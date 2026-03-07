@@ -1,0 +1,1698 @@
+import shutil
+import os
+import time
+import signal
+import asyncio
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
+from app.core.config import config_manager, config_ai_manager
+from app.services.database import db_service
+from app.services.router import jpk_router
+
+try:
+    import pyi_splash
+    pyi_splash.update_text("Uruchamianie serwera...")
+except ImportError:
+    pyi_splash = None
+
+# Define lifespan event handler to manage startup/shutdown
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    app.state.last_heartbeat = time.time()
+
+    async def check_connection():
+        while True:
+            await asyncio.sleep(2)
+            # Increased timeout to 30s to be safer for local operations
+            if time.time() - app.state.last_heartbeat > 30:
+                db_service.close()
+                print("Brak aktywności - zamykanie serwera...")
+                os.kill(os.getpid(), signal.SIGINT)
+                break
+
+    asyncio.create_task(check_connection())
+
+    last_db = config_manager.get_last_db()
+    if last_db and Path(last_db).exists():
+        try:
+            if pyi_splash:
+                pyi_splash.update_text(f"Ładowanie bazy: {Path(last_db).name}")
+            db_service.connect(last_db)
+            print(f"Restored last database: {last_db}")
+        except Exception as e:
+            print(f"Could not restore last DB: {e}")
+            config_manager.set_last_db(None)
+    
+    if pyi_splash:
+        pyi_splash.close()
+    yield
+    # Shutdown
+    db_service.close()
+
+app = FastAPI(lifespan=lifespan)
+
+@app.post("/api/heartbeat")
+async def heartbeat():
+    app.state.last_heartbeat = time.time()
+    return {"status": "ok"}
+
+# Setup Templates & Static Files
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+
+# Routes
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.post("/upload", response_class=HTMLResponse)
+@app.post("/import", response_class=HTMLResponse)
+async def import_jpk(file: UploadFile = File(...)):
+    # Save uploaded file temporarily?
+    # Or strict requirement: "Tworzy bazę .db w tym samym folderze co XML".
+    # User selects file from LOCAL disk via browser.
+    # Browser upload means the file is sent to the server.
+    # Since this is a LOCAL app, users might expect to pick a path, OR upload.
+    # "okno wyboru pliku" usually means <input type="file">.
+    # When using Browser <-> FastAPI on localhost, the file is effectively copied to temp.
+    # We need to save it to a known location to treat it as "Source XML".
+    # Let's save it to 'data/imports' or keep it in temp?
+    # Requirement: "Tworzy bazę .db w tym samym folderze co XML".
+    # If we save to `app/data/uploads`, DB goes there. That's fine.
+    
+    upload_dir = Path("app/data/uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    file_path = upload_dir / file.filename
+    
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        print(f"File saved to {file_path}")
+        
+        # Trigger ETL in a separate thread to avoid blocking the heartbeat event loop
+        # and manually update heartbeat before and after
+        app.state.last_heartbeat = time.time()
+        db_path = await asyncio.to_thread(jpk_router.route_import, str(file_path))
+        app.state.last_heartbeat = time.time()
+        
+        # Ensure we are connected to the newly created database in the main service
+        db_service.connect(db_path)
+        
+        # Update config
+        config_manager.set_last_db(db_path)
+        
+        # We return the filename, but also trigger UI refresh and consistency check via HTMX header
+        response = HTMLResponse(content=Path(db_path).name)
+        import json
+        response.headers["HX-Trigger"] = json.dumps({"db-changed": None, "show-consistency": None})
+        return response
+        
+    except Exception as e:
+        print(f"Import failed: {e}")
+        return HTMLResponse(content=f"Error: {e}", status_code=500)
+
+@app.post("/connect-db")
+async def connect_db(file: UploadFile = File(...)):
+    # Create databases folder if not exists
+    db_dir = Path("databases")
+    db_dir.mkdir(exist_ok=True)
+    
+    target_path = db_dir / file.filename
+    with open(target_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    try:
+        db_service.verify_db(str(target_path))
+        # Valid: connect and add to recent
+        db_service.connect(str(target_path))
+        config_manager.set_last_db(str(target_path))
+        
+        # Trigger UI update and clear any previous errors
+        response = HTMLResponse(content='<div id="alert-container" hx-swap-oob="true"></div>')
+        response.headers["HX-Trigger"] = "db-changed"
+        return response
+    except Exception as e:
+        # Invalid: delete and return error
+        if target_path.exists():
+            target_path.unlink()
+        
+        # Return error as OOB swap for the alert container
+        alert_html = f"""
+        <div id="alert-container" hx-swap-oob="true" class="fixed bottom-4 right-4 z-50">
+            <div class="alert alert-error shadow-lg border-2 border-base-100/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span class="text-xs font-bold leading-tight">{str(e)}</span>
+                <button class="btn btn-ghost btn-xs" onclick="document.getElementById('alert-container').innerHTML=''">✕</button>
+            </div>
+        </div>
+        """
+        return HTMLResponse(content=alert_html)
+
+@app.get("/active-db-name", response_class=HTMLResponse)
+async def get_active_db_name():
+    last_db = config_manager.get_last_db()
+    if last_db:
+        return Path(last_db).name
+    return "Brak"
+
+@app.get("/active-podmiot-name", response_class=HTMLResponse)
+async def get_active_podmiot_name():
+    try:
+        conn = db_service.get_connection()
+        row = conn.execute("SELECT PelnaNazwa FROM Podmiot").fetchone()
+        if row and row['PelnaNazwa']:
+            return row['PelnaNazwa']
+    except:
+        pass
+    return "---"
+
+@app.get("/recent", response_class=HTMLResponse)
+async def get_recent():
+    recent = config_manager.get_recent_dbs()
+    if not recent:
+        return "<li><span class='text-gray-400 p-2'>Brak ostatnich baz</span></li>"
+    
+    html = ""
+    for db_path in recent:
+        name = Path(db_path).name
+        html += f"""
+        <li>
+            <a hx-post="/select-db" hx-vals='{{"path": "{db_path.replace("\\", "/")}"}}' hx-swap="none">
+                {name}
+            </a>
+        </li>
+        """
+    return html
+
+@app.post("/select-db")
+async def select_db(path: str = Form(...)):
+    if Path(path).exists():
+        db_service.connect(path)
+        config_manager.set_last_db(path)
+        response = HTMLResponse(content="OK")
+        response.headers["HX-Trigger"] = "db-changed"
+        return response
+    raise HTTPException(status_code=404, detail="Database file not found")
+
+def format_amount(value):
+    if value is None:
+        return ""
+    try:
+        val_float = float(value)
+        if val_float == 0:
+            return ""
+        # Format with 2 decimal places and comma as decimal separator
+        # Then use space as thousands separator
+        formatted = "{:,.2f}".format(val_float).replace(",", " ").replace(".", ",")
+        return formatted
+    except (ValueError, TypeError):
+        return ""
+
+def sanitize_text(text):
+    if text is None: return ""
+    # Aggressive cleaning: replace all newline variants with space, then strip
+    raw_text = str(text)
+    return raw_text.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ').strip()
+
+def parse_smart_query(q: str):
+    if not q:
+        return []
+    # Split by common separators: LUB (case insensitive), comma, pipe
+    # Using regex to handle LUB case insensitively
+    import re
+    parts = re.split(r'\s+LUB\s+|[,|]', q, flags=re.IGNORECASE)
+    return [p.strip() for p in parts if p.strip()]
+
+def _build_where_clause(q: str = "", type: str = "", zq: str = "", month: str = ""):
+    """Helper for dynamic SQL WHERE clause construction with parameter binding."""
+    where_clauses = []
+    params = {}
+    
+    if q:
+        terms = parse_smart_query(q)
+        if terms:
+            term_clauses = []
+            for i, term in enumerate(terms):
+                key = f"q{i}"
+                if term.startswith("konto:"):
+                    val = term[6:]
+                    term_clauses.append(f"(z.Z_3 = :{key} OR z.Z_3 LIKE :{key} || '-%')")
+                    params[key] = val
+                else:
+                    term_clauses.append(f"(z.Z_3 LIKE :{key} OR s.S_2 LIKE :{key})")
+                    params[key] = f"%{term}%"
+            where_clauses.append("(" + " OR ".join(term_clauses) + ")")
+            
+    if type:
+        where_clauses.append("s.TypKonta = :type")
+        params["type"] = type
+
+    if zq:
+        terms = parse_smart_query(zq)
+        if terms:
+            term_clauses = []
+            for i, term in enumerate(terms):
+                key = f"zq{i}"
+                term_clauses.append(f"(z.Z_3 LIKE :{key} OR z.Z_2 LIKE :{key})")
+                params[key] = f"%{term}%"
+            where_clauses.append("(" + " OR ".join(term_clauses) + ")")
+            
+    if month and month.isdigit():
+        where_clauses.append("z.Z_DataMiesiac = :month")
+        params["month"] = int(month)
+        
+    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+    return where_sql, params
+
+def build_zois_tree(rows):
+    nodes = {}
+    for row in rows:
+        node = dict(row)
+        node['children'] = []
+        nodes[node['S_1']] = node
+        
+    tree = []
+    for node in nodes.values():
+        s_1 = node['S_1']
+        s_3 = node['S_3']
+        if not s_3 or s_1 == s_3 or s_3 not in nodes:
+            tree.append(node)
+        else:
+            nodes[s_3]['children'].append(node)
+    return tree
+
+def render_zois_tree(nodes, depth=0):
+    html = ""
+    padding_base = 0.5 # rem
+    padding = depth * padding_base
+    
+    # Generate tree lines for hierarchy visualization
+    tree_lines = "".join([f'<div class="absolute border-l border-base-content/10 h-full" style="left: {i * 0.5 + 0.25}rem; top: 0;"></div>' for i in range(depth)])
+    
+    for node in nodes:
+        konto = node['S_1']
+        nazwa = node['S_2']
+        bo_wn = format_amount(node['S_4'])
+        bo_ma = format_amount(node['S_5'])
+        obroty_wn = format_amount(node['S_8'])
+        obroty_ma = format_amount(node['S_9'])
+        saldo_wn = format_amount(node['S_10'])
+        saldo_ma = format_amount(node['S_11'])
+        
+        is_analytical = node.get('IsAnalytical', 0) == 1
+        has_children = len(node['children']) > 0
+        
+        konto_full = sanitize_text(konto)
+        nazwa_full = sanitize_text(nazwa)
+        
+        # Improved Truncation & Tooltip Logic
+        # Escape quotes for HTML data-tip attribute
+        nazwa_escaped = nazwa_full.replace('"', '&quot;')
+        konto_escaped = konto_full.replace('"', '&quot;')
+
+        # Account code tooltip (longer than 15 chars)
+        if len(konto_full) > 15:
+            konto_html = f'<div class="tooltip tooltip-right z-50" data-tip="{konto_escaped}"><div class="truncate max-w-[9rem]">{konto_full}</div></div>'
+        else:
+            konto_html = f'<div class="truncate">{konto_full}</div>'
+
+        # Account name tooltip (Extra wide and multiline)
+        if nazwa_full:
+            nazwa_html = f'<div class="tooltip tooltip-right tooltip-multiline text-left z-50 w-full" data-tip="{nazwa_escaped}"><div class="truncate w-full">{nazwa_full}</div></div>'
+        else:
+            nazwa_html = f'<div class="truncate">{nazwa_full}</div>'
+            
+        weight_class = ""
+        if is_analytical or not has_children:
+            weight_class = "font-normal text-base-content/80 text-[11px]"
+        else:
+            weight_class = "font-bold text-base-content text-xs"
+
+        expander_svg = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>'
+
+        # Grid config: Konto (10rem), Nazwa (flex), Amounts (6x 7rem)
+        grid_class = f"grid grid-cols-[10rem_minmax(0,1fr)_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-1 border-b border-base-content/5 items-center hover:bg-base-200 w-full overflow-hidden {weight_class}"
+
+        if has_children:
+            children_html = render_zois_tree(node['children'], depth + 1)
+            html += f"""
+            <details class="group zoistree">
+                <summary class="list-none [&::-webkit-details-marker]:hidden outline-none cursor-pointer">
+                    <div class="{grid_class}">
+                        <div class="flex items-center gap-1 relative h-full min-w-0" style="padding-left: {padding}rem;">
+                            {tree_lines}
+                            <span class="z-10 group-open:rotate-90 transition-transform duration-200 inline-block cursor-pointer p-0.5 hover:bg-base-300 rounded" onclick="this.closest('details').open = !this.closest('details').open; event.preventDefault(); event.stopPropagation();">{expander_svg}</span>
+                            <div class="z-10 flex-grow hover:underline min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{konto_html}</div>
+                        </div>
+                        <div onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();" class="hover:underline min-w-0">{nazwa_html}</div>
+                        <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(bo_wn)}</div>
+                        <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(bo_ma)}</div>
+                        <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(obroty_wn)}</div>
+                        <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(obroty_ma)}</div>
+                        <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(saldo_wn)}</div>
+                        <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(saldo_ma)}</div>
+                    </div>
+                </summary>
+                <div>
+                    {children_html}
+                </div>
+            </details>
+            """
+        else:
+            empty_expander = '<span class="inline-block w-4 h-4 shrink-0 mx-0.5"></span>'
+            html += f"""
+            <div class="{grid_class} cursor-pointer" onclick="drillDown('{konto_full}')">
+                <div class="flex items-center gap-1 relative h-full min-w-0" style="padding-left: {padding}rem;">
+                    {tree_lines}
+                    <div class="z-10 flex items-center gap-1 min-w-0">
+                        {empty_expander}
+                        <span class="hover:underline min-w-0">{konto_html}</span>
+                    </div>
+                </div>
+                <div class="hover:underline min-w-0">{nazwa_html}</div>
+                <div class="text-right font-mono min-w-0">{sanitize_text(bo_wn)}</div>
+                <div class="text-right font-mono min-w-0">{sanitize_text(bo_ma)}</div>
+                <div class="text-right font-mono min-w-0">{sanitize_text(obroty_wn)}</div>
+                <div class="text-right font-mono min-w-0">{sanitize_text(obroty_ma)}</div>
+                <div class="text-right font-mono min-w-0">{sanitize_text(saldo_wn)}</div>
+                <div class="text-right font-mono min-w-0">{sanitize_text(saldo_ma)}</div>
+            </div>
+            """
+            
+    return html
+
+@app.get("/zois", response_class=HTMLResponse)
+async def get_zois(request: Request, q: str = "", type: str = ""):
+    # Skeleton of table
+    try:
+        conn = db_service.get_connection()
+        
+        where_clauses = []
+        params = {}
+        
+        if q:
+            terms = parse_smart_query(q)
+            if terms:
+                term_clauses = []
+                for i, term in enumerate(terms):
+                    key = f"q{i}"
+                    if term.startswith("konto:"):
+                        val = term[6:]
+                        # Strict account code and its children match
+                        term_clauses.append(f"(S_1 = :{key} OR S_1 LIKE :{key} || '-%')")
+                        params[key] = val
+                    else:
+                        term_clauses.append(f"(S_1 LIKE :{key} OR S_2 LIKE :{key})")
+                        params[key] = f"%{term}%"
+                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
+        
+        if type:
+            where_clauses.append("TypKonta = :type")
+            params["type"] = type
+            
+        where_sql = ""
+        if where_clauses:
+            where_sql = "WHERE " + " AND ".join(where_clauses)
+
+        try:
+            sql = f"""
+                SELECT S_1, S_2, S_3, S_4, S_5, S_8, S_9, S_10, S_11, IsAnalytical, TypKonta
+                FROM ZOiS {where_sql} 
+                ORDER BY S_1
+            """
+            rows = conn.execute(sql, params).fetchall()
+            
+            # Calculate totals and check types for the filtered set
+            totals_sql = f"""
+                SELECT 
+                    SUM(S_10) as sum_wn, 
+                    SUM(S_11) as sum_ma,
+                    COUNT(*) as total_count,
+                    SUM(CASE WHEN TypKonta LIKE 'PASYWA%' OR TypKonta LIKE 'WYNIKOWE%' THEN 1 ELSE 0 END) as special_count
+                FROM ZOiS {where_sql}
+            """
+            totals = conn.execute(totals_sql, params).fetchone()
+            sum_wn = totals['sum_wn'] or 0
+            sum_ma = totals['sum_ma'] or 0
+            total_count = totals['total_count'] or 0
+            special_count = totals['special_count'] or 0
+            
+            # Determine Persaldo formula: Ma - Wn if ALL accounts are PASYWA or WYNIKOWE
+            is_special = total_count > 0 and special_count == total_count
+            persaldo = sum_ma - sum_wn if is_special else sum_wn - sum_ma
+            persaldo_label = "Persaldo (Ma-Wn)" if is_special else "Persaldo (Wn-Ma)"
+            
+        except Exception as e:
+            print(f"ZOiS Error: {e}")
+            return "<div>Brak danych w tabeli ZOiS.</div>"
+            
+        # Build and render the tree structure
+        tree_nodes = build_zois_tree(rows)
+        html_rows = render_zois_tree(tree_nodes)
+        
+        if not html_rows:
+            html_rows = "<div class='text-center p-4 border-b border-base-content/10'>Brak danych</div>"
+            
+        return f"""
+        <div class="flex flex-col h-full overflow-hidden">
+            <div class="overflow-x-auto flex-grow bg-base-100 pb-8">
+                <div class="w-full">
+                    <!-- Tree Table Header -->
+                    <div class="grid grid-cols-[10rem_minmax(0,1fr)_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-2 border-b-2 border-base-content/20 text-[10px] font-bold text-base-content/60 uppercase tracking-wider bg-base-200 sticky top-0 z-10 shadow-sm w-full overflow-hidden" style="padding-left: 0.5rem;">
+                        <div class="min-w-0">Konto</div>
+                        <div class="min-w-0">Nazwa</div>
+                        <div class="text-right min-w-0">BO Wn</div>
+                        <div class="text-right min-w-0">BO Ma</div>
+                        <div class="text-right min-w-0">Obroty Wn</div>
+                        <div class="text-right min-w-0">Obroty Ma</div>
+                        <div class="text-right min-w-0">Saldo Wn</div>
+                        <div class="text-right min-w-0">Saldo Ma</div>
+                    </div>
+                    <!-- Tree Body -->
+                    <div class="flex flex-col">
+                        {html_rows}
+                    </div>
+                </div>
+            </div>
+            <!-- Summation Footer -->
+            <div class="bg-base-300 p-2 border-t border-base-content/10 flex justify-end items-center gap-8 px-6 shadow-inner">
+                <div class="flex flex-col items-end">
+                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Wn</span>
+                    <span class="text-sm font-black text-secondary font-mono">{format_amount(sum_wn)}</span>
+                </div>
+                <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
+                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Ma</span>
+                    <span class="text-sm font-black text-secondary font-mono">{format_amount(sum_ma)}</span>
+                </div>
+                <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
+                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">{persaldo_label}</span>
+                    <span class="text-sm font-black text-primary font-mono">{format_amount(persaldo)}</span>
+                </div>
+            </div>
+        </div>
+        """
+    except RuntimeError:
+        return "<div class='alert alert-warning'>Nie otwarto żadnej bazy danych. Zaimportuj plik JPK.</div>"
+    except Exception as e:
+        return f"<div class='alert alert-error'>Błąd pobierania danych: {e}</div>"
+
+@app.get("/zois/filters", response_class=HTMLResponse)
+async def get_zois_filters():
+    try:
+        conn = db_service.get_connection()
+        rows = conn.execute("SELECT DISTINCT TypKonta FROM ZOiS WHERE TypKonta IS NOT NULL ORDER BY TypKonta").fetchall()
+        
+        options = '<option value="">Wszystkie (Typ Konta)</option>'
+        for row in rows:
+            val = sanitize_text(row['TypKonta'])
+            options += f'<option value="{val}">{val}</option>'
+        return options
+    except:
+        return '<option value="">Wszystkie (Typ Konta)</option>'
+
+@app.get("/dziennik", response_class=HTMLResponse)
+async def get_dziennik():
+    try:
+        conn = db_service.get_connection()
+        # Updated Dziennik mapping:
+        # Nr dziennika -> D_1, Opis -> D_10, Nr dowodu -> D_4, 
+        # Data zapisu -> D_8, Wartość -> D_11, KSeF -> D_12
+        rows = conn.execute("SELECT D_1, D_10, D_4, D_8, D_11, D_12 FROM Dziennik ORDER BY D_8 LIMIT 500").fetchall()
+        
+        html_rows = ""
+        for row in rows:
+            opis = sanitize_text(row['D_10'])
+            html_rows += f"""
+            <tr class="hover whitespace-nowrap">
+                <td data-type="text">{sanitize_text(row['D_1'])}</td>
+                <td data-type="text" class="max-w-md truncate">{opis}</td>
+                <td data-type="text">{sanitize_text(row['D_4'])}</td>
+                <td data-type="date" data-value="{row['D_8'] or ''}">{sanitize_text(row['D_8'])}</td>
+                <td data-type="number" data-value="{row['D_11'] or 0}" class="text-right font-mono">{sanitize_text(format_amount(row['D_11']))}</td>
+                <td data-type="text">{sanitize_text(row['D_12'])}</td>
+            </tr>
+            """
+        
+        if not html_rows:
+            html_rows = "<tr><td colspan='6' class='text-center'>Brak danych</td></tr>"
+            
+        return f"""
+        <div class="overflow-x-auto">
+            <table class="table table-xs">
+                <thead>
+                    <tr>
+                        <th>Nr dziennika</th>
+                        <th>Opis</th>
+                        <th>Nr dowodu</th>
+                        <th>Data zapisu</th>
+                        <th class="text-right">Wartość</th>
+                        <th>KSeF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {html_rows}
+                </tbody>
+            </table>
+        </div>
+        """
+    except RuntimeError:
+        return "<div class='alert alert-warning'>Nie otwarto żadnej bazy danych.</div>"
+    except Exception as e:
+        return f"<div class='alert alert-error'>Błąd: {e}</div>"
+
+@app.get("/data/table", response_class=HTMLResponse)
+@app.get("/data/zapisy", response_class=HTMLResponse)
+@app.get("/zapisy", response_class=HTMLResponse)
+async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", page: int = 1):
+    pageSize = 1000
+    offset = (page - 1) * pageSize
+    try:
+        conn = db_service.get_connection()
+        where_sql, params = _build_where_clause(q, type, zq, month)
+
+        # Performance optimization: Recommended Index
+        # CREATE INDEX IF NOT EXISTS idx_zapisy_filter ON Zapisy (Z_3, Z_Data);
+
+        query = f"""
+            SELECT z.Dziennik_Id, z.Z_3, z.Z_2, z.Z_Data, d.D_1, z.Z_4, z.Z_5, z.Z_6, z.Z_7, z.Z_8, z.Z_9, s.S_2
+            FROM Zapisy z
+            LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
+            LEFT JOIN ZOiS s ON z.Z_3 = s.S_1
+            {where_sql}
+            ORDER BY z.Z_Data, z.Id
+            LIMIT :pageSize OFFSET :offset
+        """
+        params["pageSize"] = pageSize
+        params["offset"] = offset
+        rows = conn.execute(query, params).fetchall()
+        
+        # Total calculation for the filtered results
+        total_query = f"""
+            SELECT SUM(z.Z_4) as sum_wn, SUM(z.Z_7) as sum_ma
+            FROM Zapisy z
+            LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
+            LEFT JOIN ZOiS s ON z.Z_3 = s.S_1
+            {where_sql}
+        """
+        totals = conn.execute(total_query, params).fetchone()
+        sum_wn = totals['sum_wn'] or 0
+        sum_ma = totals['sum_ma'] or 0
+
+        html_rows = ""
+        for row in rows:
+            dziennik_id = row['Dziennik_Id']
+            konto_full = sanitize_text(row['Z_3'])
+            opis_full = sanitize_text(row['Z_2'])
+            data_val = row['Z_Data'] or "---"
+            nazwa_full = sanitize_text(row['S_2'])
+            
+            tip_content = f"{konto_full}\\n{nazwa_full or '---'}"
+            konto_html = f'<div class="tooltip tooltip-right text-left" data-tip="{tip_content}"><div class="max-w-[150px] truncate">{konto_full}</div></div>'
+            opis_html = f'<div class="tooltip tooltip-right text-left" data-tip="{opis_full}"><div class="max-w-xs truncate">{opis_full}</div></div>'
+
+            wn_waluta_val = format_amount(row['Z_5'])
+            wn_waluta_code = row['Z_6'] or ""
+            wn_waluta_str = f"{wn_waluta_val} {wn_waluta_code}".strip() if wn_waluta_val else ""
+            ma_waluta_val = format_amount(row['Z_8'])
+            ma_waluta_code = row['Z_9'] or ""
+            ma_waluta_str = f"{ma_waluta_val} {ma_waluta_code}".strip() if ma_waluta_val else ""
+
+            html_rows += f"""
+            <tr class="hover whitespace-nowrap text-xs">
+                <td data-type="text">{konto_html}</td>
+                <td data-type="text">{opis_html}</td>
+                <td data-type="date" data-value="{row['Z_Data'] or ''}">{data_val}</td>
+                <td data-type="text" class="text-primary cursor-pointer hover:underline" onclick="openDziennikModal({dziennik_id})">{row['D_1']}</td>
+                <td data-type="number" data-value="{row['Z_4'] or 0}" class="text-right font-mono">{format_amount(row['Z_4'])}</td>
+                <td data-type="text" class="text-right font-mono">{wn_waluta_str}</td>
+                <td data-type="number" data-value="{row['Z_7'] or 0}" class="text-right font-mono">{format_amount(row['Z_7'])}</td>
+                <td data-type="text" class="text-right font-mono">{ma_waluta_str}</td>
+            </tr>
+            """
+        
+        if not html_rows:
+            html_rows = "<tr><td colspan='8' class='text-center'>Brak danych</td></tr>"
+            
+        return f"""
+        <div class="mb-4 p-3 bg-base-200 rounded-xl border border-base-content/5 flex gap-8 justify-end items-center shadow-inner">
+            <div class="flex flex-col items-end">
+                <span class="text-[9px] uppercase font-bold opacity-50">Suma Winien (Wn)</span>
+                <span class="text-lg font-black text-secondary font-mono">{format_amount(sum_wn)}</span>
+            </div>
+            <div class="flex flex-col items-end">
+                <span class="text-[9px] uppercase font-bold opacity-50">Suma Ma</span>
+                <span class="text-lg font-black text-accent font-mono">{format_amount(sum_ma)}</span>
+            </div>
+            <div class="flex flex-col items-end pl-6 border-l border-base-content/10">
+                <span class="text-[9px] uppercase font-bold opacity-50">Saldo</span>
+                <span class="text-lg font-black font-mono">{format_amount(sum_wn - sum_ma)}</span>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table id="zapisy-table" class="table table-xs">
+                <thead>
+                    <tr>
+                        <th>Konto</th>
+                        <th>Opis</th>
+                        <th>Data</th>
+                        <th>Dziennik</th>
+                        <th class="text-right">Kwota Wn</th>
+                        <th class="text-right">Waluta Wn</th>
+                        <th class="text-right">Kwota Ma</th>
+                        <th class="text-right">Waluta Ma</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {html_rows}
+                </tbody>
+            </table>
+        </div>
+        """
+    except Exception as e:
+        return f"<div class='alert alert-error font-mono text-xs'>Błąd: {str(e)}</div>"
+
+@app.get("/data/chart", response_class=HTMLResponse)
+@app.get("/api/chart-fragment", response_class=HTMLResponse)
+async def get_data_chart(q: str = "", type: str = "", zq: str = "", month: str = ""):
+    try:
+        conn = db_service.get_connection()
+        where_sql, params = _build_where_clause(q, type, zq, month)
+
+        # 1. PRIMARY AGGREGATE SUMMARY
+        agg_sql = f"""
+            SELECT 
+                COUNT(*) as total_count,
+                SUM(z.Z_4) as sum_wn,
+                SUM(z.Z_7) as sum_ma,
+                AVG(z.Z_4) as avg_wn,
+                AVG(z.Z_7) as avg_ma
+            FROM Zapisy z
+            JOIN ZOiS s ON z.Z_3 = s.S_1
+            {where_sql}
+        """
+        agg = conn.execute(agg_sql, params).fetchone()
+        
+        # 2. MONTHLY DISTRIBUTION FOR CHART
+        sql_monthly = f"""
+            SELECT Z_DataMiesiac, SUM(Z_4) as suma_wn, SUM(Z_7) as suma_ma 
+            FROM Zapisy z
+            JOIN ZOiS s ON z.Z_3 = s.S_1
+            {where_sql} 
+            AND Z_DataMiesiac IS NOT NULL
+            GROUP BY Z_DataMiesiac 
+            ORDER BY Z_DataMiesiac
+        """
+        rows = conn.execute(sql_monthly, params).fetchall()
+
+        months_idx = list(range(1, 13))
+        month_names = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", 
+                       "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"]
+        wn_data = [0.0] * 12
+        ma_data = [0.0] * 12
+
+        for row in rows:
+            m = row['Z_DataMiesiac']
+            if m and 1 <= m <= 12:
+                wn_data[m-1] = float(row['suma_wn'] or 0)
+                ma_data[m-1] = float(row['suma_ma'] or 0)
+
+        import json
+        
+        return f"""
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="stats shadow bg-base-200 border border-base-content/5">
+                <div class="stat">
+                    <div class="stat-title text-[10px] uppercase font-bold opacity-60">Liczba zapisów</div>
+                    <div class="stat-value text-xl text-primary">{agg['total_count']}</div>
+                </div>
+            </div>
+            <div class="stats shadow bg-base-200 border border-base-content/5">
+                <div class="stat">
+                    <div class="stat-title text-[10px] uppercase font-bold opacity-60">Suma Wn</div>
+                    <div class="stat-value text-xl text-secondary font-mono">{format_amount(agg['sum_wn'])}</div>
+                </div>
+            </div>
+            <div class="stats shadow bg-base-200 border border-base-content/5">
+                <div class="stat">
+                    <div class="stat-title text-[10px] uppercase font-bold opacity-60">Suma Ma</div>
+                    <div class="stat-value text-xl text-accent font-mono">{format_amount(agg['sum_ma'])}</div>
+                </div>
+            </div>
+            <div class="stats shadow bg-base-200 border border-base-content/5">
+                <div class="stat">
+                    <div class="stat-title text-[10px] uppercase font-bold opacity-60">Balans (Wn-Ma)</div>
+                    <div class="stat-value text-xl font-mono">{(format_amount((agg['sum_wn'] or 0) - (agg['sum_ma'] or 0)))}</div>
+                </div>
+            </div>
+        </div>
+
+        <div id='plotly-chart' class='w-full h-[500px] pointer-events-none select-none border border-base-content/10 rounded-xl shadow-lg bg-base-100'></div>
+        
+        <script>
+            (function() {{
+                const months = {json.dumps(month_names)};
+                const wnData = {json.dumps(wn_data)};
+                const maData = {json.dumps(ma_data)};
+                
+                const data = [
+                    {{
+                        x: months,
+                        y: wnData,
+                        name: 'Winien (Wn)',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: {{ shape: 'spline', color: '#d926aa', width: 4 }},
+                        marker: {{ size: 8 }}
+                    }},
+                    {{
+                        x: months,
+                        y: maData,
+                        name: 'Ma',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: {{ shape: 'spline', color: '#00d7c0', width: 4 }},
+                        marker: {{ size: 8 }}
+                    }}
+                ];
+                
+                const layout = {{
+                    title: 'Rozkład miesięczny (Analiza Liniowa)',
+                    xaxis: {{ 
+                        title: 'Miesiąc',
+                        tickangle: -45
+                    }},
+                    yaxis: {{ title: 'Suma (PLN)' }},
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {{ color: '#9ca3af' }},
+                    margin: {{ t: 60, b: 80, l: 80, r: 40 }},
+                    dragmode: false,
+                    legend: {{ orientation: 'h', y: -0.2 }}
+                }};
+                
+                Plotly.newPlot('plotly-chart', data, layout, {{ responsive: true, staticPlot: true }});
+            }})();
+        </script>
+        """
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"<div class='alert alert-error'>Błąd analizy danych: {str(e)}</div>"
+
+@app.get("/dziennik-details/{dziennik_id}", response_class=HTMLResponse)
+async def get_dziennik_details(dziennik_id: int):
+    try:
+        conn = db_service.get_connection()
+        # 1. Fetch journal details
+        row = conn.execute("SELECT * FROM Dziennik WHERE Id = ?", (dziennik_id,)).fetchone()
+        
+        if not row:
+            return "<div class='alert alert-error'>Nie znaleziono wpisu w dzienniku.</div>"
+            
+        # 2. Fetch associated entries
+        entries = conn.execute("""
+            SELECT z.Z_3, z.Z_2, z.Z_4, z.Z_5, z.Z_6, z.Z_7, z.Z_8, z.Z_9, s.S_2
+            FROM Zapisy z
+            JOIN ZOiS s ON z.Z_3 = s.S_1
+            WHERE z.Dziennik_Id = ?
+            ORDER BY z.Id
+        """, (dziennik_id,)).fetchall()
+
+        def field_html(label, value, is_amount=False, is_bold=False):
+            val_str = format_amount(value) if is_amount else sanitize_text(value)
+            weight_class = "font-black text-secondary" if is_bold else "font-medium text-base-content/80"
+            return f"""
+            <div class="flex flex-col min-w-0">
+                <span class="text-[8px] font-bold opacity-50 uppercase tracking-tighter leading-none mb-0.5">{label}</span>
+                <span class="text-[12px] {weight_class} truncate leading-tight">{"---" if not val_str else val_str}</span>
+            </div>
+            """
+
+        # Build entries table rows
+        table_rows = ""
+        for ent in entries:
+            # Currency Wn
+            wn_val = format_amount(ent['Z_5'])
+            wn_code = ent['Z_6'] or ""
+            wn_waluta = f"{wn_val} {wn_code}".strip() if wn_val else ""
+            
+            # Currency Ma
+            ma_val = format_amount(ent['Z_8'])
+            ma_code = ent['Z_9'] or ""
+            ma_waluta = f"{ma_val} {ma_code}".strip() if ma_val else ""
+
+            # Opis Tooltip for Modal: Multi-line support and ensure it's always applied
+            full_opis = sanitize_text(ent['Z_2'])
+            opis_html = f'<div class="tooltip tooltip-bottom text-left" data-tip="{full_opis}"><div class="max-w-[150px] truncate">{full_opis}</div></div>'
+
+            # Truncate and Tooltip for Konto in Modal
+            full_konto = sanitize_text(ent['Z_3'])
+            nazwa_full = sanitize_text(ent['S_2'])
+            
+            # Konto Tooltip for Modal: Multi-line support
+            tip_content = f"{full_konto}\n{nazwa_full or '---'}"
+            konto_html = f'<div class="tooltip tooltip-right text-left" data-tip="{tip_content}"><div class="max-w-[100px] truncate">{full_konto}</div></div>'
+
+            table_rows += f"""
+            <tr class="hover whitespace-nowrap text-[10px]">
+                <td data-type="text">{konto_html}</td>
+                <td data-type="text">{opis_html}</td>
+                <td data-type="number" data-value="{ent['Z_4'] or 0}" class="text-right font-mono">{format_amount(ent['Z_4'])}</td>
+                <td data-type="text" class="text-right font-mono text-gray-500">{wn_waluta}</td>
+                <td data-type="number" data-value="{ent['Z_7'] or 0}" class="text-right font-mono">{format_amount(ent['Z_7'])}</td>
+                <td data-type="text" class="text-right font-mono text-gray-500">{ma_waluta}</td>
+            </tr>
+            """
+
+        return f"""
+        <div class="flex flex-col gap-3">
+            <!-- Header section (Condensed Grid) -->
+            <div class="bg-base-200/50 p-3 rounded-lg border border-base-300">
+                <div class="grid grid-cols-4 gap-x-4 gap-y-3">
+                    {field_html("Numer zapisu", row['D_1'])}
+                    {field_html("Dowód źródłowy", row['D_5'])}
+                    {field_html("Dowód", row['D_4'])}
+                    {field_html("Kwota", row['D_11'], is_amount=True, is_bold=True)}
+                    
+                    {field_html("Data operacji", row['D_6'])}
+                    {field_html("Data dowodu", row['D_7'])}
+                    {field_html("Data księgowania", row['D_8'])}
+                    {field_html("Kontrahent", row['D_3'])}
+
+                    <div class="col-span-2">
+                        {field_html("Opis operacji", row['D_10'])}
+                    </div>
+                    <div class="col-span-1">
+                        {field_html("Opis dziennika", row['D_2'])}
+                    </div>
+                    <div class="col-span-1">
+                        {field_html("KSeF", row['D_12'])}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entries section -->
+            <div class="flex-grow min-h-0">
+                <h4 class="text-[10px] font-bold uppercase opacity-60 mb-1.5 px-1">Zapisy skojarzone</h4>
+                <div class="border border-base-300 rounded-lg overflow-hidden h-full">
+                    <div class="overflow-y-auto max-h-[400px] bg-base-100">
+                        <table class="table table-xs table-pin-rows w-full">
+                            <thead>
+                                <tr class="bg-base-200">
+                                    <th>Konto</th>
+                                    <th>Opis</th>
+                                    <th class="text-right">Wn</th>
+                                    <th class="text-right">Wn Wal.</th>
+                                    <th class="text-right">Ma</th>
+                                    <th class="text-right">Ma Wal.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {table_rows or '<tr><td colspan="6" class="text-center py-4 opacity-50 italic">Brak zapisów skojarzonych</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+    except Exception as e:
+        return f"<div class='alert alert-error'>Błąd: {e}</div>"
+
+@app.get("/api/ai-config", response_class=HTMLResponse)
+async def get_ai_config():
+    config = config_ai_manager.get_config()
+    return HTMLResponse(content=config.model_dump_json())
+
+@app.post("/api/ai-config")
+async def save_ai_config(
+    company_type: str = Form(...),
+    multiplier: float = Form(None),
+    deviation: float = Form(None),
+    threshold: float = Form(None),
+    normalization_100: str = Form("false"),
+    prompt: str = Form(None)
+):
+    update_data = {
+        "company_type": company_type,
+        "normalization_100": normalization_100.lower() in ["true", "on"]
+    }
+    
+    if multiplier is not None:
+        update_data["multiplier"] = multiplier
+    if deviation is not None:
+        update_data["deviation"] = deviation
+    if threshold is not None:
+        update_data["threshold"] = threshold
+        
+    if prompt is not None:
+        update_data["prompts"] = {company_type: prompt}
+        
+    config_ai_manager.update_config(update_data)
+    return HTMLResponse(content="Ustawienia zapisane", headers={"HX-Trigger": "ai-config-updated"})
+
+@app.get("/api/ai-prompt", response_class=HTMLResponse)
+async def get_ai_prompt(type: str = ""):
+    prompt = config_ai_manager.get_prompt_for_type(type if type else None)
+    return HTMLResponse(content=prompt)
+
+@app.get("/api/ai-tab", response_class=HTMLResponse)
+async def get_ai_tab(request: Request):
+    config = config_ai_manager.get_config()
+    return templates.TemplateResponse("ai_tab.html", {"request": request, "config": config})
+
+@app.get("/api/badanie-tab", response_class=HTMLResponse)
+async def get_badanie_tab(request: Request):
+    try:
+        conn = db_service.get_connection()
+        keys = ["Biegly", "Istotnosc_Ogolna", "Istotnosc_Wykonawcza", "Uwagi"]
+        params = {}
+        for key in keys:
+            row = conn.execute("SELECT Tekst, Kwota FROM ParametryBadania WHERE Klucz = ?", (key,)).fetchone()
+            if row:
+                # Round to integer as requested
+                kwota = int(round(row["Kwota"])) if row["Kwota"] is not None else 0
+                params[key] = {"Tekst": row["Tekst"], "Kwota": kwota}
+            else:
+                params[key] = {"Tekst": "", "Kwota": 0}
+        
+        return templates.TemplateResponse("badanie_tab.html", {"request": request, "params": params})
+    except RuntimeError:
+        return HTMLResponse(content="<div class='alert alert-warning'>Nie otwarto żadnej bazy danych. Proszę zaimportować lub podłączyć bazę.</div>")
+    except Exception as e:
+        print(f"Błąd Badanie Tab: {e}")
+        return HTMLResponse(content=f"<div class='alert alert-error'>Błąd: {e}</div>")
+
+@app.post("/api/save-badanie")
+async def save_badanie(
+    biegly: str = Form(""),
+    istotnosc_ogolna: str = Form("0"),
+    istotnosc_wykonawcza: str = Form("0"),
+    uwagi: str = Form("")
+):
+    try:
+        # Clean and round to integer
+        try:
+            val_ogolna = int(round(float(istotnosc_ogolna.replace(" ", ""))))
+            val_wykonawcza = int(round(float(istotnosc_wykonawcza.replace(" ", ""))))
+        except (ValueError, TypeError):
+            val_ogolna = 0
+            val_wykonawcza = 0
+
+        conn = db_service.get_connection()
+        data = [
+            ("Biegly", "Kluczowy biegły rewident", biegly, None),
+            ("Istotnosc_Ogolna", "Istotność Ogólna", None, val_ogolna),
+            ("Istotnosc_Wykonawcza", "Istotność Wykonawcza", None, val_wykonawcza),
+            ("Uwagi", "Uwagi do pliku", uwagi, None)
+        ]
+        
+        for klucz, opis, tekst, kwota in data:
+            conn.execute("""
+                INSERT INTO ParametryBadania (Klucz, Opis, Tekst, Kwota)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(Klucz) DO UPDATE SET
+                    Tekst = excluded.Tekst,
+                    Kwota = excluded.Kwota,
+                    Opis = excluded.Opis
+            """, (klucz, opis, tekst, kwota))
+        
+        conn.commit()
+        return HTMLResponse(content="Parametry zapisane", headers={"HX-Trigger": "badanie-updated"})
+    except Exception as e:
+        print(f"Błąd zapisu Badanie: {e}")
+        return HTMLResponse(content=f"Błąd zapisu: {e}", status_code=500)
+
+@app.get("/api/get-ai-modal", response_class=HTMLResponse)
+async def get_ai_modal():
+    prompt = config_ai_manager.get_prompt_for_type()
+    
+    # Stable modal fragment using modal-toggle trick or simple open attribute
+    # Here we use the standard showModal() call triggered by hx-on
+    return f"""
+    <dialog id="ai_stable_modal" class="modal modal-open">
+        <div class="modal-box w-11/12 max-w-3xl relative">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="this.closest('dialog').remove()">✕</button>
+            
+            <h3 class="font-bold text-lg mb-4">Przygotowanie danych dla AI</h3>
+            <p class="text-[11px] mb-4 opacity-70">
+                Skopiuj prompt i pobierz plik CSV. Następnie wklej oba elementy do narzędzia AI.
+            </p>
+
+            <div class="relative group mb-6">
+                <textarea id="ai-modal-prompt-text"
+                    class="textarea textarea-bordered w-full h-64 text-[11px] font-mono leading-relaxed bg-base-200"
+                    readonly>{prompt}</textarea>
+                <button class="btn btn-sm btn-primary absolute top-2 right-2" onclick="copyAiModalPrompt(this)">
+                    Kopiuj Prompt
+                </button>
+            </div>
+
+            <div class="flex justify-between items-center bg-base-200 p-4 rounded-lg">
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold">Plik danych (CSV)</span>
+                    <span class="text-[10px] opacity-60">Kompleksowy eksport ZOiS z slownikiem kategorii</span>
+                </div>
+                <a href="/api/export-ai-full" class="btn btn-secondary btn-sm gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Pobierz dane (CSV)
+                </a>
+            </div>
+
+            <div class="modal-action">
+                <button class="btn" onclick="this.closest('dialog').remove()">Zamknij</button>
+            </div>
+            
+            <script>
+                function copyAiModalPrompt(btn) {{
+                    const textArea = document.getElementById('ai-modal-prompt-text');
+                    navigator.clipboard.writeText(textArea.value);
+
+                    const originalText = btn.innerText;
+                    btn.innerText = 'Skopiowano!';
+                    btn.classList.replace('btn-primary', 'btn-success');
+                    setTimeout(() => {{
+                        btn.innerText = originalText;
+                        btn.classList.replace('btn-success', 'btn-primary');
+                    }}, 2000);
+                }}
+            </script>
+        </div>
+    </dialog>
+    """
+
+@app.get("/api/export-ai-full")
+async def export_ai_full():
+    try:
+        conn = db_service.get_connection()
+        ai_config = config_ai_manager.get_config()
+        
+        sql = """
+            SELECT 
+                COALESCE(z.TypKonta, 'BRAK') AS [Typ konta],
+                SUM(z.S_4) AS [BO Wn],
+                SUM(z.S_5) AS [BO Ma],
+                SUM(z.S_8) AS [Obroty Wn],
+                SUM(z.S_9) AS [Obroty Ma],
+                SUM(z.S_10) AS [BZ Wn],
+                SUM(z.S_11) AS [BZ Ma]
+            FROM ZOiS z
+            GROUP BY [Typ konta]
+            ORDER BY [Typ konta];
+        """
+        rows = conn.execute(sql).fetchall()
+        
+        import io
+        import csv
+        import random
+        from collections import defaultdict
+
+        # Helper to determine group
+        def get_group(typ_konta):
+            if not typ_konta or typ_konta == 'BRAK':
+                return 'BRAK'
+            first_word = typ_konta.split()[0].upper()
+            if first_word in ['AKTYWA', 'PASYWA', 'WYNIKOWE']:
+                return first_word
+            return 'INNE'
+
+        # Groups ordering and Columns
+        GROUP_ORDER = ['AKTYWA', 'PASYWA', 'WYNIKOWE', 'INNE', 'BRAK']
+        COLUMNS = ['BO Wn', 'BO Ma', 'Obroty Wn', 'Obroty Ma', 'BZ Wn', 'BZ Ma']
+
+        multiplier = ai_config.multiplier
+        dev_percent = ai_config.deviation / 100.0 if ai_config.deviation else 0
+        threshold_percent = ai_config.threshold / 100.0 if ai_config.threshold else 0.005
+        is_norm = ai_config.normalization_100
+
+        # --- STEP 1: Apply Noise (Cell-level) and Grouping ---
+        grouped_data = defaultdict(list)
+        sum_abs_aktywa = 0.0
+        sum_abs_wynikowe = 0.0
+
+        for row in rows:
+            grp = get_group(row['Typ konta'])
+            noisy_row = {'Typ konta': row['Typ konta'], 'Grupa': grp}
+            
+            for col in COLUMNS:
+                r_noise = random.uniform(1.0 - dev_percent, 1.0 + dev_percent)
+                val = float(row[col] or 0)
+                noisy_val = val * r_noise
+                noisy_row[col] = noisy_val
+                
+                # For relational scaling ratio calculation (Step 2)
+                if col == 'BZ Wn':
+                    if grp == 'AKTYWA':
+                        sum_abs_aktywa += abs(noisy_val)
+                    elif grp == 'WYNIKOWE':
+                        sum_abs_wynikowe += abs(noisy_val)
+                        
+            grouped_data[grp].append(noisy_row)
+
+        # --- STEP 2: Calculate Relational Scale Ratio ---
+        ratio = (sum_abs_wynikowe / sum_abs_aktywa * 100.0) if sum_abs_aktywa != 0 else 0.0
+        # Add scale noise
+        ratio_noisy = ratio * random.uniform(1.0 - dev_percent, 1.0 + dev_percent)
+
+        output_rows = []
+
+        if is_norm:
+            # --- STEP 3: Normalization, Thresholding & Balansowanie (DS 3.0 Mode) ---
+            for grp_name in GROUP_ORDER:
+                grp_rows = grouped_data.get(grp_name, [])
+                if not grp_rows:
+                    continue
+                
+                # 3.1: Calculate Internal Normalization (Initial shares)
+                # First, we need to handle each column independently
+                grp_col_sums = {}
+                for col in COLUMNS:
+                    # Use absolute sum to avoid division by zero if negative values cancel out
+                    grp_col_sums[col] = sum(abs(r[col]) for r in grp_rows)
+
+                # Convert to shares
+                shares_data = []
+                for r in grp_rows:
+                    row_shares = {'Typ konta': r['Typ konta'], 'Grupa': grp_name}
+                    for col in COLUMNS:
+                        total = grp_col_sums[col]
+                        row_shares[col] = (abs(r[col]) / total * 100.0) if total != 0 else 0.0
+                    shares_data.append(row_shares)
+
+                # 3.2: Thresholding and Aggregation (POZOSTAŁE)
+                # Significant logic based on BZ Wn column (as per convention)
+                significant_rows = []
+                others_row = {'Typ konta': 'POZOSTAŁE (poniżej progu)', 'Grupa': grp_name}
+                for col in COLUMNS: others_row[col] = 0.0
+                has_others = False
+
+                for r in shares_data:
+                    # Check if BZ Wn share is below threshold
+                    if r['BZ Wn'] < (threshold_percent * 100.0):
+                        has_others = True
+                        for col in COLUMNS:
+                            others_row[col] += r[col]
+                    else:
+                        significant_rows.append(r)
+                
+                if has_others:
+                    significant_rows.append(others_row)
+
+                # 3.3: BALANSOWANIE (Uniform distribution of the error to 100.00%)
+                for col in COLUMNS:
+                    total_pct = sum(r[col] for r in significant_rows)
+                    if total_pct > 0:
+                        diff = 100.0 - total_pct
+                        non_zero_elements = [r for r in significant_rows if r[col] != 0]
+                        if non_zero_elements:
+                            adj = diff / len(non_zero_elements)
+                            for r in non_zero_elements:
+                                r[col] += adj
+                
+                output_rows.extend(significant_rows)
+        else:
+            # --- Multiplier Mode (Standard Noisy Values) ---
+            for grp_name in GROUP_ORDER:
+                grp_rows = grouped_data.get(grp_name, [])
+                for r in grp_rows:
+                    row_val = {'Typ konta': r['Typ konta'], 'Grupa': r['Grupa']}
+                    for col in COLUMNS:
+                        row_val[col] = r[col] * multiplier
+                    output_rows.append(row_val)
+
+        # --- STEP 4: Write CSV Output ---
+        output = io.StringIO()
+        output.write('\ufeff')
+        writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+        
+        if is_norm:
+            # Mandatory DS 3.0 Metadata Header
+            writer.writerow([
+                "INFO", 
+                f"SKALA RELACYJNA: WYNIKOWE STANOWIĄ {ratio_noisy:.2f}% AKTYWA", 
+                "AKTYWA I PASYWA PRZYJĘTO JAKO 100%", "", "", "", "", ""
+            ])
+            # Mandatory Headers
+            writer.writerow(['Grupa', 'Typ konta', 'BO Wn [%]', 'BO Ma [%]', 'Obroty Wn [%]', 'Obroty Ma [%]', 'BZ Wn [%]', 'BZ Ma [%]'])
+            
+            # Write data rows with % symbol
+            for r in output_rows:
+                writer.writerow([
+                    r['Grupa'],
+                    r['Typ konta'],
+                    *[f"{r[col]:.2f}%" for col in COLUMNS]
+                ])
+        else:
+            # Standard Multiplier CSV
+            writer.writerow(['Grupa', 'Typ konta'] + COLUMNS)
+            for r in output_rows:
+                writer.writerow([
+                    r['Grupa'],
+                    r['Typ konta'],
+                    *[f"{r[col]:.2f}" for col in COLUMNS]
+                ])
+            
+        csv_data = output.getvalue()
+        
+        from fastapi.responses import Response
+        return Response(
+            content=csv_data,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": "attachment; filename=zois_export_ai.csv"
+            }
+        )
+    except Exception as e:
+        return HTMLResponse(content=f"<div class='alert alert-error'>Błąd eksportu: {e}</div>", status_code=500)
+
+@app.get("/podmiot", response_class=HTMLResponse)
+async def get_podmiot():
+    try:
+        conn = db_service.get_connection()
+        
+        # 1. Naglowek
+        naglowek = conn.execute("SELECT DataOd, DataDo, DataWytworzeniaJPK FROM Naglowek").fetchone()
+        
+        # 2. Podmiot
+        podmiot = conn.execute("SELECT PelnaNazwa, NIP, Miejscowosc, Ulica, NrDomu FROM Podmiot").fetchone()
+        
+        # 3. CTRL
+        ctrl = conn.execute("SELECT C_1, C_2, C_3 FROM Ctrl").fetchone()
+        
+        def safe_get(row, key, default=""):
+            try:
+                return row[key] if row and row[key] is not None else default
+            except:
+                return default
+
+        # Formatting values
+        pelna_nazwa = safe_get(podmiot, 'PelnaNazwa', '---')
+        data_spr = f"{safe_get(naglowek, 'DataOd')} do {safe_get(naglowek, 'DataDo')}"
+        
+        # Reformat DataWytworzeniaJPK: "2026-01-26T14:41:08" -> "2026-01-26 o godzinie: 14:41:08"
+        data_wytw_raw = safe_get(naglowek, 'DataWytworzeniaJPK', '---')
+        if "T" in data_wytw_raw:
+            date_part, time_part = data_wytw_raw.split("T")
+            data_wytw = f"{date_part} o godzinie: {time_part}"
+        else:
+            data_wytw = data_wytw_raw
+
+        nip = safe_get(podmiot, 'NIP', '---')
+        miejscowosc = safe_get(podmiot, 'Miejscowosc', '---')
+        adres = f"{safe_get(podmiot, 'Ulica')} {safe_get(podmiot, 'NrDomu')}".strip() or "---"
+        
+        c1 = safe_get(ctrl, 'C_1', '0')
+        c2 = format_amount(safe_get(ctrl, 'C_2', 0)) or "0,00"
+        c3 = safe_get(ctrl, 'C_3', '0')
+
+        return f"""
+        <div class="max-w-4xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Data Podmiotu Card -->
+                <div class="card bg-base-200 shadow-sm transition-all duration-300">
+                    <div class="card-body p-5">
+                        <h4 class="card-title text-xs uppercase opacity-70 tracking-wider">Dane Identyfikacyjne</h4>
+                        <div class="space-y-4 py-2">
+                            <div>
+                                <label class="text-xs font-bold block text-primary uppercase mb-1">Pełna nazwa:</label>
+                                <div class="text-sm font-medium leading-relaxed">{pelna_nazwa}</div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold block text-primary uppercase mb-1">NIP:</label>
+                                <div class="text-sm font-medium">{nip}</div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold block text-primary uppercase mb-1">Miejscowość:</label>
+                                <div class="text-sm font-medium">{miejscowosc}</div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold block text-primary uppercase mb-1">Adres:</label>
+                                <div class="text-sm font-medium">{adres}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Okres i Wytworzenie Card -->
+                <div class="card bg-base-200 shadow-sm transition-all duration-300">
+                    <div class="card-body p-5">
+                        <h4 class="card-title text-xs uppercase opacity-70 tracking-wider">Okres Sprawozdawczy</h4>
+                        <div class="space-y-4 py-2">
+                            <div>
+                                <label class="text-xs font-bold block text-secondary uppercase mb-1">Data sprawozdania:</label>
+                                <div class="text-sm font-medium">{data_spr}</div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold block text-secondary uppercase mb-1">Data wytworzenia:</label>
+                                <div class="text-sm font-medium">{data_wytw}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sumy Kontrolne Card -->
+                <div class="card bg-base-200 shadow-sm md:col-span-2 transition-all duration-300">
+                    <div class="card-body p-5">
+                        <h4 class="card-title text-xs uppercase opacity-70 tracking-wider">Sumy Kontrolne (Sekcja Ctrl)</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                            <div class="bg-base-100 p-3 rounded-lg border border-base-300 shadow-inner">
+                                <label class="text-[10px] font-bold uppercase block opacity-60 mb-1">Liczba zapisów (Dziennik):</label>
+                                <div class="text-xl font-black text-accent">{c1}</div>
+                            </div>
+                            <div class="bg-base-100 p-3 rounded-lg border border-base-300 shadow-inner">
+                                <label class="text-[10px] font-bold uppercase block opacity-60 mb-1">Suma operacji (D_11):</label>
+                                <div class="text-xl font-black text-accent whitespace-nowrap">{c2}</div>
+                            </div>
+                            <div class="bg-base-100 p-3 rounded-lg border border-base-300 shadow-inner">
+                                <label class="text-[10px] font-bold uppercase block opacity-60 mb-1">Liczba zapisów (KontoZapis):</label>
+                                <div class="text-xl font-black text-accent">{c3}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+    except RuntimeError:
+        return "<div class='alert alert-warning'>Nie otwarto żadnej bazy danych.</div>"
+    except Exception as e:
+        return f"<div class='alert alert-error'>Błąd: {e}</div>"
+
+import json
+
+def calculate_mus(populacja_rows, interval, start_point):
+    wybrane_id = set()
+    
+    # Próbkowanie dla Wn (Z_4)
+    suma_narastajaca = 0.0
+    aktualny_prog = float(start_point)
+    
+    for row in populacja_rows:
+        try:
+            kwota = float(row['Z_4']) if row['Z_4'] is not None else 0.0
+        except (ValueError, TypeError):
+            kwota = 0.0
+            
+        if kwota > 0:
+            suma_narastajaca += kwota
+            while suma_narastajaca >= aktualny_prog:
+                wybrane_id.add(row['Id'])
+                aktualny_prog += interval
+                
+    # Próbkowanie dla Ma (Z_7)
+    suma_narastajaca = 0.0
+    # Reset progu startowego tak samo jak przy Wn
+    aktualny_prog = float(start_point) 
+    
+    for row in populacja_rows:
+        try:
+            kwota = float(row['Z_7']) if row['Z_7'] is not None else 0.0
+        except (ValueError, TypeError):
+            kwota = 0.0
+            
+        if kwota > 0:
+            suma_narastajaca += kwota
+            while suma_narastajaca >= aktualny_prog:
+                wybrane_id.add(row['Id'])
+                aktualny_prog += interval
+                
+    return wybrane_id
+
+@app.get("/api/mus/prepare", response_class=HTMLResponse)
+async def mus_prepare(q: str = "", type: str = "", zq: str = "", month: str = ""):
+    try:
+        conn = db_service.get_connection()
+        where_sql, params = _build_where_clause(q, type, zq, month)
+
+        sum_query = f"""
+            SELECT SUM(z.Z_4) as sum_wn, SUM(z.Z_7) as sum_ma
+            FROM Zapisy z
+            JOIN ZOiS s ON z.Z_3 = s.S_1
+            {where_sql}
+        """
+        sum_row = conn.execute(sum_query, params).fetchone()
+        suma_wn = float(sum_row['sum_wn'] or 0)
+        suma_ma = float(sum_row['sum_ma'] or 0)
+
+        param_row = conn.execute("SELECT Kwota FROM ParametryBadania WHERE Klucz = 'Istotnosc_Wykonawcza'").fetchone()
+        istotnosc = float(param_row['Kwota'] or 0) if param_row else 0.0
+
+        return HTMLResponse(content=json.dumps({
+            "istotnosc": istotnosc,
+            "suma_wn": suma_wn,
+            "suma_ma": suma_ma
+        }), media_type="application/json")
+    except Exception as e:
+        return HTMLResponse(content=f'{{"error": "{str(e)}"}}', media_type="application/json", status_code=500)
+
+@app.post("/api/mus/execute", response_class=HTMLResponse)
+async def mus_execute(
+    q: str = Form(""), 
+    type: str = Form(""), 
+    zq: str = Form(""),
+    month: str = Form(""),
+    istotnosc: float = Form(...),
+    wspolczynnik: float = Form(...),
+    punkt_startowy: float = Form(...)
+):
+    try:
+        if istotnosc <= 0 or wspolczynnik <= 0:
+            return HTMLResponse(content="<div class='alert alert-error'>Nieprawidłowe parametry MUS (wartości mniejsze bądź równe zeru!).</div>")
+            
+        interval = float(istotnosc) / float(wspolczynnik)
+        
+        conn = db_service.get_connection()
+        where_sql, params = _build_where_clause(q, type, zq, month)
+
+        # Pobieramy rzędy tylko do zbudowania próby MUS iterując
+        pop_query = f"""
+            SELECT z.Id, z.Z_4, z.Z_7
+            FROM Zapisy z
+            JOIN ZOiS s ON z.Z_3 = s.S_1
+            {where_sql}
+            ORDER BY z.Z_Data, z.Id
+        """
+        populacja_rows = conn.execute(pop_query, params).fetchall()
+        
+        # Wyliczenie
+        wybrane_id = calculate_mus(populacja_rows, interval, punkt_startowy)
+        
+        if not wybrane_id:
+            return HTMLResponse(content="<div class='p-8 text-center bg-base-200 opacity-60 rounded-box border border-dashed border-base-content/20'>Brak odnalezionych zapisów w ramach MUS z wyznaczonymi parametrami.</div>")
+            
+        # Zbudowanie wynikowej tabeli - ograniczamy pobierane dane tylko do zaznaczonych "ID"
+        id_list = ",".join([str(i) for i in wybrane_id])
+        query = f"""
+            SELECT z.Dziennik_Id, z.Z_3, z.Z_2, z.Z_Data, d.D_1, z.Z_4, z.Z_5, z.Z_6, z.Z_7, z.Z_8, z.Z_9, s.S_2
+            FROM Zapisy z
+            JOIN Dziennik d ON z.Dziennik_Id = d.Id
+            JOIN ZOiS s ON z.Z_3 = s.S_1
+            WHERE z.Id IN ({id_list})
+            ORDER BY z.Z_Data, z.Id
+        """
+        rows = conn.execute(query).fetchall()
+        
+        html_rows = ""
+        for row in rows:
+            dziennik_id = row['Dziennik_Id']
+            konto_full = sanitize_text(row['Z_3'])
+            opis_full = sanitize_text(row['Z_2'])
+            data_val = row['Z_Data'] or "---"
+            nazwa_full = sanitize_text(row['S_2'])
+            
+            tip_content = f"{konto_full}\\n{nazwa_full or '---'}"
+            konto_html = f'<div class="tooltip tooltip-right text-left" data-tip="{tip_content}"><div class="max-w-[150px] truncate">{konto_full}</div></div>'
+            opis_html = f'<div class="tooltip tooltip-right text-left" data-tip="{opis_full}"><div class="max-w-xs truncate">{opis_full}</div></div>'
+
+            wn_waluta_val = format_amount(row['Z_5'])
+            wn_waluta_code = row['Z_6'] or ""
+            wn_waluta_str = f"{wn_waluta_val} {wn_waluta_code}".strip()
+
+            ma_waluta_val = format_amount(row['Z_8'])
+            ma_waluta_code = row['Z_9'] or ""
+            ma_waluta_str = f"{ma_waluta_val} {ma_waluta_code}".strip()
+
+            html_rows += f"""
+            <tr class="hover whitespace-nowrap text-xs">
+                <td data-type="text">{konto_html}</td>
+                <td data-type="text">{opis_html}</td>
+                <td data-type="date" data-value="{row['Z_Data'] or ''}">{data_val}</td>
+                <td data-type="text" class="text-primary font-bold cursor-pointer hover:underline" onclick="openDziennikModal({dziennik_id})">{row['D_1']}</td>
+                <td data-type="number" data-value="{row['Z_4'] or 0}" class="text-right font-mono">{format_amount(row['Z_4'])}</td>
+                <td data-type="text" class="text-right font-mono text-base-content/50 opacity-0 group-hover:opacity-100">{wn_waluta_str}</td>
+                <td data-type="number" data-value="{row['Z_7'] or 0}" class="text-right font-mono">{format_amount(row['Z_7'])}</td>
+                <td data-type="text" class="text-right font-mono text-base-content/50 opacity-0 group-hover:opacity-100">{ma_waluta_str}</td>
+            </tr>
+            """
+            
+        return f"""
+        <div class="mb-4 text-sm bg-success/10 border border-success/30 px-4 py-2 rounded font-bold text-success flex items-center gap-2 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Wyłoniono i ograniczono widok do {len(wybrane_id)} zapisów w wyniku próbkowania MUS w oparciu o wyliczony interwał wynoszący {interval:,.2f} PLN.
+        </div>
+        <div class="overflow-x-auto border border-base-content/10 rounded-box shadow">
+            <table class="table table-xs w-full">
+                <thead class="bg-base-200">
+                    <tr>
+                        <th class="w-24">Konto</th>
+                        <th class="w-1/3">Opis wg Dowodu</th>
+                        <th>Data</th>
+                        <th>Dowód (Nr dziennika)</th>
+                        <th class="text-right">Wn PLN</th>
+                        <th class="text-right border-x border-base-300">Wn Wal.</th>
+                        <th class="text-right">Ma PLN</th>
+                        <th class="text-right border-l border-base-300">Ma Wal.</th>
+                    </tr>
+                </thead>
+                <tbody class="group">
+                    {html_rows}
+                </tbody>
+            </table>
+        </div>
+        """
+    except Exception as e:
+        return HTMLResponse(content=f"<div class='alert alert-error font-mono text-xs p-4'>Wystąpił twardy błąd generatora:<br><br>{str(e)}</div>")
+
+@app.get("/api/jpk/check-consistency", response_class=HTMLResponse)
+async def get_jpk_check_consistency():
+    try:
+        results = db_service.get_import_consistency_check()
+        is_kr_pd = results["is_kr_pd"]
+        checks = results["checks"]
+        
+        rows_html = ""
+        for check in checks:
+            label = check["label"]
+            ctrl_val = check["ctrl"]
+            actual_val = check["actual"]
+            
+            # Tolerance 0.01 for decimals
+            is_match = False
+            if check["type"] == "int":
+                is_match = int(ctrl_val or 0) == int(actual_val or 0)
+            else:
+                is_match = abs(float(ctrl_val or 0) - float(actual_val or 0)) <= 0.01
+            
+            status_badge = '<div class="badge badge-success gap-2 p-3 font-bold">Zgodny</div>' if is_match else '<div class="badge badge-error gap-2 p-3 font-bold uppercase">Błąd</div>'
+            row_class = "" if is_match else "bg-error/10 hover:bg-error/20"
+            
+            # Format display values
+            if check["type"] == "decimal":
+                display_ctrl = format_amount(ctrl_val)
+                display_actual = format_amount(actual_val)
+            else:
+                display_ctrl = str(ctrl_val or 0)
+                display_actual = str(actual_val or 0)
+                
+            rows_html += f"""
+            <tr class="{row_class} transition-colors duration-200">
+                <td class="font-bold text-sm">{label}</td>
+                <td class="font-mono text-right">{display_ctrl}</td>
+                <td class="font-mono text-right">{display_actual}</td>
+                <td class="text-center">{status_badge}</td>
+            </tr>
+            """
+            
+        integrity = results.get("integrity", [])
+        integrity_html = ""
+        for item in integrity:
+            count = item["count"]
+            label = item["label"]
+            tip = item["tip"]
+            
+            if count == 0:
+                status_html = '<span class="text-success font-bold flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg> OK</span>'
+                row_class = ""
+            else:
+                status_html = f'<span class="text-error font-black flex items-center gap-1 animate-pulse"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg> WYKRYTO BŁĘDY ({count})</span>'
+                row_class = "bg-error/5"
+
+            integrity_html += f"""
+            <tr class="{row_class}">
+                <td class="py-3">
+                    <div class="tooltip tooltip-right text-left" data-tip="{tip}">
+                        <span class="text-xs font-semibold cursor-help border-b border-dotted border-base-content/20">{label}</span>
+                    </div>
+                </td>
+                <td colspan="2"></td>
+                <td class="text-center">{status_html}</td>
+            </tr>
+            """
+
+        jpk_type_str = "JPK_KR_PD" if is_kr_pd else "JPK_KR"
+            
+        return f"""
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
+            <div class="p-8 bg-base-100 rounded-3xl shadow-2xl border border-base-content/10 max-w-3xl w-full mx-4 animate-in zoom-in duration-300">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-black text-primary flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Wynik Importu JPK
+                        </h2>
+                        <p class="text-[10px] opacity-60 font-black uppercase tracking-[0.2em] mt-2">Weryfikacja sum kontrolnych: <span class="badge badge-outline badge-sm font-bold ml-1">{jpk_type_str}</span></p>
+                    </div>
+                    <button onclick="this.closest('.fixed').remove()" class="btn btn-circle btn-ghost">✕</button>
+                </div>
+
+                <div class="overflow-hidden rounded-2xl border border-base-content/10 shadow-sm bg-base-200/30">
+                    <table class="table w-full">
+                        <thead class="bg-base-300/50 text-[10px] uppercase font-bold text-base-content/50">
+                            <tr>
+                                <th class="py-4">Kryterium Spójności</th>
+                                <th class="text-right">Wartość w JPK (Ctrl)</th>
+                                <th class="text-right">Wartość w bazie</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-base-content/5">
+                            {rows_html}
+                            <tr class="bg-base-300/30">
+                                <td colspan="4" class="py-2 px-4 text-[10px] font-black uppercase opacity-40">Integralność techniczna bazy danych</td>
+                            </tr>
+                            {integrity_html}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-8 flex justify-end gap-3">
+                    <button onclick="this.closest('.fixed').remove()" class="btn btn-primary px-10 rounded-xl font-bold">Zamknij</button>
+                </div>
+            </div>
+        </div>
+        """
+    except Exception as e:
+        return f"""
+        <div class="fixed bottom-6 right-6 z-[200] max-w-md animate-in slide-in-from-right duration-500">
+            <div class="alert alert-error shadow-2xl border-2 border-white/10 flex items-start gap-4 p-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-8 w-8" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div class="flex-grow">
+                    <h3 class="font-black text-sm uppercase tracking-wider">Błąd weryfikacji spójności</h3>
+                    <p class="text-xs opacity-80 mt-1 font-medium leading-relaxed">{str(e)}</p>
+                    <div class="mt-4 flex justify-end">
+                        <button onclick="this.closest('.fixed').remove()" class="btn btn-ghost btn-xs font-bold uppercase">Rozumiem</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+
+if __name__ == "__main__":
+    import uvicorn
+    # Allow running directly for debug
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

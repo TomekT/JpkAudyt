@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / Build
+dist/
+build/
+*.exe
+*.spec
+*.msi
+*.app
+
+# Local environment
+venv/
+.env
+.venv/
+env/
+
+# Databases & Local state
+*.db
+*.db-journal
+*.wal
+config.json
+configAI.json
+
+# Temporary / Logs
+logs/
+*.log
+tmp/
+*.tmp
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

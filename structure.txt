@@ -1,0 +1,36 @@
+# JPK Audyt - Project Structure Manifest
+# This file lists the essential files for a functional development environment.
+
+app/
+  core/
+    config.py
+    path_utils.py
+  services/
+    database.py
+    etl.py
+    legacy_etl.py
+    router.py
+  static/
+    favicon.ico
+    logo.png
+  templates/
+    ai_tab.html
+    badanie_tab.html
+    index.html
+  __init__.py
+  main.py
+
+build.py
+build_app.py
+insert_slownik.sql
+launcher.py
+requirements.txt
+run.bat
+run.py
+schema.sql
+splash.png
+tmp_clean_db.py
+
+.gitignore
+structure.txt
+README.md (Recommended)

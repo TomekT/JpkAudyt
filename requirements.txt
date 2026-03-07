@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+jinja2
+pydantic
+lxml
+python-multipart
+aiofiles
+pyinstaller

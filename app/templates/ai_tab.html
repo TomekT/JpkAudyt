@@ -1,0 +1,204 @@
+<div class="flex flex-col gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Configuration Form -->
+        <div class="card bg-base-200 border border-base-300 shadow-sm">
+            <div class="card-body p-5 gap-4">
+                <h3 class="text-xs font-bold uppercase opacity-60 tracking-widest flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Ustawienia Bezpiecznego Eksportu
+                </h3>
+
+                <form id="ai-config-form" hx-post="/api/ai-config" hx-trigger="change delay:500ms, submit"
+                    hx-swap="none" class="space-y-4">
+                    <div class="form-control w-full">
+                        <label class="label pt-0"><span class="label-text text-xs font-semibold">Typ spółki (Profil
+                                Promptu)</span></label>
+                        <select id="ai-company-type" name="company_type"
+                            class="select select-bordered select-sm w-full text-xs"
+                            onchange="fetchPromptForType(this.value)">
+                            <option value="Produkcyjna" {% if config.company_type=='Produkcyjna' %}selected{% endif %}>
+                                Produkcyjna (Domyślny)</option>
+                            <option value="Handlowa" {% if config.company_type=='Handlowa' %}selected{% endif %}>
+                                Handlowa</option>
+                            <option value="Usługowa" {% if config.company_type=='Usługowa' %}selected{% endif %}>
+                                Usługowa</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-control w-full">
+                            <label class="label"><span class="label-text text-xs font-semibold">Mnożnik
+                                    kwot</span></label>
+                            <input type="number" step="0.01" id="ai-multiplier" name="multiplier"
+                                value="{{ config.multiplier }}"
+                                class="input input-bordered input-sm w-full text-xs font-mono disabled:opacity-50"
+                                placeholder="1.90" {% if config.normalization_100 %}disabled{% endif %} />
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label"><span class="label-text text-xs font-semibold">Odchylenie
+                                    (%)</span></label>
+                            <input type="number" step="0.01" name="deviation" value="{{ config.deviation }}"
+                                class="input input-bordered input-sm w-full text-xs font-mono" placeholder="5.0" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-control w-full">
+                            <label class="label"><span class="label-text text-xs font-semibold">Próg istotności
+                                    (%)</span></label>
+                            <input type="number" step="0.01" name="threshold" value="{{ config.threshold }}"
+                                class="input input-bordered input-sm w-full text-xs font-mono" placeholder="0.50" />
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label cursor-pointer justify-start gap-4">
+                                <span class="label-text text-xs font-semibold">Normalizacja 100%</span>
+                                <input type="checkbox" id="ai-normalization" name="normalization_100"
+                                    class="checkbox checkbox-sm checkbox-primary" {% if config.normalization_100
+                                    %}checked{% endif %}
+                                    onchange="document.getElementById('ai-multiplier').disabled = this.checked" />
+                            </label>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="alert bg-base-300 border-none py-3 mt-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        class="stroke-info shrink-0 w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div class="text-[10px] leading-relaxed">
+                        <p class="font-bold mb-1 italic opacity-80">Logika Zaciemniania:</p>
+                        <p>Dla każdego wiersza losowane jest odchylenie <b>R</b> z zakresu wyznaczonego przez procent.
+                            Kwoty są mnożone przez <b>R</b>, a następnie przez <b>globalny Mnożnik</b> i zaokrąglane.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt Preview -->
+        <div class="card bg-base-200 border border-base-300 shadow-sm">
+            <div class="card-body p-5 gap-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold uppercase opacity-60 tracking-widest flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Edytuj Prompt dla LLM
+                    </h3>
+                    <div class="flex gap-2">
+                        <button class="btn btn-xs btn-primary gap-1" onclick="saveCurrentAiPrompt(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            Zapisz
+                        </button>
+                        <button class="btn btn-xs btn-outline gap-1" onclick="copyAiTabPrompt(this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            Kopiuj
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative flex-grow">
+                    <textarea id="ai-tab-prompt-text" name="prompt" form="ai-config-form"
+                        class="textarea textarea-bordered w-full h-80 text-[10px] font-mono leading-relaxed bg-base-100"
+                        hx-get="/api/ai-prompt" hx-trigger="load"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function saveCurrentAiPrompt(btn) {
+        const type = document.getElementById('ai-company-type').value;
+        const promptText = document.getElementById('ai-tab-prompt-text').value;
+        const multiplier = document.getElementById('ai-multiplier').value;
+        const deviation = document.getElementsByName('deviation')[0].value;
+        const threshold = document.getElementsByName('threshold')[0].value;
+        const normalization = document.getElementById('ai-normalization').checked;
+
+        const formData = new FormData();
+        formData.append('company_type', type);
+        formData.append('multiplier', multiplier);
+        formData.append('deviation', deviation);
+        formData.append('threshold', threshold);
+        formData.append('normalization_100', normalization);
+        formData.append('prompt', promptText);
+
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+        btn.disabled = true;
+
+        try {
+            await fetch('/api/ai-config', { method: 'POST', body: formData });
+            btn.innerHTML = 'Zapisano!';
+            btn.classList.replace('btn-primary', 'btn-success');
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.replace('btn-success', 'btn-primary');
+                btn.disabled = false;
+            }, 2000);
+        } catch (err) {
+            console.error('Błąd zapisu:', err);
+            btn.innerHTML = 'Błąd!';
+            btn.classList.replace('btn-primary', 'btn-error');
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.replace('btn-error', 'btn-primary');
+                btn.disabled = false;
+            }, 2000);
+        }
+    }
+
+    async function fetchPromptForType(type) {
+        const ta = document.getElementById('ai-tab-prompt-text');
+        ta.classList.add('opacity-50');
+
+        try {
+            const response = await fetch(`/api/ai-prompt?type=${type}`);
+            const text = await response.text();
+            ta.value = text;
+
+            // Also update the global active type setting without prompt to store user's choice
+            const configForm = document.getElementById('ai-config-form');
+            htmx.trigger(configForm, 'submit');
+        } catch (err) {
+            console.error('Błąd wczytywania promptu:', err);
+        } finally {
+            ta.classList.remove('opacity-50');
+        }
+    }
+
+    function copyAiTabPrompt(btn) {
+        const textArea = document.getElementById('ai-tab-prompt-text');
+        textArea.select();
+        document.execCommand('copy');
+
+        const originalText = btn.innerHTML;
+        btn.innerText = 'Skopiowano!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+        }, 2000);
+    }
+</script>

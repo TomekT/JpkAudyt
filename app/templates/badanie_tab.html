@@ -1,0 +1,131 @@
+{% macro format_pl(val) %}{{ "{:,.0f}".format(val).replace(",", " ") }}{% endmacro %}
+<div class="max-w-5xl mx-auto">
+    <div class="card bg-base-100 border border-base-300 shadow-xl transition-all duration-300">
+        <div class="card-body p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xs font-bold uppercase opacity-60 tracking-widest flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    Parametry Badania
+                </h3>
+                <div id="badanie-status"
+                    class="text-[10px] font-bold uppercase text-success opacity-0 transition-opacity duration-300">
+                    Zapisano pomyślnie
+                </div>
+            </div>
+
+            <form id="badanie-form" hx-post="/api/save-badanie" hx-trigger="submit" hx-swap="none" hx-on::after-request="if(event.detail.successful) { 
+                    const status = document.getElementById('badanie-status');
+                    status.classList.remove('opacity-0');
+                    setTimeout(() => status.classList.add('opacity-0'), 2000);
+                }">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Column -->
+                    <div class="space-y-6">
+                        <div class="form-control w-full">
+                            <label class="label pt-0">
+                                <span class="label-text text-xs font-bold text-primary uppercase mb-1">Kluczowy biegły
+                                    rewident:</span>
+                            </label>
+                            <input type="text" name="biegly" value="{{ params.Biegly.Tekst or '' }}"
+                                class="input input-bordered input-md w-full text-sm font-medium bg-base-100 focus:border-primary transition-colors"
+                                placeholder="Imię i Nazwisko" />
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-control w-full">
+                                <label class="label">
+                                    <span class="label-text text-xs font-bold text-secondary uppercase mb-1">Istotność
+                                        ogólna:</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="istotnosc_ogolna_display"
+                                        value="{{ format_pl(params.Istotnosc_Ogolna.Kwota or 0) }}"
+                                        oninput="formatCurrencyInput(this)"
+                                        class="input input-bordered input-md w-full text-sm font-mono font-bold text-accent pr-12 bg-base-100 focus:border-secondary transition-colors"
+                                        placeholder="0" />
+                                    <input type="hidden" name="istotnosc_ogolna" id="istotnosc_ogolna_raw"
+                                        value="{{ params.Istotnosc_Ogolna.Kwota or 0 }}" />
+                                    <span
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-base-content/70 font-black">PLN</span>
+                                </div>
+                            </div>
+
+                            <div class="form-control w-full">
+                                <label class="label">
+                                    <span class="label-text text-xs font-bold text-secondary uppercase mb-1">Istotność
+                                        wykonawcza:</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="istotnosc_wykonawcza_display"
+                                        value="{{ format_pl(params.Istotnosc_Wykonawcza.Kwota or 0) }}"
+                                        oninput="formatCurrencyInput(this)"
+                                        class="input input-bordered input-md w-full text-sm font-mono font-bold text-accent pr-12 bg-base-100 focus:border-secondary transition-colors"
+                                        placeholder="0" />
+                                    <input type="hidden" name="istotnosc_wykonawcza" id="istotnosc_wykonawcza_raw"
+                                        value="{{ params.Istotnosc_Wykonawcza.Kwota or 0 }}" />
+                                    <span
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-base-content/70 font-black">PLN</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="form-control w-full h-full flex flex-col">
+                        <label class="label pt-0">
+                            <span class="label-text text-xs font-bold text-primary uppercase mb-1">Uwagi do
+                                pliku:</span>
+                        </label>
+                        <textarea name="uwagi"
+                            class="textarea textarea-bordered flex-grow min-h-[220px] text-sm leading-relaxed bg-base-100 focus:border-primary transition-colors resize-none"
+                            placeholder="Wpisz uwagi do pliku...">{{ params.Uwagi.Tekst or '' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-8 border-t border-base-300 pt-6">
+                    <button type="submit"
+                        class="btn btn-primary btn-md gap-2 px-8 shadow-lg hover:shadow-xl transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                        Zapisz Parametry Badania
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function formatCurrencyInput(input) {
+        // Remove all non-numeric characters
+        let value = input.value.replace(/\D/g, '');
+
+        // Update the hidden input with the raw number
+        const rawId = input.id.replace('_display', '_raw');
+        document.getElementById(rawId).value = value;
+
+        // Format for display with space group separator
+        if (value === '') {
+            input.value = '';
+            return;
+        }
+
+        // Format with spaces
+        input.value = parseInt(value, 10).toLocaleString('pl-PL').replace(/\u00A0/g, ' ');
+    }
+
+    // Initialize formatting on load in case browser autofills
+    document.addEventListener('DOMContentLoaded', () => {
+        const ogolna = document.getElementById('istotnosc_ogolna_display');
+        const wykonawcza = document.getElementById('istotnosc_wykonawcza_display');
+        if (ogolna) formatCurrencyInput(ogolna);
+        if (wykonawcza) formatCurrencyInput(wykonawcza);
+    });
+</script>

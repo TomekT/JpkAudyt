@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="light">
+<script>
+    // Immediate theme initialization to prevent flash
+    (function () {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+</script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JPK Auditor</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+
+    <!-- Tailwind + DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+
+    <style>
+        :root {
+            --tab-height: calc(100vh - 12rem);
+        }
+
+        .tab-content {
+            height: var(--tab-height);
+            transition: height 0.3s ease-in-out;
+        }
+
+        /* Multi-line tooltip support */
+        .tooltip:before {
+            white-space: pre-wrap !important;
+            text-align: left !important;
+            max-width: 24rem !important;
+            word-break: break-all !important;
+        }
+
+        /* Logo theme handling */
+        [data-theme='light'] .logo-cat {
+            filter: brightness(0);
+        }
+
+        [data-theme='dark'] .logo-cat {
+            filter: invert(1);
+        }
+
+        /* Prevent Plotly crosshair leak */
+        .js-plotly-plot .main-svg {
+            cursor: default !important;
+        }
+
+        .plotly-chart,
+        #plotly-chart {
+            cursor: default;
+        }
+
+        /* HTMX Indicator styles - forcing hide unless htmx-request is active */
+        .htmx-indicator {
+            display: none !important;
+        }
+
+        .htmx-request .htmx-indicator,
+        .htmx-request.htmx-indicator {
+            display: flex !important;
+        }
+
+        /* Large Multiline Tooltips for long account names */
+        .tooltip-multiline {
+            --tooltip-tail: 0.5rem;
+        }
+
+        .tooltip-multiline:before {
+            white-space: normal !important;
+            max-width: 45rem !important;
+            width: max-content !important;
+            text-align: left !important;
+            line-height: 1.5 !important;
+            padding: 1.25rem !important;
+            font-size: 0.9rem !important;
+            border-radius: 0.75rem !important;
+            display: inline-block !important;
+            /* Critical for multiline height */
+            height: auto !important;
+            /* Ensure it grows vertically */
+            word-wrap: break-word !important;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5) !important;
+            background-color: var(--fallback-bc, oklch(var(--bc)/1)) !important;
+            color: var(--fallback-b1, oklch(var(--b1)/1)) !important;
+        }
+
+        /* Fix DaisyUI tooltip position when multiline */
+        .tooltip-multiline.tooltip-right:before {
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+        }
+    </style>
+    <script>
+        // HTMX Debugging
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('HTMX and Plotly Debug Initialized');
+            if (typeof htmx === 'undefined') {
+                console.error('HTMX failed to load!');
+                alert('Błąd: Biblioteka HTMX nie została załadowana. Sprawdź połączenie z internetem.');
+            }
+
+            document.body.addEventListener('htmx:beforeRequest', (evt) => {
+                console.log('HTMX Request starting:', evt.detail.pathInfo.path);
+            });
+            document.body.addEventListener('htmx:afterRequest', (evt) => {
+                console.log('HTMX Request finished:', evt.detail.pathInfo.path, 'Status:', evt.detail.xhr.status);
+            });
+            document.body.addEventListener('htmx:responseError', (evt) => {
+                console.error('HTMX Response Error:', evt.detail.xhr.status, evt.detail.xhr.statusText);
+            });
+            document.body.addEventListener('htmx:sendError', (evt) => {
+                console.error('HTMX Network/Send Error');
+            });
+        });
+    </script>
+</head>
+
+<body class="h-screen flex overflow-hidden bg-base-200">
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+        class="w-64 bg-base-100 shadow-xl flex flex-col transition-all duration-300 relative border-r overflow-hidden">
+        <div id="sidebar-content" class="flex flex-col h-full transition-opacity duration-200">
+            <div class="p-4 border-b">
+                <h1 class="text-xl font-bold text-primary truncate">JPK Audytor</h1>
+            </div>
+
+            <div class="px-4 pb-4 flex flex-col gap-2">
+                <button onclick="document.getElementById('import_modal').showModal()"
+                    class="btn btn-primary w-full btn-sm gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="truncate">Importuj JPK</span>
+                </button>
+
+                <button onclick="document.getElementById('connect-db-input').click()"
+                    class="btn btn-outline btn-sm w-full gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <span class="truncate">Podłącz bazę</span>
+                </button>
+
+                <!-- Hidden file input for DB connection -->
+                <form hx-post="/connect-db" hx-encoding="multipart/form-data" hx-swap="none">
+                    <input type="file" id="connect-db-input" name="file" class="hidden" accept=".db"
+                        onchange="this.form.requestSubmit()" />
+                </form>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4">
+                <h2 class="font-semibold text-gray-500 text-[10px] uppercase mb-2 truncate">Ostatnio otwarte</h2>
+                <ul class="menu menu-xs bg-base-100 w-full rounded-box gap-1" id="recent-dbs" hx-get="/recent"
+                    hx-trigger="load, db-changed from:body">
+                    <li><span class="loading loading-spinner loading-xs"></span></li>
+                </ul>
+            </div>
+
+            <div class="px-4 py-2 flex justify-center items-center">
+                <img src="/static/logo.png" alt="Logo" id="cat-logo"
+                    class="logo-cat max-h-24 w-auto object-contain opacity-60 hover:opacity-100 transition-opacity duration-300">
+            </div>
+
+            <div class="p-4 border-t text-[10px] text-center text-gray-500 truncate">
+                v0.1.0 Alpha
+            </div>
+        </div>
+
+        <!-- Toggle Button -->
+        <button id="toggle-sidebar"
+            class="btn btn-ghost btn-xs w-full rounded-none border-t border-base-300 py-4 h-auto hover:bg-base-200 group">
+            <span id="toggle-text"
+                class="text-[10px] uppercase font-bold tracking-widest opacity-60 group-hover:opacity-100 transition-all">Zwiń</span>
+        </button>
+    </aside>
+
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const sidebarContent = document.getElementById('sidebar-content');
+        const toggleBtn = document.getElementById('toggle-sidebar');
+        const toggleText = document.getElementById('toggle-text');
+        let isCollapsed = false;
+
+        toggleBtn.addEventListener('click', () => {
+            isCollapsed = !isCollapsed;
+            const topbar = document.getElementById('topbar');
+            const root = document.documentElement;
+
+            if (isCollapsed) {
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-[5%]');
+                sidebarContent.classList.add('opacity-0', 'pointer-events-none');
+
+                topbar.classList.add('h-0', 'min-h-0', 'opacity-0', 'border-none');
+                topbar.classList.remove('h-16', 'min-h-[4rem]', 'px-6', 'py-2');
+
+                root.style.setProperty('--tab-height', 'calc(100vh - 8rem)');
+
+                toggleText.innerText = 'Rozwiń';
+            } else {
+                sidebar.classList.remove('w-[5%]');
+                sidebar.classList.add('w-64');
+                sidebarContent.classList.remove('opacity-0', 'pointer-events-none');
+
+                topbar.classList.remove('h-0', 'min-h-0', 'opacity-0', 'border-none');
+                topbar.classList.add('h-16', 'min-h-[4rem]', 'px-6', 'py-2');
+
+                root.style.setProperty('--tab-height', 'calc(100vh - 12rem)');
+
+                toggleText.innerText = 'Zwiń';
+            }
+        });
+
+        // Chart Modal Cleanup
+        document.addEventListener('DOMContentLoaded', () => {
+            const chartModal = document.getElementById('chart_modal');
+            if (chartModal) {
+                chartModal.addEventListener('close', () => {
+                    const chartDiv = document.getElementById('plotly-chart');
+                    if (chartDiv) {
+                        try {
+                            Plotly.purge(chartDiv);
+                        } catch (e) {
+                            console.error('Plotly purge error:', e);
+                        }
+                    }
+                    // Force reset cursor to default in case Plotly left it as crosshair
+                    document.body.style.cursor = 'default';
+                });
+
+                // Responsive Chart Resize on Modal Open
+                const btnShowChart = document.getElementById('btn-show-chart');
+                if (btnShowChart) {
+                    btnShowChart.addEventListener('click', () => {
+                        // Wait for modal transition to finish
+                        setTimeout(() => {
+                            const chartDiv = document.getElementById('plotly-chart');
+                            if (chartDiv && typeof Plotly !== 'undefined') {
+                                Plotly.Plots.resize(chartDiv);
+                            }
+                        }, 200);
+                    });
+                }
+            }
+        });
+    </script>
+
+    <!-- HTMX Debug Status Overlay -->
+    <div class="fixed bottom-4 right-4 z-[200]">
+        <div id="htmx-debug-status"
+            class="badge badge-success gap-2 p-3 font-bold opacity-30 hover:opacity-100 transition-opacity">
+            <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+            HTMX OK
+        </div>
+        <script>
+            document.addEventListener('htmx:load', () => {
+                const status = document.getElementById('htmx-debug-status');
+                if (status) status.classList.replace('badge-ghost', 'badge-success');
+            });
+        </script>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+        <!-- Top Bar -->
+        <header id="topbar"
+            class="navbar bg-base-100 border-b px-6 transition-all duration-300 overflow-hidden h-16 min-h-[4rem]">
+            <div class="flex-1">
+                <h2 class="text-xl font-semibold">Baza:
+                    <span class="text-secondary" id="active-db-label" hx-get="/active-db-name"
+                        hx-trigger="load, db-changed from:body">
+                        Brak
+                    </span>
+                </h2>
+            </div>
+            <div class="flex-none">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase opacity-50">Tryb ciemny:</span>
+                        <input type="checkbox" id="theme-toggle" class="toggle toggle-primary toggle-sm"
+                            onchange="toggleTheme()" />
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase opacity-50">Podmiot:</span>
+                        <span class="text-sm font-bold text-primary" id="active-podmiot-label"
+                            hx-get="/active-podmiot-name" hx-trigger="load, db-changed from:body">
+                            ---
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tabs & Content -->
+        <div class="flex-1 overflow-auto p-6">
+
+            <div role="tablist" class="tabs tabs-lifted mb-6">
+                <input id="tab-zois" type="radio" name="main_tabs" role="tab" class="tab" aria-label="ZOiS" checked
+                    onclick="triggerAiSave(); resetZoisFilter();" />
+                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+
+                    <!-- ZOiS View -->
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">Zestawienie Obrotów i Sald</h3>
+                        <div class="flex items-center gap-4">
+                            <div class="flex gap-2">
+                                <button class="btn btn-sm btn-outline btn-secondary gap-2" hx-get="/api/get-ai-modal"
+                                    hx-target="#modal-container" hx-swap="innerHTML">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    <span>AI</span>
+                                </button>
+                                <button class="btn btn-sm btn-outline btn-accent"
+                                    onclick="copyTableToClipboard('zois-container', this)">
+                                    <span>Kopiuj</span>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs opacity-70">Filtr:</span>
+                                <select id="global-zois-type" name="type"
+                                    class="select select-sm select-bordered max-w-[250px] text-xs" hx-get="/zois"
+                                    hx-target="#zois-container" hx-include="#global-zois-q"
+                                    hx-trigger="change, db-changed from:body" hx-indicator="#zois-spinner"
+                                    hx-on:change="htmx.trigger('body', 'filter-updated')">
+                                    <option value="">Wszystkie (Typ Konta)</option>
+                                </select>
+                            </div>
+
+                            <div class="join">
+                                <!-- Hidden HTMX dummy to populate the select above -->
+                                <div hx-get="/zois/filters" hx-trigger="load, db-changed from:body"
+                                    hx-target="#global-zois-type" class="hidden"></div>
+
+                                <input id="global-zois-q" name="q" class="input input-bordered input-sm join-item"
+                                    placeholder="Szukaj... (LUB / ,)" hx-get="/zois" hx-target="#zois-container"
+                                    hx-trigger="keyup changed delay:500ms, db-changed from:body"
+                                    hx-include="#global-zois-type" hx-indicator="#zois-spinner"
+                                    hx-on:keyup="htmx.trigger('body', 'filter-updated')" />
+                                <button class="btn btn-sm btn-primary join-item">Szukaj</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="zois-container" hx-get="/zois" hx-trigger="load, db-changed from:body" hx-swap="innerHTML">
+                        <span id="zois-spinner" class="loading loading-spinner loading-lg htmx-indicator"></span>
+                        Ładowanie danych...
+                    </div>
+                </div>
+
+                <input id="tab-zapisy" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Zapisy"
+                    onclick="triggerAiSave()" />
+                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">Zapisy Księgowe</h3>
+                        <div class="flex items-center gap-2">
+                            <div class="flex gap-2">
+                                <button id="btn-show-chart" class="btn btn-sm btn-outline btn-primary gap-2"
+                                    onclick="document.getElementById('chart_modal').showModal()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                                    </svg>
+                                    <span>Wykres</span>
+                                </button>
+                                <button class="btn btn-sm btn-outline btn-secondary gap-2" onclick="openMusModal()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                    </svg>
+                                    <span>MUS</span>
+                                </button>
+                                <button class="btn btn-sm btn-outline btn-accent"
+                                    onclick="copyTableToClipboard('zapisy-container', this)">
+                                    <span>Kopiuj</span>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2 mr-2">
+                                <span class="text-[10px] uppercase font-bold opacity-40">Miesiąc:</span>
+                                <select id="filter-month" name="month"
+                                    class="select select-bordered select-sm text-xs h-8 px-2" hx-trigger="change"
+                                    hx-on:change="htmx.trigger('body', 'filter-updated')">
+                                    <option value="">Wszystkie (Rok)</option>
+                                    <option value="1">Styczeń</option>
+                                    <option value="2">Luty</option>
+                                    <option value="3">Marzec</option>
+                                    <option value="4">Kwiecień</option>
+                                    <option value="5">Maj</option>
+                                    <option value="6">Czerwiec</option>
+                                    <option value="7">Lipiec</option>
+                                    <option value="8">Sierpień</option>
+                                    <option value="9">Wrzesień</option>
+                                    <option value="10">Październik</option>
+                                    <option value="11">Listopad</option>
+                                    <option value="12">Grudzień</option>
+                                </select>
+                            </div>
+                            <div class="join">
+                                <input id="zapisy-local-q" name="zq"
+                                    class="input input-bordered input-sm join-item w-48"
+                                    placeholder="Szukaj lokalnie..." hx-get="/data/table" hx-target="#zapisy-container"
+                                    hx-trigger="keyup changed delay:500ms"
+                                    hx-include="#global-zois-q, #global-zois-type, #filter-month"
+                                    hx-indicator="#main-spinner" hx-on:keyup="htmx.trigger('body', 'filter-updated')" />
+                                <button class="btn btn-sm btn-primary join-item">Szukaj</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="zapisy-container" hx-get="/data/table"
+                        hx-trigger="load, db-changed from:body, filter-updated from:body"
+                        hx-include="#global-zois-q, #global-zois-type, #zapisy-local-q, #filter-month"
+                        hx-swap="innerHTML" hx-indicator="#main-spinner">
+                        <div class="flex justify-center items-center p-12">
+                            <span class="loading loading-spinner loading-lg text-primary"></span>
+                        </div>
+                    </div>
+                </div>
+
+
+                <input id="tab-dziennik" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Dziennik"
+                    onclick="triggerAiSave()" />
+                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+                    <!-- Dziennik View -->
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">Dziennik Zapisów</h3>
+                        <button class="btn btn-sm btn-outline btn-accent"
+                            onclick="copyTableToClipboard('dziennik-container', this)">
+                            <span>Kopiuj</span>
+                        </button>
+                    </div>
+
+                    <div id="dziennik-container" hx-get="/dziennik" hx-trigger="load, db-changed from:body"
+                        hx-swap="innerHTML">
+                        <span class="loading loading-spinner loading-lg"></span> Ładowanie danych...
+                    </div>
+                </div>
+
+                <input id="tab-podmiot" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Podmiot"
+                    onclick="triggerAiSave()" />
+                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+                    <!-- Podmiot View -->
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">Informacje o Podmiocie</h3>
+                    </div>
+
+                    <div id="podmiot-container" hx-get="/podmiot" hx-trigger="load, db-changed from:body"
+                        hx-swap="innerHTML">
+                        <span class="loading loading-spinner loading-lg"></span> Ładowanie danych...
+                    </div>
+                </div>
+
+                <input id="tab-badanie" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Badanie"
+                    onclick="triggerAiSave()" />
+                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+                    <!-- Badanie View -->
+                    <div id="badanie-tab-container" hx-get="/api/badanie-tab" hx-trigger="load, db-changed from:body">
+                        <span class="loading loading-spinner loading-lg"></span> Ładowanie parametrów badania...
+                    </div>
+                </div>
+
+                <!-- AI Tab (Ustawienia) -->
+                <input id="tab-ai" type="radio" name="main_tabs" role="tab" class="tab" aria-label="AI ustaw." />
+                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+                    <div id="ai-tab-container" hx-get="/api/ai-tab" hx-trigger="load">
+                        <span class="loading loading-spinner loading-lg"></span> Ładowanie konfiguracji AI...
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Plotly Chart Modal -->
+    <dialog id="chart_modal" class="modal">
+        <div class="modal-box w-11/12 max-w-5xl relative">
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+            </form>
+            <h3 class="font-bold text-lg mb-4">Podsumowanie Graficzne</h3>
+
+            <!-- This div automatically reloads when filters change, or when modal opens -->
+            <div id="chart-container" hx-get="/api/chart-fragment"
+                hx-trigger="click from:#btn-show-chart, filter-updated from:body, db-changed from:body"
+                hx-include="#global-zois-q, #global-zois-type, #zapisy-local-q, #filter-month">
+                <div class="p-10 text-center">
+                    <span class="loading loading-spinner loading-lg"></span> Generowanie wykresu...
+                </div>
+            </div>
+
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <!-- Import Modal -->
+    <dialog id="import_modal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">Importuj nowy plik JPK</h3>
+            <p class="py-4">Wybierz plik XML do zaimportowania.</p>
+
+            <form id="import-form" hx-post="/upload" hx-encoding="multipart/form-data" hx-target="#active-db-label"
+                hx-indicator="#main-spinner">
+                <input type="file" name="file" class="file-input file-input-bordered w-full mb-4" accept=".xml"
+                    required />
+
+                <div class="modal-action">
+                    <button type="button" class="btn"
+                        onclick="document.getElementById('import_modal').close()">Anuluj</button>
+                    <button type="submit" class="btn btn-primary"
+                        onclick="document.getElementById('import_modal').close()">
+                        Importuj
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Container for dynamic modals -->
+    <div id="modal-container"></div>
+    <div hx-get="/api/jpk/check-consistency" hx-trigger="show-consistency from:body" hx-target="#modal-container"
+        hx-swap="innerHTML"></div>
+
+    <!-- Dziennik Details Modal -->
+    <dialog id="dziennik_modal" class="modal">
+        <div class="modal-box w-11/12 max-w-4xl h-fit max-h-[95vh] relative">
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+            </form>
+            <h3 class="font-bold text-lg mb-4">Szczegóły Dziennika</h3>
+            <div id="dziennik-details-content">
+                <span class="loading loading-spinner loading-lg"></span> Pobieranie danych...
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <script>
+        // Set initial state of the toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const theme = document.documentElement.getAttribute('data-theme');
+            const toggle = document.getElementById('theme-toggle');
+            if (toggle) toggle.checked = (theme === 'dark');
+        });
+
+        // Global HTMX cleanup for Plotly to prevent memory leaks and "crosshair" cursor issues
+        document.addEventListener('htmx:beforeCleanupElement', (evt) => {
+            const el = evt.detail.elt;
+            // Check if the element itself is a Plotly plot or contains one
+            if (el.classList && el.classList.contains('js-plotly-plot')) {
+                Plotly.purge(el);
+            } else {
+                const plots = el.querySelectorAll('.js-plotly-plot');
+                plots.forEach(plot => Plotly.purge(plot));
+            }
+        });
+
+        document.addEventListener('htmx:beforeSwap', (evt) => {
+            const chartDiv = document.getElementById('plotly-chart');
+            if (chartDiv) {
+                try {
+                    Plotly.purge(chartDiv);
+                } catch (e) {
+                    console.error('Plotly purge error during swap:', e);
+                }
+            }
+        });
+
+        document.addEventListener('htmx:afterSwap', (evt) => {
+            // Initializing other charts with .plotly-chart class if they exist
+            const otherCharts = evt.detail.elt.querySelectorAll('.plotly-chart');
+            otherCharts.forEach(chart => {
+                if (window.Plotly && !chart.classList.contains('js-plotly-plot')) {
+                    // This is a placeholder for other potential charts as requested
+                    // Plotly.newPlot(chart, data, layout, { staticPlot: true });
+                }
+            });
+        });
+
+
+        function triggerAiSave() {
+            const aiForm = document.getElementById('ai-config-form');
+            if (aiForm) {
+                // Manually trigger HTMX submit if it was the last active tab
+                htmx.trigger(aiForm, 'submit');
+            }
+        }
+
+        function resetZoisFilter() {
+            const qInput = document.getElementById('global-zois-q');
+            const typeSelect = document.getElementById('global-zois-type');
+
+            if (qInput && typeSelect) {
+                qInput.value = "";
+                typeSelect.value = "";
+
+                // Trigger HTMX reload for ZOiS
+                htmx.trigger(qInput, 'keyup');
+                htmx.trigger(typeSelect, 'change');
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function openDziennikModal(dziennikId) {
+            const modal = document.getElementById('dziennik_modal');
+            const content = document.getElementById('dziennik-details-content');
+
+            if (modal && content) {
+                // Reset content to loading state
+                content.innerHTML = '<span class="loading loading-spinner loading-lg"></span> Pobieranie danych...';
+
+                // Fetch details using htmx.ajax for better reliability
+                htmx.ajax('GET', `/dziennik-details/${dziennikId}`, {
+                    target: '#dziennik-details-content',
+                    swap: 'innerHTML'
+                });
+
+                modal.showModal();
+            }
+        }
+
+        function drillDown(konto) {
+            const qInput = document.getElementById('global-zois-q');
+            const typeSelect = document.getElementById('global-zois-type');
+            const tabZapisy = document.getElementById('tab-zapisy');
+
+            if (qInput && typeSelect && tabZapisy) {
+                // Set the account number in search with specific prefix
+                qInput.value = "konto:" + konto;
+                // Reset category filter to ensure the account is visible
+                typeSelect.value = "";
+
+                // Trigger HTMX reload for both tabs
+                htmx.trigger('body', 'filter-updated');
+                htmx.trigger(qInput, 'keyup'); // Also trigger ZOiS reload just in case
+
+                // Switch tab
+                tabZapisy.checked = true;
+            }
+        }
+
+        async function copyTableToClipboard(containerId, btn) {
+            const container = document.getElementById(containerId);
+            const table = container.querySelector('table');
+            if (!table) return;
+
+            // Improved flattening: strip HTML and normalize whitespace
+            const flatten = (val) => {
+                if (!val) return "";
+                let text = val.toString().replace(/<[^>]*>?/gm, '');
+                return text.replace(/\s+/g, " ").trim();
+            };
+
+            const formatPL = (val) => {
+                if (val === null || val === undefined) return "";
+                // Format for display: space as thousand separator, comma as decimal
+                return parseFloat(val).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\u00A0/g, ' ');
+            };
+
+            let rowsHtml = "";
+            let plainTextLines = [];
+
+            // Headers
+            const headerCells = Array.from(table.querySelectorAll('thead th'));
+            const headers = headerCells.map(th => flatten(th.innerText));
+            plainTextLines.push(headers.join("\t"));
+
+            rowsHtml += "<tr>";
+            headers.forEach(h => {
+                rowsHtml += `<th style="border: 0.5pt solid #ccc; background-color: #eeeeee; font-weight: bold; text-align: center;">${h}</th>`;
+            });
+            rowsHtml += "</tr>";
+
+            // Data Rows
+            Array.from(table.querySelectorAll('tbody tr')).forEach(row => {
+                const tdElements = Array.from(row.querySelectorAll('td'));
+                const cellTexts = tdElements.map(td => {
+                    const tooltip = td.querySelector('.tooltip');
+                    // Prefer tooltip content if present (full data), otherwise clean innerText
+                    return flatten(tooltip ? tooltip.getAttribute('data-tip') : td.innerText);
+                });
+
+                plainTextLines.push(cellTexts.join("\t"));
+
+                rowsHtml += "<tr>";
+                tdElements.forEach((td, idx) => {
+                    const dataType = td.getAttribute('data-type') || 'text';
+                    const dataValue = td.getAttribute('data-value'); // Raw numeric/date value
+                    const textContent = cellTexts[idx];
+
+                    if (dataType === 'number') {
+                        const rawVal = dataValue !== null ? dataValue : textContent.replace(/\s+/g, '').replace(',', '.');
+                        const displayVal = formatPL(rawVal);
+                        rowsHtml += `<td x:num="${rawVal}" class="xl-num">${displayVal}</td>`;
+                    } else if (dataType === 'date') {
+                        const rawVal = dataValue !== null ? dataValue : textContent;
+                        rowsHtml += `<td class="xl-date">${rawVal}</td>`;
+                    } else {
+                        // Text/Account: Force text format for Excel using x:str
+                        rowsHtml += `<td x:str class="xl-text">${textContent}</td>`;
+                    }
+                });
+                rowsHtml += "</tr>";
+            });
+
+            const excelHtml = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" 
+      xmlns:x="urn:schemas-microsoft-com:office:excel" 
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<style>
+    td { border: 0.5pt solid #ccc; white-space: nowrap; color: black; background: white; font-family: Arial, sans-serif; font-size: 9pt; }
+    .xl-text { mso-number-format:"\\@"; }
+    .xl-num { mso-number-format:"\\#\\ \\#\\#0\\.00"; text-align: right; }
+    .xl-date { mso-number-format:"yyyy\\-mm\\-dd"; text-align: center; }
+</style>
+</head>
+<body>
+    <table border="1" style="border-collapse: collapse;">
+        ${rowsHtml}
+    </table>
+</body>
+</html>`;
+
+            try {
+                const blobHtml = new Blob([excelHtml], { type: "text/html" });
+                const blobText = new Blob(["\ufeff" + plainTextLines.join("\n")], { type: "text/plain" });
+
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        "text/html": blobHtml,
+                        "text/plain": blobText
+                    })
+                ]);
+
+                // Feedback animation
+                const originalText = btn.innerHTML;
+                btn.innerHTML = 'Skopiowano!';
+                btn.classList.remove('btn-outline');
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline');
+                }, 2000);
+            } catch (err) {
+                console.error('Błąd kopiowania:', err);
+                alert('Nie udało się skopiować danych. Sprawdź uprawnienia schowka.');
+            }
+        }
+
+        async function sendHeartbeat() {
+            try {
+                await fetch('/api/heartbeat', { method: 'POST' });
+            } catch (e) {
+                console.error("Heartbeat failed", e);
+            }
+        }
+        setInterval(sendHeartbeat, 2000); // Ping co 2 sekundy
+    </script>
+
+    <!-- MUS Modal Dialog -->
+    <dialog id="mus_modal" class="modal">
+        <div class="modal-box w-11/12 max-w-2xl relative shadow-2xl">
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+            </form>
+
+            <h3 class="font-bold text-lg mb-4 text-secondary flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                Monetary Unit Sampling (MUS)
+            </h3>
+
+            <div id="mus-loading" class="text-center py-10 text-primary">
+                <span class="loading loading-spinner loading-lg"></span> <br><br>
+                <span class="opacity-70 text-sm italic font-bold tracking-widest uppercase">Przeszukiwanie populacji
+                    (Wn/Ma)...</span>
+            </div>
+
+            <div id="mus-content" class="hidden">
+                <form id="mus-form" onsubmit="executeMus(event)" class="space-y-4">
+
+                    <div
+                        class="alert bg-base-200 border border-base-300 text-xs py-3 px-4 mb-4 rounded-xl flex shadow-inner">
+                        <span class="opacity-60 font-semibold uppercase tracking-widest">Suma analiz. próby: </span>
+                        <span class="flex-1 text-right font-bold pl-2 ml-2">Wn: <span id="mus-pop-wn"
+                                class="font-mono text-emerald-500">0,00</span> PLN</span>
+                        <span class="flex-1 text-right font-bold border-l pl-2 ml-2 border-base-content/20">Ma: <span
+                                id="mus-pop-ma" class="font-mono text-rose-500">0,00</span> PLN</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-control w-full">
+                            <label class="label"><span class="label-text font-bold text-xs">Istotność
+                                    wykonawcza</span></label>
+                            <input type="number" step="0.01" id="mus-istotnosc" required
+                                class="input input-sm input-bordered w-full font-mono text-right"
+                                oninput="calculateMusFields()" />
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-bold text-xs">Ryzyko badania</span>
+                                <span id="mus-ryzyko-val" class="label-text-alt font-black text-secondary">3.0</span>
+                            </label>
+                            <select id="mus-ryzyko" class="select select-sm select-bordered w-full"
+                                onchange="calculateMusFields()">
+                                <option value="3.0">Wysokie (3.0)</option>
+                                <option value="2.3">Średnie (2.3)</option>
+                                <option value="1.0">Niskie (1.0)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label"><span class="label-text font-bold text-xs text-primary">Interwał (krok
+                                    testu)</span></label>
+                            <input type="number" step="0.01" id="mus-interwal" readonly
+                                class="input input-sm input-bordered w-full font-mono text-right bg-base-300/50 shadow-inner" />
+                        </div>
+
+                        <div class="form-control w-full">
+                            <label class="label">
+                                <span class="label-text font-bold text-xs text-primary">Punkt startowy</span>
+                                <div class="tooltip tooltip-left" data-tip="Punkt startowy 1 > X > Interwał."><span
+                                        class="badge badge-xs">?</span></div>
+                            </label>
+                            <input type="number" step="0.01" id="mus-start" required
+                                class="input input-sm input-bordered w-full font-mono text-right text-primary focus:border-primary shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]"
+                                oninput="validateMusForm()" />
+                        </div>
+                    </div>
+
+                    <div
+                        class="form-control w-full mt-6 p-4 bg-gradient-to-tr from-base-200 to-base-100 rounded-xl border border-base-300">
+                        <label class="label pt-0 pb-1"><span
+                                class="label-text font-bold text-[10px] uppercase opacity-60 tracking-widest text-secondary">Przewidywana
+                                próba łączna</span></label>
+                        <div class="flex items-center gap-6">
+                            <div class="text-4xl font-black text-secondary drop-shadow-sm" id="mus-proba-count">0</div>
+                            <div class="text-xs opacity-60 flex-1 border-l pl-4 border-base-content/10">Szacowana
+                                całkowita liczba prób do wylosowania (obejmuje narastające obroty Wn i osobno
+                                narastające obroty Ma) w oparciu o sumę populacji.</div>
+                        </div>
+                    </div>
+
+                    <div class="modal-action mt-8">
+                        <button type="button" class="btn btn-sm"
+                            onclick="document.getElementById('mus_modal').close()">Anuluj</button>
+                        <button type="submit" id="mus-submit-btn"
+                            class="btn btn-sm btn-primary gap-2 w-36 hover:scale-105 transition-transform" disabled>
+                            Uruchom MUS
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <script>
+        let musPopWn = 0.0;
+        let musPopMa = 0.0;
+
+        function formatAmountToPln(val) {
+            return parseFloat(val).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\u00A0/g, ' ');
+        }
+
+        async function openMusModal() {
+            const modal = document.getElementById('mus_modal');
+            const loading = document.getElementById('mus-loading');
+            const content = document.getElementById('mus-content');
+
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+            modal.showModal();
+
+            const type = document.getElementById('global-zois-type')?.value || "";
+            const q = document.getElementById('global-zois-q')?.value || "";
+            const zq = document.getElementById('zapisy-local-q')?.value || "";
+            const month = document.getElementById('filter-month')?.value || "";
+
+            try {
+                const res = await fetch(`/api/mus/prepare?type=${encodeURIComponent(type)}&q=${encodeURIComponent(q)}&zq=${encodeURIComponent(zq)}&month=${encodeURIComponent(month)}`);
+                const data = await res.json();
+
+                if (data.error) {
+                    alert("Błąd backendu zgłoszony z przygotowania: " + data.error);
+                    modal.close();
+                    return;
+                }
+
+                musPopWn = data.suma_wn || 0;
+                musPopMa = data.suma_ma || 0;
+
+                document.getElementById('mus-pop-wn').innerText = formatAmountToPln(musPopWn);
+                document.getElementById('mus-pop-ma').innerText = formatAmountToPln(musPopMa);
+
+                document.getElementById('mus-istotnosc').value = data.istotnosc > 0 ? data.istotnosc : '';
+
+                // True nadpisuje Start parametrem losowym opartym o nowo wyliczony interwał
+                calculateMusFields(true);
+
+                loading.classList.add('hidden');
+                content.classList.remove('hidden');
+            } catch (error) {
+                console.error("Przygotowanie danych MUS zawiodło: ", error);
+                alert("Nieudane pobieranie bazowych danych populacji do analizy.");
+                modal.close();
+            }
+        }
+
+        function calculateMusFields(resetStartPoint = false) {
+            const istotnosc = parseFloat(document.getElementById('mus-istotnosc').value) || 0;
+            const ryzykoSelect = document.getElementById('mus-ryzyko');
+            const ryzyko = parseFloat(ryzykoSelect.value) || 3.0;
+
+            document.getElementById('mus-ryzyko-val').innerText = ryzyko.toFixed(1);
+
+            const btn = document.getElementById('mus-submit-btn');
+            const intInput = document.getElementById('mus-interwal');
+            const startInput = document.getElementById('mus-start');
+
+            if (istotnosc <= 0) {
+                intInput.value = '';
+                document.getElementById('mus-proba-count').innerText = "0";
+                btn.disabled = true;
+                return;
+            }
+
+            const interwal = istotnosc / ryzyko;
+            intInput.value = interwal.toFixed(2);
+
+            if (resetStartPoint) {
+                // Generujemy przedział losowy
+                const randomStart = (Math.random() * (interwal - 1)) + 1;
+                startInput.value = randomStart.toFixed(2);
+            }
+
+            // Estymacja (Suma / Interwal)
+            const estymacjaWn = Math.floor(musPopWn / interwal);
+            const estymacjaMa = Math.floor(musPopMa / interwal);
+            document.getElementById('mus-proba-count').innerText = (estymacjaWn + estymacjaMa).toString();
+
+            validateMusForm();
+        }
+
+        function validateMusForm() {
+            const istotnosc = parseFloat(document.getElementById('mus-istotnosc').value) || 0;
+            const interwal = parseFloat(document.getElementById('mus-interwal').value) || 0;
+            const start = parseFloat(document.getElementById('mus-start').value) || 0;
+            const btn = document.getElementById('mus-submit-btn');
+
+            if (istotnosc <= 0 || start <= 0 || start > interwal) {
+                btn.disabled = true;
+                document.getElementById('mus-start').classList.add('border-error');
+            } else {
+                btn.disabled = false;
+                document.getElementById('mus-start').classList.remove('border-error');
+            }
+        }
+
+        async function executeMus(e) {
+            e.preventDefault();
+
+            // Zbieranie bazowych filtrów globalnych i lokalnych
+            const type = document.getElementById('global-zois-type')?.value || "";
+            const q = document.getElementById('global-zois-q')?.value || "";
+            const zq = document.getElementById('zapisy-local-q')?.value || "";
+            const month = document.getElementById('filter-month')?.value || "";
+
+            const istotnosc = document.getElementById('mus-istotnosc').value;
+            const wspolczynnik = document.getElementById('mus-ryzyko').value;
+            const startNode = document.getElementById('mus-start').value;
+
+            const formData = new FormData();
+            formData.append('type', type);
+            formData.append('q', q);
+            formData.append('zq', zq);
+            formData.append('month', month);
+            formData.append('istotnosc', istotnosc);
+            formData.append('wspolczynnik', wspolczynnik);
+            formData.append('punkt_startowy', startNode);
+
+            document.getElementById('mus_modal').close();
+
+            // Loader dla modyfikacji kontenera tabeli
+            const container = document.getElementById('zapisy-container');
+            container.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-20 gap-4">
+                <span class="loading loading-spinner text-secondary w-16 h-16"></span>
+                <div class="text-sm font-bold uppercase tracking-widest opacity-60">Matematykowanie próby...</div>
+            </div>`;
+
+            try {
+                const res = await fetch('/api/mus/execute', {
+                    method: 'POST',
+                    body: formData
+                });
+                const html = await res.text();
+                container.innerHTML = html;
+
+                // Wygenerowany HTML usunie stare HTMX tagi (wymusi statyczny renderer), co jest z założenia intencjonalne dla raportu
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = '<div class="alert alert-error">Zgłoszono krytyczny wyjątek frontendu.</div>';
+            }
+        }
+    </script>
+
+    <!-- Alert Container for DB Connection Errors -->
+    <div id="alert-container"></div>
+
+    <!-- Global Spinner -->
+    <div id="main-spinner"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-base-300/20 backdrop-blur-sm htmx-indicator">
+        <div
+            class="flex flex-col items-center gap-4 bg-base-100 p-8 rounded-2xl shadow-2xl border border-base-content/10">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <div class="text-sm font-bold tracking-widest uppercase opacity-70 text-center">
+                Przetwarzanie danych...<br>
+                <div class="text-[10px] opacity-50 lowercase tracking-normal font-normal">System pracuje. Proszę nie
+                    odświeżać strony.</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
