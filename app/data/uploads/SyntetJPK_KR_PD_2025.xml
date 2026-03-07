@@ -1,0 +1,3312 @@
+﻿
+<tns:JPK xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/" xmlns:kus="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/KodyUrzedowSkarbowych/" xsi:schemaLocation="http://jpk.mf.gov.pl/wzor/2024/09/04/09041/ https://www.gov.pl/attachment/4ec8f106-032c-42f2-9fb5-15b5ec5ca670" xmlns:tns="http://jpk.mf.gov.pl/wzor/2024/09/04/09041/">
+	<tns:Naglowek>
+		<tns:KodFormularza kodSystemowy="JPK_KR_PD (1)" wersjaSchemy="1-1">JPK_KR_PD</tns:KodFormularza>
+		<tns:WariantFormularza>1</tns:WariantFormularza>
+		<tns:CelZlozenia>1</tns:CelZlozenia>
+		<tns:DataWytworzeniaJPK>2026-02-23T13:05:26</tns:DataWytworzeniaJPK>
+		<tns:DataOd>2025-01-01</tns:DataOd>
+		<tns:DataDo>2025-12-31</tns:DataDo>
+		<tns:RokDataOd>2025-01-01</tns:RokDataOd>
+		<tns:RokDataDo>2025-12-31</tns:RokDataDo>
+		<tns:DomyslnyKodWaluty>PLN</tns:DomyslnyKodWaluty>
+		<tns:KodUrzedu>0202</tns:KodUrzedu>
+	</tns:Naglowek>
+	<tns:Podmiot1>
+		<tns:IdentyfikatorPodmiotu>
+			<etd:NIP>3630898381</etd:NIP>
+			<etd:PelnaNazwa>Pełna nazwa spółki</etd:PelnaNazwa>
+			<etd:REGON>123456785</etd:REGON>
+		</tns:IdentyfikatorPodmiotu>
+		<tns:Adres>
+			<tns:AdresPol>
+				<etd:KodKraju>PL</etd:KodKraju>
+				<etd:Wojewodztwo>Małopolskie</etd:Wojewodztwo>
+				<etd:Powiat>Kraków</etd:Powiat>
+				<etd:Gmina>Kraków</etd:Gmina>
+				<etd:Ulica>Fiołkowa</etd:Ulica>
+				<etd:NrDomu>22</etd:NrDomu>
+				<etd:NrLokalu>5a</etd:NrLokalu>
+				<etd:Miejscowosc>Kraków</etd:Miejscowosc>
+				<etd:KodPocztowy>38-425</etd:KodPocztowy>
+			</tns:AdresPol>
+		</tns:Adres>
+	</tns:Podmiot1>
+	<tns:Kontrahent>
+		<tns:T_1>1</tns:T_1>
+		<tns:T_3>5252150534</tns:T_3>
+	</tns:Kontrahent>
+	<tns:Kontrahent>
+		<tns:T_1>4</tns:T_1>
+		<tns:T_2>PL</tns:T_2>
+		<tns:T_3>9511234567</tns:T_3>
+	</tns:Kontrahent>
+	<tns:Kontrahent>
+		<tns:T_1>5</tns:T_1>
+		<tns:T_3>8259876543</tns:T_3>
+	</tns:Kontrahent>
+	<tns:Kontrahent>
+		<tns:T_1>2</tns:T_1>
+		<tns:T_3>7351122334</tns:T_3>
+	</tns:Kontrahent>
+	<tns:Kontrahent>
+		<tns:T_1>6</tns:T_1>
+		<tns:T_2>NL</tns:T_2>
+		<tns:T_3>815809786B01</tns:T_3>
+	</tns:Kontrahent>
+	<tns:Kontrahent>
+		<tns:T_1>3</tns:T_1>
+		<tns:T_3>6125678901</tns:T_3>
+	</tns:Kontrahent>
+	<tns:ZOiS>
+		<tns:ZOiS7>
+			<tns:S_1>011</tns:S_1>
+			<tns:S_2>Środki trwałe</tns:S_2>
+			<tns:S_3>011</tns:S_3>
+			<tns:S_4>300000.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>214440.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>214440.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>514440.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BAAII1b_W</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>011-01</tns:S_1>
+			<tns:S_2>Środki trwałe</tns:S_2>
+			<tns:S_3>011</tns:S_3>
+			<tns:S_4>300000.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>214440.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>214440.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>514440.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BAAII1b_W</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>011-01-01</tns:S_1>
+			<tns:S_2>Nieruchomości</tns:S_2>
+			<tns:S_3>011-01</tns:S_3>
+			<tns:S_4>300000.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>300000.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BAAII1a_W</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>011-01-02</tns:S_1>
+			<tns:S_2>Budynki</tns:S_2>
+			<tns:S_3>011-01</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>68650.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>68650.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>68650.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BAAII1b_W</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>011-01-03</tns:S_1>
+			<tns:S_2>Maszyny</tns:S_2>
+			<tns:S_3>011-01</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>145790.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>145790.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>145790.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>020</tns:S_1>
+			<tns:S_2>Wartości niematerialne i prawne</tns:S_2>
+			<tns:S_3>020</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>50000.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>50000.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>50000.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BAAI3_W</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>020-01</tns:S_1>
+			<tns:S_2>Wartości niematerialne i prawne</tns:S_2>
+			<tns:S_3>020</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>50000.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>50000.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>50000.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BAAI3_W</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>071</tns:S_1>
+			<tns:S_2>Umorzenie środków trwałych</tns:S_2>
+			<tns:S_3>071</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>17512.57</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>17512.57</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>17512.57</tns:S_11>
+			<tns:S_12_1>BAAII1b_U</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>071-01</tns:S_1>
+			<tns:S_2>Umorzenie środków trwałych</tns:S_2>
+			<tns:S_3>071</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>17512.57</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>17512.57</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>17512.57</tns:S_11>
+			<tns:S_12_1>BAAII1b_U</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>071-01-02</tns:S_1>
+			<tns:S_2>Umorzenie budynków</tns:S_2>
+			<tns:S_3>071-01</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>5606.41</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>5606.41</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>5606.41</tns:S_11>
+			<tns:S_12_1>BAAII1b_U</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>071-01-03</tns:S_1>
+			<tns:S_2>Umorzenie maszyn</tns:S_2>
+			<tns:S_3>071-01</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>11906.16</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>11906.16</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>11906.16</tns:S_11>
+			<tns:S_12_1>BAAII1c_U</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>073</tns:S_1>
+			<tns:S_2>Umorzenie wartości niemat. i prawnych</tns:S_2>
+			<tns:S_3>073</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>7500.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>7500.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>7500.00</tns:S_11>
+			<tns:S_12_1>BAAI3_U</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>073-01</tns:S_1>
+			<tns:S_2>Umorzenie wartości niemat. i prawnych</tns:S_2>
+			<tns:S_3>073</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>7500.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>7500.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>7500.00</tns:S_11>
+			<tns:S_12_1>BAAI3_U</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>083</tns:S_1>
+			<tns:S_2>Środki trwałe w budowie</tns:S_2>
+			<tns:S_3>083</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>264350.00</tns:S_6>
+			<tns:S_7>264440.00</tns:S_7>
+			<tns:S_8>264350.00</tns:S_8>
+			<tns:S_9>264440.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>90.00</tns:S_11>
+			<tns:S_12_1>BAAII2_W</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>083-01</tns:S_1>
+			<tns:S_2>Środki trwałe w budowie</tns:S_2>
+			<tns:S_3>083</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>264350.00</tns:S_6>
+			<tns:S_7>264440.00</tns:S_7>
+			<tns:S_8>264350.00</tns:S_8>
+			<tns:S_9>264440.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>90.00</tns:S_11>
+			<tns:S_12_1>BAAII2_W</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>100</tns:S_1>
+			<tns:S_2>Kasa środków pieniężnych</tns:S_2>
+			<tns:S_3>100</tns:S_3>
+			<tns:S_4>500000.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>84439.50</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>84439.50</tns:S_9>
+			<tns:S_10>415560.50</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABIII1c1_SPKR</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>100-01</tns:S_1>
+			<tns:S_2>Kasa środków pieniężnych</tns:S_2>
+			<tns:S_3>100</tns:S_3>
+			<tns:S_4>500000.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>84439.50</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>84439.50</tns:S_9>
+			<tns:S_10>415560.50</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABIII1c1_SPKR</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>101</tns:S_1>
+			<tns:S_2>Kasa walutowa</tns:S_2>
+			<tns:S_3>101</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>462895.00</tns:S_6>
+			<tns:S_7>37153.25</tns:S_7>
+			<tns:S_8>462895.00</tns:S_8>
+			<tns:S_9>37153.25</tns:S_9>
+			<tns:S_10>425741.75</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABIII1c1_SPKR</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>101-01</tns:S_1>
+			<tns:S_2>Kasa euro</tns:S_2>
+			<tns:S_3>101</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>462895.00</tns:S_6>
+			<tns:S_7>37153.25</tns:S_7>
+			<tns:S_8>462895.00</tns:S_8>
+			<tns:S_9>37153.25</tns:S_9>
+			<tns:S_10>425741.75</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABIII1c1_SPKR</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>131</tns:S_1>
+			<tns:S_2>Rachunek bieżący</tns:S_2>
+			<tns:S_3>131</tns:S_3>
+			<tns:S_4>200000.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>286774.62</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>286774.62</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>86774.62</tns:S_11>
+			<tns:S_12_1>BABIII1c1_SPKR</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>131-01</tns:S_1>
+			<tns:S_2>Rachunek bieżący</tns:S_2>
+			<tns:S_3>131</tns:S_3>
+			<tns:S_4>200000.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>286774.62</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>286774.62</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>86774.62</tns:S_11>
+			<tns:S_12_1>BABIII1c1_SPKR</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>201</tns:S_1>
+			<tns:S_2>Rozrachunki z odbiorcami</tns:S_2>
+			<tns:S_3>201</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>238816.80</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>238816.80</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>238816.80</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABII3a_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>201-BUDEX</tns:S_1>
+			<tns:S_2>BUDEX Gdańsk</tns:S_2>
+
+			<tns:S_3>201</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>45264.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>45264.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>45264.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABII3a_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>201-IT_SERVICES</tns:S_1>
+			<tns:S_2>IT_SERVICES Warszawa</tns:S_2>
+			<tns:S_3>201</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>190404.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>190404.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>190404.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABII3a_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>201-ZIELONY_OGRÓD</tns:S_1>
+			<tns:S_2>ZIELONY OGRÓD Poznań</tns:S_2>
+			<tns:S_3>201</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>3148.80</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>3148.80</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>3148.80</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABII3a_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>202</tns:S_1>
+			<tns:S_2>Rozrachunki z dostawcami</tns:S_2>
+			<tns:S_3>202</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>371214.12</tns:S_6>
+			<tns:S_7>669858.12</tns:S_7>
+			<tns:S_8>371214.12</tns:S_8>
+			<tns:S_9>669858.12</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>298644.00</tns:S_11>
+			<tns:S_12_1>BPBIII3d_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>202-ABC</tns:S_1>
+			<tns:S_2>ABC Kraków</tns:S_2>
+			<tns:S_3>202</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>60639.06</tns:S_6>
+			<tns:S_7>69249.06</tns:S_7>
+			<tns:S_8>60639.06</tns:S_8>
+			<tns:S_9>69249.06</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>8610.00</tns:S_11>
+			<tns:S_12_1>BPBIII3d_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>202-BUDEX</tns:S_1>
+			<tns:S_2>BUDEX Gdańsk</tns:S_2>
+			<tns:S_3>202</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>215631.30</tns:S_6>
+			<tns:S_7>277131.30</tns:S_7>
+			<tns:S_8>215631.30</tns:S_8>
+			<tns:S_9>277131.30</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>61500.00</tns:S_11>
+			<tns:S_12_1>BPBIII3d_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>202-EKO_PLAST</tns:S_1>
+			<tns:S_2>EKO PLAST Wrocław</tns:S_2>
+			<tns:S_3>202</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>94943.70</tns:S_6>
+			<tns:S_7>322493.70</tns:S_7>
+			<tns:S_8>94943.70</tns:S_8>
+			<tns:S_9>322493.70</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>227550.00</tns:S_11>
+			<tns:S_12_1>BPBIII3d_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>202-IT_SERVICES</tns:S_1>
+			<tns:S_2>IT_SERVICES Warszawa</tns:S_2>
+			<tns:S_3>202</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.06</tns:S_6>
+			<tns:S_7>0.06</tns:S_7>
+			<tns:S_8>0.06</tns:S_8>
+			<tns:S_9>0.06</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BPBIII3d_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>202-ZIELONY_OGRÓD</tns:S_1>
+			<tns:S_2>ZIELONY OGRÓD Poznań</tns:S_2>
+			<tns:S_3>202</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>984.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>984.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>984.00</tns:S_11>
+			<tns:S_12_1>BPBIII3d_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>203</tns:S_1>
+			<tns:S_2>Rozrachunki z odbiorcami walutowymi</tns:S_2>
+			<tns:S_3>203</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>473878.46</tns:S_6>
+			<tns:S_7>467641.16</tns:S_7>
+			<tns:S_8>473878.46</tns:S_8>
+			<tns:S_9>467641.16</tns:S_9>
+			<tns:S_10>6237.30</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABII3a_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>203-NL_HOLDING</tns:S_1>
+			<tns:S_2>NL_HOLDING Amsterdam</tns:S_2>
+			<tns:S_3>203</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>473878.46</tns:S_6>
+			<tns:S_7>467641.16</tns:S_7>
+			<tns:S_8>473878.46</tns:S_8>
+			<tns:S_9>467641.16</tns:S_9>
+			<tns:S_10>6237.30</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABII3a_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>204</tns:S_1>
+			<tns:S_2>Rozrachunki z dostawcami walutowymi</tns:S_2>
+			<tns:S_3>204</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>41927.30</tns:S_6>
+			<tns:S_7>48289.40</tns:S_7>
+			<tns:S_8>41927.30</tns:S_8>
+			<tns:S_9>48289.40</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>6362.10</tns:S_11>
+			<tns:S_12_1>BPBIII3d_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>204-NL_HOLDING</tns:S_1>
+			<tns:S_2>NL_HOLDING Amsterdam</tns:S_2>
+			<tns:S_3>204</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>41927.30</tns:S_6>
+			<tns:S_7>48289.40</tns:S_7>
+			<tns:S_8>41927.30</tns:S_8>
+			<tns:S_9>48289.40</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>6362.10</tns:S_11>
+			<tns:S_12_1>BPBIII3d_D12</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>221</tns:S_1>
+			<tns:S_2>Rozrachunki z tyt.VAT</tns:S_2>
+			<tns:S_3>221</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>125258.02</tns:S_6>
+			<tns:S_7>44656.80</tns:S_7>
+			<tns:S_8>125258.02</tns:S_8>
+			<tns:S_9>44656.80</tns:S_9>
+			<tns:S_10>80601.22</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABII3b</tns:S_12_1>
+			<tns:S_12_2>BPBIII3g</tns:S_12_2>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>221-01</tns:S_1>
+			<tns:S_2>Rozrachunki z tyt.VAT</tns:S_2>
+			<tns:S_3>221</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>125258.02</tns:S_6>
+			<tns:S_7>44656.80</tns:S_7>
+			<tns:S_8>125258.02</tns:S_8>
+			<tns:S_9>44656.80</tns:S_9>
+			<tns:S_10>80601.22</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABII3b</tns:S_12_1>
+			<tns:S_12_2>BPBIII3g</tns:S_12_2>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>303</tns:S_1>
+			<tns:S_2>Rozliczenie zakupu towarów handlowych</tns:S_2>
+			<tns:S_3>303</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>544600.10</tns:S_6>
+			<tns:S_7>264350.00</tns:S_7>
+			<tns:S_8>544600.10</tns:S_8>
+			<tns:S_9>264350.00</tns:S_9>
+			<tns:S_10>280250.10</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABI4</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>303-01</tns:S_1>
+			<tns:S_2>Rozliczenie zakupu towarów handlowych</tns:S_2>
+			<tns:S_3>303</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>544600.10</tns:S_6>
+			<tns:S_7>264350.00</tns:S_7>
+			<tns:S_8>544600.10</tns:S_8>
+			<tns:S_9>264350.00</tns:S_9>
+			<tns:S_10>280250.10</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>BABI4</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>331</tns:S_1>
+			<tns:S_2>Towary - w hurcie</tns:S_2>
+			<tns:S_3>331</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>173480.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>173480.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>173480.00</tns:S_11>
+			<tns:S_12_1>BABI4</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>331-01</tns:S_1>
+			<tns:S_2>Towary - w hurcie</tns:S_2>
+			<tns:S_3>331</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>173480.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>173480.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>173480.00</tns:S_11>
+			<tns:S_12_1>BABI4</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>401</tns:S_1>
+			<tns:S_2>Amortyzacja</tns:S_2>
+			<tns:S_3>401</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>25012.57</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>25012.57</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>25012.57</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBI</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>401-01</tns:S_1>
+			<tns:S_2>Amortyzacja</tns:S_2>
+			<tns:S_3>401</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>25012.57</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>25012.57</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>25012.57</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBI</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>401-01-01</tns:S_1>
+			<tns:S_2>Amortyzacja środków trwałych</tns:S_2>
+			<tns:S_3>401-01</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>17512.57</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>17512.57</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>17512.57</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBI</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>401-01-02</tns:S_1>
+			<tns:S_2>Amortyzacja WNIP</tns:S_2>
+			<tns:S_3>401-01</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>7500.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>7500.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>7500.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBI</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>429</tns:S_1>
+			<tns:S_2>Inne usługi obce</tns:S_2>
+			<tns:S_3>429</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>48162.30</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>48162.30</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>48162.30</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBIII</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>429-01</tns:S_1>
+			<tns:S_2>Inne usługi obce</tns:S_2>
+			<tns:S_3>429</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>48162.30</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>48162.30</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>48162.30</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBIII</tns:S_12_1>
+		</tns:ZOiS7>
+
+		<tns:ZOiS7>
+			<tns:S_1>700</tns:S_1>
+			<tns:S_2>Sprzedaż produktów</tns:S_2>
+			<tns:S_3>700</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>471318.46</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>471318.46</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>471318.46</tns:S_11>
+			<tns:S_12_1>RPAI_RKAI_POZ</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>700-01</tns:S_1>
+			<tns:S_2>Sprzedaż produktów</tns:S_2>
+			<tns:S_3>700</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>471318.46</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>471318.46</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>471318.46</tns:S_11>
+			<tns:S_12_1>RPAI_RKAI_POZ</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>731</tns:S_1>
+			<tns:S_2>Przychody ze sprzedaży towarów</tns:S_2>
+			<tns:S_3>731</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>194160.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>194160.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>194160.00</tns:S_11>
+			<tns:S_12_1>RPBVIII_RKBII_POZ</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>731-01</tns:S_1>
+			<tns:S_2>Przychody ze sprzedaży towarów</tns:S_2>
+			<tns:S_3>731</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>194160.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>194160.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>194160.00</tns:S_11>
+			<tns:S_12_1>RPBVIII_RKBII_POZ</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>732</tns:S_1>
+			<tns:S_2>Wartość sprzedaży towarów w cenach zakup</tns:S_2>
+			<tns:S_3>732</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>173480.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>173480.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>173480.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBVIII_RKBII_POZ</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>732-01</tns:S_1>
+			<tns:S_2>Wartość sprzedaży towarów w cenach zakup</tns:S_2>
+			<tns:S_3>732</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>173480.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>173480.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>173480.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBVIII_RKBII_POZ</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>751</tns:S_1>
+			<tns:S_2>Koszty operacji finansowych</tns:S_2>
+			<tns:S_3>751</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>4873.26</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>4873.26</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>4873.26</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPHIV_RKKIV_RK</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>751-01</tns:S_1>
+			<tns:S_2>Koszty operacji finansowych</tns:S_2>
+			<tns:S_3>751</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>4873.26</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>4873.26</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>4873.26</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPHIV_RKKIV_RK</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>752</tns:S_1>
+			<tns:S_2>Przychody z operacji finansowych</tns:S_2>
+			<tns:S_3>752</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>7334.05</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>7334.05</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>7334.05</tns:S_11>
+			<tns:S_12_1>RPGV_RKJV_RK</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>752-01</tns:S_1>
+			<tns:S_2>Przychody z operacji finansowych</tns:S_2>
+			<tns:S_3>752</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>7334.05</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>7334.05</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>7334.05</tns:S_11>
+			<tns:S_12_1>RPGV_RKJV_RK</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>803</tns:S_1>
+			<tns:S_2>Kapitał podstawowy</tns:S_2>
+			<tns:S_3>803</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>700000.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>700000.00</tns:S_11>
+			<tns:S_12_1>BPAI</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>803-01</tns:S_1>
+			<tns:S_2>Kapitał podstawowy</tns:S_2>
+			<tns:S_3>803</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>700000.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>700000.00</tns:S_11>
+			<tns:S_12_1>BPAI</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>804</tns:S_1>
+			<tns:S_2>Kapitał zapasowy</tns:S_2>
+			<tns:S_3>804</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>300000.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>300000.00</tns:S_11>
+			<tns:S_12_1>BPAII_INN</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>804-01</tns:S_1>
+			<tns:S_2>Kapitał zapasowy</tns:S_2>
+			<tns:S_3>804</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>300000.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>300000.00</tns:S_11>
+			<tns:S_12_1>BPAII_INN</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>902</tns:S_1>
+			<tns:S_2>Amortyzacja KUP</tns:S_2>
+			<tns:S_3>902</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>21610.82</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>21610.82</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>21610.82</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBI</tns:S_12_1>
+			<tns:S_12_3>PD4_PB</tns:S_12_3>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>902-01</tns:S_1>
+			<tns:S_2>Amortyzacja KUP ST</tns:S_2>
+			<tns:S_3>902</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>14110.82</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>14110.82</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>14110.82</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBI</tns:S_12_1>
+			<tns:S_12_3>PD4_PB</tns:S_12_3>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>902-02</tns:S_1>
+			<tns:S_2>Amortyzacja KUP WNIP</tns:S_2>
+			<tns:S_3>902</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>7500.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>7500.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>7500.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPBI</tns:S_12_1>
+			<tns:S_12_3>PD4_PB</tns:S_12_3>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>903</tns:S_1>
+			<tns:S_2>Testowa syntetyka</tns:S_2>
+			<tns:S_3>903</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>10000.00</tns:S_6>
+			<tns:S_7>10000.00</tns:S_7>
+			<tns:S_8>10000.00</tns:S_8>
+			<tns:S_9>10000.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPJ_RKM_O</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>903-01</tns:S_1>
+			<tns:S_2>01</tns:S_2>
+			<tns:S_3>903</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>5000.00</tns:S_6>
+			<tns:S_7>5000.00</tns:S_7>
+			<tns:S_8>5000.00</tns:S_8>
+			<tns:S_9>5000.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPJ_RKM_O</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>903-01-01</tns:S_1>
+			<tns:S_2>0101</tns:S_2>
+			<tns:S_3>903-01</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>5000.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>5000.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>5000.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPJ_RKM_O</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>903-01-02</tns:S_1>
+			<tns:S_2>0102</tns:S_2>
+			<tns:S_3>903-01</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>5000.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>5000.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>5000.00</tns:S_11>
+			<tns:S_12_1>RPJ_RKM_O</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>903-02</tns:S_1>
+			<tns:S_2>02</tns:S_2>
+			<tns:S_3>903</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>5000.00</tns:S_6>
+			<tns:S_7>5000.00</tns:S_7>
+			<tns:S_8>5000.00</tns:S_8>
+			<tns:S_9>5000.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPJ_RKM_O</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>903-02-01</tns:S_1>
+			<tns:S_2>0201</tns:S_2>
+			<tns:S_3>903-02</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>5000.00</tns:S_6>
+			<tns:S_7>0.00</tns:S_7>
+			<tns:S_8>5000.00</tns:S_8>
+			<tns:S_9>0.00</tns:S_9>
+			<tns:S_10>5000.00</tns:S_10>
+			<tns:S_11>0.00</tns:S_11>
+			<tns:S_12_1>RPJ_RKM_O</tns:S_12_1>
+		</tns:ZOiS7>
+		<tns:ZOiS7>
+			<tns:S_1>903-02-02</tns:S_1>
+			<tns:S_2>0202</tns:S_2>
+			<tns:S_3>903-02</tns:S_3>
+			<tns:S_4>0.00</tns:S_4>
+			<tns:S_5>0.00</tns:S_5>
+			<tns:S_6>0.00</tns:S_6>
+			<tns:S_7>5000.00</tns:S_7>
+			<tns:S_8>0.00</tns:S_8>
+			<tns:S_9>5000.00</tns:S_9>
+			<tns:S_10>0.00</tns:S_10>
+			<tns:S_11>5000.00</tns:S_11>
+			<tns:S_12_1>RPJ_RKM_O</tns:S_12_1>
+		</tns:ZOiS7>
+	</tns:ZOiS>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/01/1</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>1</tns:D_3>
+		<tns:D_4>2345/01/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-01-08</tns:D_6>
+		<tns:D_7>2025-01-08</tns:D_7>
+		<tns:D_8>2025-01-08</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>2345/01/25 FZ-1/25 ABC</tns:D_10>
+
+		<tns:D_11>60639.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>2345/01/25 FZ-1/25 ABC</tns:Z_2>
+			<tns:Z_3>202-ABC</tns:Z_3>
+			<tns:Z_7>60639.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>2345/01/25 FZ-1/25 ABC</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>49300.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>2345/01/25 FZ-1/25 ABC</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>11339.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/01/2</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>4</tns:D_3>
+		<tns:D_4>8754/FVAT/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-01-08</tns:D_6>
+		<tns:D_7>2025-01-08</tns:D_7>
+		<tns:D_8>2025-01-08</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>8754/FVAT/25 FZ-2/25 BUDEX</tns:D_10>
+		<tns:D_11>36309.60</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>8754/FVAT/25 FZ-2/25 BUDEX</tns:Z_2>
+			<tns:Z_3>202-BUDEX</tns:Z_3>
+			<tns:Z_7>36309.60</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>8754/FVAT/25 FZ-2/25 BUDEX</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>29520.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>8754/FVAT/25 FZ-2/25 BUDEX</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>6789.60</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/01/3</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>5</tns:D_3>
+		<tns:D_4>3210/FS/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-01-08</tns:D_6>
+		<tns:D_7>2025-01-08</tns:D_7>
+		<tns:D_8>2025-01-08</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>3210/FS/25 FZ-3/25 EKO PLAST</tns:D_10>
+		<tns:D_11>10504.20</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>3210/FS/25 FZ-3/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>202-EKO_PLAST</tns:Z_3>
+			<tns:Z_7>10504.20</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>3210/FS/25 FZ-3/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>8540.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>3210/FS/25 FZ-3/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>1964.20</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/01/4</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>2</tns:D_3>
+		<tns:D_4>9876/PRO/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-01-08</tns:D_6>
+		<tns:D_7>2025-01-08</tns:D_7>
+		<tns:D_8>2025-01-08</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>9876/PRO/25 FZ-4/25 IT_SERVICES</tns:D_10>
+		<tns:D_11>0.06</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>9876/PRO/25 FZ-4/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>202-IT_SERVICES</tns:Z_3>
+			<tns:Z_7>0.06</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>9876/PRO/25 FZ-4/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>0.05</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>9876/PRO/25 FZ-4/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>0.01</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/01/5</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>1</tns:D_3>
+		<tns:D_4>1234/COR/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-01-08</tns:D_6>
+		<tns:D_7>2025-01-08</tns:D_7>
+		<tns:D_8>2025-01-08</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>1234/COR/25 FZ-5/25 ABC</tns:D_10>
+		<tns:D_11>0.04</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>1234/COR/25 FZ-5/25 ABC</tns:Z_2>
+			<tns:Z_3>202-ABC</tns:Z_3>
+			<tns:Z_7>0.04</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>1234/COR/25 FZ-5/25 ABC</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>0.03</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>1234/COR/25 FZ-5/25 ABC</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>0.01</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/01/6</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>1</tns:D_3>
+		<tns:D_4>9012/FP/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-01-08</tns:D_6>
+		<tns:D_7>2025-01-08</tns:D_7>
+		<tns:D_8>2025-01-08</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>9012/FP/25 FZ-6/25 ABC</tns:D_10>
+		<tns:D_11>0.02</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>9012/FP/25 FZ-6/25 ABC</tns:Z_2>
+			<tns:Z_3>202-ABC</tns:Z_3>
+			<tns:Z_7>0.02</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>9012/FP/25 FZ-6/25 ABC</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>0.02</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/01/7</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>4</tns:D_3>
+		<tns:D_4>fz825-st</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-01-19</tns:D_6>
+		<tns:D_7>2025-01-19</tns:D_7>
+		<tns:D_8>2025-01-19</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>fz825-st FZ-8/25 BUDEX</tns:D_10>
+		<tns:D_11>179321.70</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>fz825-st FZ-8/25 BUDEX</tns:Z_2>
+			<tns:Z_3>202-BUDEX</tns:Z_3>
+			<tns:Z_7>179321.70</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>fz825-st FZ-8/25 BUDEX</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>145790.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>fz825-st FZ-8/25 BUDEX</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>33531.70</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/01/8</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>5</tns:D_3>
+		<tns:D_4>fz8st/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-01-19</tns:D_6>
+		<tns:D_7>2025-01-19</tns:D_7>
+		<tns:D_8>2025-01-19</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>fz8st/25 FZ-9/25 EKO PLAST</tns:D_10>
+		<tns:D_11>84439.50</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>fz8st/25 FZ-9/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>202-EKO_PLAST</tns:Z_3>
+			<tns:Z_7>84439.50</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>fz8st/25 FZ-9/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>68650.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>fz8st/25 FZ-9/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>15789.50</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/01/9</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>25/KASEU/2</tns:D_4>
+		<tns:D_5>Raport kasowy</tns:D_5>
+		<tns:D_6>2025-01-02</tns:D_6>
+		<tns:D_7>2025-01-02</tns:D_7>
+		<tns:D_8>2025-01-02</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Raport kasowy 25/KASEU/2</tns:D_10>
+		<tns:D_11>1500.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>101-01</tns:Z_3>
+			<tns:Z_4>1500.00</tns:Z_4>
+			<tns:Z_5>1500.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>1500.00</tns:Z_7>
+			<tns:Z_8>1500.00</tns:Z_8>
+			<tns:Z_9>EUR</tns:Z_9>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/02/1</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>4</tns:D_3>
+		<tns:D_4>fz10-wnip/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-02-19</tns:D_6>
+		<tns:D_7>2025-02-19</tns:D_7>
+		<tns:D_8>2025-02-19</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>fz10-wnip/25 FZ-10/25 BUDEX</tns:D_10>
+		<tns:D_11>61500.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>fz10-wnip/25 FZ-10/25 BUDEX</tns:Z_2>
+			<tns:Z_3>202-BUDEX</tns:Z_3>
+			<tns:Z_7>61500.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>fz10-wnip/25 FZ-10/25 BUDEX</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>50000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>fz10-wnip/25 FZ-10/25 BUDEX</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>11500.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/02/2</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>FSE-1/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-02-20</tns:D_6>
+		<tns:D_7>2025-02-20</tns:D_7>
+		<tns:D_8>2025-02-20</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FSE-1/25 NL_HOLDING</tns:D_10>
+		<tns:D_11>3243.40</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>3243.40</tns:Z_4>
+			<tns:Z_5>780.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Netto</tns:Z_2>
+			<tns:Z_3>700-01</tns:Z_3>
+			<tns:Z_7>3243.40</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/02/3</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>FSE-2/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-02-24</tns:D_6>
+		<tns:D_7>2025-02-24</tns:D_7>
+		<tns:D_8>2025-02-24</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FSE-2/25 NL_HOLDING</tns:D_10>
+		<tns:D_11>3002.76</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>3002.76</tns:Z_4>
+			<tns:Z_5>720.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Netto</tns:Z_2>
+			<tns:Z_3>700-01</tns:Z_3>
+			<tns:Z_7>3002.76</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/02/4</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>RK-1/25</tns:D_4>
+		<tns:D_5>Różnica kursowa</tns:D_5>
+		<tns:D_6>2025-02-20</tns:D_6>
+		<tns:D_7>2025-02-20</tns:D_7>
+		<tns:D_8>2025-02-20</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Różnica kursowa KB-25/KASEU/2/1 (1) - FSE-1/25 (4.15821) EUR</tns:D_10>
+		<tns:D_11>2463.40</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/2/1 (1) - FSE-1/25 (4.15821) EUR</tns:Z_2>
+			<tns:Z_3>751-01</tns:Z_3>
+			<tns:Z_4>2463.40</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/2/1 (1) - FSE-1/25 (4.15821) EUR</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>2463.40</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/02/5</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>RK-2/25</tns:D_4>
+		<tns:D_5>Różnica kursowa</tns:D_5>
+		<tns:D_6>2025-02-24</tns:D_6>
+		<tns:D_7>2025-02-24</tns:D_7>
+		<tns:D_8>2025-02-24</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Różnica kursowa KB-25/KASEU/2/1 (1) - FSE-2/25 (4.1705) EUR</tns:D_10>
+		<tns:D_11>2282.76</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/2/1 (1) - FSE-2/25 (4.1705) EUR</tns:Z_2>
+			<tns:Z_3>751-01</tns:Z_3>
+			<tns:Z_4>2282.76</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/2/1 (1) - FSE-2/25 (4.1705) EUR</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>2282.76</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/1</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>fai1</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-03-04</tns:D_6>
+		<tns:D_7>2025-03-04</tns:D_7>
+		<tns:D_8>2025-03-04</tns:D_8>
+
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FAI-1/25</tns:D_10>
+		<tns:D_11>25096.20</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>25096.20</tns:Z_7>
+			<tns:Z_8>6000.00</tns:Z_8>
+			<tns:Z_9>EUR</tns:Z_9>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Wartość</tns:Z_2>
+			<tns:Z_3>429-01</tns:Z_3>
+			<tns:Z_4>25096.20</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/2</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>FSE-3/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-03-04</tns:D_6>
+		<tns:D_7>2025-03-04</tns:D_7>
+		<tns:D_8>2025-03-04</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FSE-3/25 NL_HOLDING</tns:D_10>
+		<tns:D_11>209135.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>209135.00</tns:Z_4>
+			<tns:Z_5>50000.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Netto</tns:Z_2>
+			<tns:Z_3>700-01</tns:Z_3>
+			<tns:Z_7>209135.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/3</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>FSE-4/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-03-06</tns:D_6>
+		<tns:D_7>2025-03-06</tns:D_7>
+		<tns:D_8>2025-03-06</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FSE-4/25 NL_HOLDING</tns:D_10>
+		<tns:D_11>166180.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>166180.00</tns:Z_4>
+			<tns:Z_5>40000.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Netto</tns:Z_2>
+			<tns:Z_3>700-01</tns:Z_3>
+			<tns:Z_7>166180.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/4</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>FSE-5/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-03-08</tns:D_6>
+		<tns:D_7>2025-03-08</tns:D_7>
+		<tns:D_8>2025-03-08</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FSE-5/25 NL_HOLDING</tns:D_10>
+		<tns:D_11>83520.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>83520.00</tns:Z_4>
+			<tns:Z_5>20000.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Netto</tns:Z_2>
+			<tns:Z_3>700-01</tns:Z_3>
+			<tns:Z_7>83520.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/5</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>fai2/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-03-08</tns:D_6>
+		<tns:D_7>2025-03-08</tns:D_7>
+		<tns:D_8>2025-03-08</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FAI-2/25</tns:D_10>
+		<tns:D_11>16704.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>16704.00</tns:Z_7>
+			<tns:Z_8>4000.00</tns:Z_8>
+			<tns:Z_9>EUR</tns:Z_9>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Wartość</tns:Z_2>
+			<tns:Z_3>429-01</tns:Z_3>
+			<tns:Z_4>16704.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/6</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>25/KASEU/3</tns:D_4>
+		<tns:D_5>Raport kasowy</tns:D_5>
+		<tns:D_6>2025-03-20</tns:D_6>
+		<tns:D_7>2025-03-20</tns:D_7>
+		<tns:D_8>2025-03-20</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Raport kasowy 25/KASEU/3</tns:D_10>
+		<tns:D_11>498548.25</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>101-01</tns:Z_3>
+			<tns:Z_4>461395.00</tns:Z_4>
+			<tns:Z_5>110000.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>461395.00</tns:Z_7>
+			<tns:Z_8>110000.00</tns:Z_8>
+			<tns:Z_9>EUR</tns:Z_9>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>1500.00</tns:Z_4>
+			<tns:Z_5>1500.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>101-01</tns:Z_3>
+			<tns:Z_7>1500.00</tns:Z_7>
+			<tns:Z_8>1500.00</tns:Z_8>
+			<tns:Z_9>EUR</tns:Z_9>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>35653.25</tns:Z_4>
+			<tns:Z_5>8500.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>6</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>101-01</tns:Z_3>
+			<tns:Z_7>35653.25</tns:Z_7>
+			<tns:Z_8>8500.00</tns:Z_8>
+			<tns:Z_9>EUR</tns:Z_9>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/7</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>RK-3/25</tns:D_4>
+		<tns:D_5>Różnica kursowa</tns:D_5>
+		<tns:D_6>2025-03-20</tns:D_6>
+		<tns:D_7>2025-03-20</tns:D_7>
+		<tns:D_8>2025-03-20</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Różnica kursowa KB-25/KASEU/3/1 (4.1945) - FSE-3/25 (4.1827) EUR</tns:D_10>
+		<tns:D_11>590.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/1 (4.1945) - FSE-3/25 (4.1827) EUR</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>590.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/1 (4.1945) - FSE-3/25 (4.1827) EUR</tns:Z_2>
+			<tns:Z_3>752-01</tns:Z_3>
+			<tns:Z_7>590.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/8</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>RK-4/25</tns:D_4>
+		<tns:D_5>Różnica kursowa</tns:D_5>
+		<tns:D_6>2025-03-20</tns:D_6>
+		<tns:D_7>2025-03-20</tns:D_7>
+		<tns:D_8>2025-03-20</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Różnica kursowa KB-25/KASEU/3/1 (4.1945) - FSE-4/25 (4.1545) EUR</tns:D_10>
+		<tns:D_11>1600.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/1 (4.1945) - FSE-4/25 (4.1545) EUR</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>1600.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/1 (4.1945) - FSE-4/25 (4.1545) EUR</tns:Z_2>
+			<tns:Z_3>752-01</tns:Z_3>
+			<tns:Z_7>1600.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/9</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>RK-5/25</tns:D_4>
+		<tns:D_5>Różnica kursowa</tns:D_5>
+		<tns:D_6>2025-03-20</tns:D_6>
+		<tns:D_7>2025-03-20</tns:D_7>
+		<tns:D_8>2025-03-20</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Różnica kursowa KB-25/KASEU/3/1 (4.1945) - FSE-5/25 (4.176) EUR</tns:D_10>
+		<tns:D_11>370.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/1 (4.1945) - FSE-5/25 (4.176) EUR</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>370.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/1 (4.1945) - FSE-5/25 (4.176) EUR</tns:Z_2>
+			<tns:Z_3>752-01</tns:Z_3>
+			<tns:Z_7>370.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/10</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>RK-6/25</tns:D_4>
+		<tns:D_5>Różnica kursowa</tns:D_5>
+		<tns:D_6>2025-03-20</tns:D_6>
+		<tns:D_7>2025-03-20</tns:D_7>
+		<tns:D_8>2025-03-20</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Różnica kursowa KB-25/KASEU/3/2 (1) - FAI-1/25 (4.1827) EUR</tns:D_10>
+		<tns:D_11>4774.05</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/2 (1) - FAI-1/25 (4.1827) EUR</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>4774.05</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/2 (1) - FAI-1/25 (4.1827) EUR</tns:Z_2>
+			<tns:Z_3>752-01</tns:Z_3>
+			<tns:Z_7>4774.05</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/11</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>RK-7/25</tns:D_4>
+		<tns:D_5>Różnica kursowa</tns:D_5>
+		<tns:D_6>2025-03-20</tns:D_6>
+		<tns:D_7>2025-03-20</tns:D_7>
+		<tns:D_8>2025-03-20</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Różnica kursowa KB-25/KASEU/3/2 (4.1945) - FAI-1/25 (4.1827) EUR</tns:D_10>
+		<tns:D_11>53.10</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/2 (4.1945) - FAI-1/25 (4.1827) EUR</tns:Z_2>
+			<tns:Z_3>751-01</tns:Z_3>
+			<tns:Z_4>53.10</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/2 (4.1945) - FAI-1/25 (4.1827) EUR</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>53.10</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/03/12</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>RK-8/25</tns:D_4>
+		<tns:D_5>Różnica kursowa</tns:D_5>
+		<tns:D_6>2025-03-20</tns:D_6>
+		<tns:D_7>2025-03-20</tns:D_7>
+		<tns:D_8>2025-03-20</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Różnica kursowa KB-25/KASEU/3/2 (4.1945) - FAI-2/25 (4.176) EUR</tns:D_10>
+		<tns:D_11>74.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/2 (4.1945) - FAI-2/25 (4.176) EUR</tns:Z_2>
+			<tns:Z_3>751-01</tns:Z_3>
+			<tns:Z_4>74.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Różnica kursowa KB-25/KASEU/3/2 (4.1945) - FAI-2/25 (4.176) EUR</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>74.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/04/1</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>5</tns:D_3>
+		<tns:D_4>fz11/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-04-09</tns:D_6>
+		<tns:D_7>2025-04-09</tns:D_7>
+		<tns:D_8>2025-04-09</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>fz11/25 FZ-11/25 EKO PLAST</tns:D_10>
+		<tns:D_11>123000.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>fz11/25 FZ-11/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>202-EKO_PLAST</tns:Z_3>
+			<tns:Z_7>123000.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>fz11/25 FZ-11/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>100000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>fz11/25 FZ-11/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>23000.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/04/2</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>5</tns:D_3>
+		<tns:D_4>fz1225</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-04-10</tns:D_6>
+		<tns:D_7>2025-04-10</tns:D_7>
+		<tns:D_8>2025-04-10</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>fz1225 FZ-12/25 EKO PLAST</tns:D_10>
+		<tns:D_11>98400.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>fz1225 FZ-12/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>202-EKO_PLAST</tns:Z_3>
+			<tns:Z_7>98400.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>fz1225 FZ-12/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>80000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>fz1225 FZ-12/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>18400.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/04/3</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>4</tns:D_3>
+		<tns:D_4>FS-1/25</tns:D_4>
+
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-04-10</tns:D_6>
+		<tns:D_7>2025-04-10</tns:D_7>
+		<tns:D_8>2025-04-10</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FS-1/25 BUDEX</tns:D_10>
+		<tns:D_11>38840.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>FS-1/25 BUDEX</tns:Z_2>
+			<tns:Z_3>201-BUDEX</tns:Z_3>
+			<tns:Z_4>9840.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>FS-1/25 BUDEX</tns:Z_2>
+			<tns:Z_3>731-01</tns:Z_3>
+			<tns:Z_7>8000.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>FS-1/25 BUDEX</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_7>1840.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>FS-1/25 BUDEX</tns:Z_2>
+			<tns:Z_3>732-01</tns:Z_3>
+			<tns:Z_4>29000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>FS-1/25 BUDEX</tns:Z_2>
+			<tns:Z_3>331-01</tns:Z_3>
+			<tns:Z_7>29000.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/04/4</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>2</tns:D_3>
+		<tns:D_4>FS-2/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-04-10</tns:D_6>
+		<tns:D_7>2025-04-10</tns:D_7>
+		<tns:D_8>2025-04-10</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FS-2/25 IT_SERVICES</tns:D_10>
+		<tns:D_11>263860.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>FS-2/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>201-IT_SERVICES</tns:Z_3>
+			<tns:Z_4>154980.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>FS-2/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>731-01</tns:Z_3>
+			<tns:Z_7>126000.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>FS-2/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_7>28980.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>FS-2/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>732-01</tns:Z_3>
+			<tns:Z_4>108880.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>FS-2/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>331-01</tns:Z_3>
+			<tns:Z_7>108880.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/1</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>25/BANK/2</tns:D_4>
+		<tns:D_5>Wyciąg bankowy</tns:D_5>
+		<tns:D_6>2025-05-01</tns:D_6>
+		<tns:D_7>2025-05-01</tns:D_7>
+		<tns:D_8>2025-05-01</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Raport bankowy 25/BANK/2</tns:D_10>
+		<tns:D_11>286774.62</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 3210/FS/25</tns:Z_2>
+			<tns:Z_3>202-EKO_PLAST</tns:Z_3>
+			<tns:Z_4>10504.20</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 3210/FS/25</tns:Z_2>
+			<tns:Z_3>131-01</tns:Z_3>
+			<tns:Z_7>10504.20</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 8754/FVAT/25</tns:Z_2>
+			<tns:Z_3>202-BUDEX</tns:Z_3>
+			<tns:Z_4>36309.60</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 8754/FVAT/25</tns:Z_2>
+			<tns:Z_3>131-01</tns:Z_3>
+			<tns:Z_7>36309.60</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. fz825-st</tns:Z_2>
+			<tns:Z_3>202-BUDEX</tns:Z_3>
+			<tns:Z_4>179321.70</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>6</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. fz825-st</tns:Z_2>
+			<tns:Z_3>131-01</tns:Z_3>
+			<tns:Z_7>179321.70</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>7</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 2345/01/25</tns:Z_2>
+			<tns:Z_3>202-ABC</tns:Z_3>
+			<tns:Z_4>60639.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>8</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 2345/01/25</tns:Z_2>
+			<tns:Z_3>131-01</tns:Z_3>
+			<tns:Z_7>60639.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>9</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 9876/PRO/25</tns:Z_2>
+			<tns:Z_3>202-IT_SERVICES</tns:Z_3>
+			<tns:Z_4>0.06</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>10</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 9876/PRO/25</tns:Z_2>
+			<tns:Z_3>131-01</tns:Z_3>
+			<tns:Z_7>0.06</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>11</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 9012/FP/25</tns:Z_2>
+			<tns:Z_3>202-ABC</tns:Z_3>
+			<tns:Z_4>0.02</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>12</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 9012/FP/25</tns:Z_2>
+			<tns:Z_3>131-01</tns:Z_3>
+			<tns:Z_7>0.02</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>13</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 1234/COR/25</tns:Z_2>
+			<tns:Z_3>202-ABC</tns:Z_3>
+			<tns:Z_4>0.04</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>14</tns:Z_1>
+			<tns:Z_2>Obciążenie Mech. Podz. Płatn. 1234/COR/25</tns:Z_2>
+			<tns:Z_3>131-01</tns:Z_3>
+			<tns:Z_7>0.04</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/2</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_4>25/KASA/2</tns:D_4>
+		<tns:D_5>Raport kasowy</tns:D_5>
+		<tns:D_6>2025-05-01</tns:D_6>
+		<tns:D_7>2025-05-01</tns:D_7>
+		<tns:D_8>2025-05-01</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>Raport kasowy 25/KASA/2</tns:D_10>
+		<tns:D_11>84439.50</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>202-EKO_PLAST</tns:Z_3>
+			<tns:Z_4>84439.50</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Kwota</tns:Z_2>
+			<tns:Z_3>100-01</tns:Z_3>
+			<tns:Z_7>84439.50</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/3</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>1</tns:D_3>
+		<tns:D_4>fz13/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-09</tns:D_6>
+		<tns:D_7>2025-05-09</tns:D_7>
+		<tns:D_8>2025-05-09</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>fz13/25 FZ-13/25 ABC</tns:D_10>
+		<tns:D_11>8610.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>fz13/25 FZ-13/25 ABC</tns:Z_2>
+			<tns:Z_3>202-ABC</tns:Z_3>
+			<tns:Z_7>8610.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>fz13/25 FZ-13/25 ABC</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>7000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>fz13/25 FZ-13/25 ABC</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>1610.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/4</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>5</tns:D_3>
+		<tns:D_4>fz14</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-09</tns:D_6>
+		<tns:D_7>2025-05-09</tns:D_7>
+		<tns:D_8>2025-05-09</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>fz14 FZ-14/25 EKO PLAST</tns:D_10>
+		<tns:D_11>6150.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>fz14 FZ-14/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>202-EKO_PLAST</tns:Z_3>
+			<tns:Z_7>6150.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>fz14 FZ-14/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>5000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>fz14 FZ-14/25 EKO PLAST</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>1150.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/5</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>3</tns:D_3>
+		<tns:D_4>fz15/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-09</tns:D_6>
+		<tns:D_7>2025-05-09</tns:D_7>
+		<tns:D_8>2025-05-09</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>fz15/25 FZ-15/25 ZIELONY OGRÓD</tns:D_10>
+		<tns:D_11>984.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>fz15/25 FZ-15/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>202-ZIELONY_OGRÓD</tns:Z_3>
+			<tns:Z_7>984.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>fz15/25 FZ-15/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_4>800.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>fz15/25 FZ-15/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_4>184.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/6</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>3</tns:D_3>
+		<tns:D_4>FS-3/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-09</tns:D_6>
+		<tns:D_7>2025-05-09</tns:D_7>
+		<tns:D_8>2025-05-09</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FS-3/25 ZIELONY OGRÓD</tns:D_10>
+		<tns:D_11>2374.40</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>FS-3/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>201-ZIELONY_OGRÓD</tns:Z_3>
+			<tns:Z_4>1574.40</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>FS-3/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>731-01</tns:Z_3>
+			<tns:Z_7>1280.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>FS-3/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_7>294.40</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>FS-3/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>732-01</tns:Z_3>
+			<tns:Z_4>800.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>FS-3/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>331-01</tns:Z_3>
+			<tns:Z_7>800.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/7</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>4</tns:D_3>
+		<tns:D_4>FS-4/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FS-4/25 BUDEX</tns:D_10>
+		<tns:D_11>25712.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>FS-4/25 BUDEX</tns:Z_2>
+			<tns:Z_3>201-BUDEX</tns:Z_3>
+			<tns:Z_4>17712.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>FS-4/25 BUDEX</tns:Z_2>
+			<tns:Z_3>731-01</tns:Z_3>
+			<tns:Z_7>14400.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>FS-4/25 BUDEX</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_7>3312.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>FS-4/25 BUDEX</tns:Z_2>
+			<tns:Z_3>732-01</tns:Z_3>
+			<tns:Z_4>8000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>FS-4/25 BUDEX</tns:Z_2>
+			<tns:Z_3>331-01</tns:Z_3>
+			<tns:Z_7>8000.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/8</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>2</tns:D_3>
+		<tns:D_4>FS-5/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FS-5/25 IT_SERVICES</tns:D_10>
+		<tns:D_11>17808.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>FS-5/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>201-IT_SERVICES</tns:Z_3>
+			<tns:Z_4>11808.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>FS-5/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>731-01</tns:Z_3>
+			<tns:Z_7>9600.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>FS-5/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_7>2208.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>FS-5/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>732-01</tns:Z_3>
+			<tns:Z_4>6000.00</tns:Z_4>
+		</tns:KontoZapis>
+
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>FS-5/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>331-01</tns:Z_3>
+			<tns:Z_7>6000.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/9</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>3</tns:D_3>
+		<tns:D_4>FS-6/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FS-6/25 ZIELONY OGRÓD</tns:D_10>
+		<tns:D_11>2374.40</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>FS-6/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>201-ZIELONY_OGRÓD</tns:Z_3>
+			<tns:Z_4>1574.40</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>FS-6/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>731-01</tns:Z_3>
+			<tns:Z_7>1280.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>FS-6/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_7>294.40</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>FS-6/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>732-01</tns:Z_3>
+			<tns:Z_4>800.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>FS-6/25 ZIELONY OGRÓD</tns:Z_2>
+			<tns:Z_3>331-01</tns:Z_3>
+			<tns:Z_7>800.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/10</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>4</tns:D_3>
+		<tns:D_4>FS-7/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FS-7/25 BUDEX</tns:D_10>
+		<tns:D_11>25712.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>FS-7/25 BUDEX</tns:Z_2>
+			<tns:Z_3>201-BUDEX</tns:Z_3>
+			<tns:Z_4>17712.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>FS-7/25 BUDEX</tns:Z_2>
+			<tns:Z_3>731-01</tns:Z_3>
+			<tns:Z_7>14400.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>FS-7/25 BUDEX</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_7>3312.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>FS-7/25 BUDEX</tns:Z_2>
+			<tns:Z_3>732-01</tns:Z_3>
+			<tns:Z_4>8000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>FS-7/25 BUDEX</tns:Z_2>
+			<tns:Z_3>331-01</tns:Z_3>
+			<tns:Z_7>8000.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/11</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>2</tns:D_3>
+		<tns:D_4>FS-8/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FS-8/25 IT_SERVICES</tns:D_10>
+		<tns:D_11>17808.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>FS-8/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>201-IT_SERVICES</tns:Z_3>
+			<tns:Z_4>11808.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>FS-8/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>731-01</tns:Z_3>
+			<tns:Z_7>9600.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>FS-8/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_7>2208.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>FS-8/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>732-01</tns:Z_3>
+			<tns:Z_4>6000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>FS-8/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>331-01</tns:Z_3>
+			<tns:Z_7>6000.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/12</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>2</tns:D_3>
+		<tns:D_4>FS-9/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FS-9/25 IT_SERVICES</tns:D_10>
+		<tns:D_11>17808.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>FS-9/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>201-IT_SERVICES</tns:Z_3>
+			<tns:Z_4>11808.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>FS-9/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>731-01</tns:Z_3>
+			<tns:Z_7>9600.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>FS-9/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>221-01</tns:Z_3>
+			<tns:Z_7>2208.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>FS-9/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>732-01</tns:Z_3>
+			<tns:Z_4>6000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>FS-9/25 IT_SERVICES</tns:Z_2>
+			<tns:Z_3>331-01</tns:Z_3>
+			<tns:Z_7>6000.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/13</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>FSE-6/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FSE-6/25 NL_HOLDING</tns:D_10>
+		<tns:D_11>2079.10</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>2079.10</tns:Z_4>
+			<tns:Z_5>500.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Netto</tns:Z_2>
+			<tns:Z_3>700-01</tns:Z_3>
+			<tns:Z_7>2079.10</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/14</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>FSE-7/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FSE-7/25 NL_HOLDING</tns:D_10>
+		<tns:D_11>2079.10</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>2079.10</tns:Z_4>
+			<tns:Z_5>500.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Netto</tns:Z_2>
+			<tns:Z_3>700-01</tns:Z_3>
+			<tns:Z_7>2079.10</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/15</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>FSE-8/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FSE-8/25 NL_HOLDING</tns:D_10>
+		<tns:D_11>2079.10</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>203-NL_HOLDING</tns:Z_3>
+			<tns:Z_4>2079.10</tns:Z_4>
+			<tns:Z_5>500.00</tns:Z_5>
+			<tns:Z_6>EUR</tns:Z_6>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Netto</tns:Z_2>
+			<tns:Z_3>700-01</tns:Z_3>
+			<tns:Z_7>2079.10</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/16</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>fai325</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FAI-3/25</tns:D_10>
+		<tns:D_11>3393.12</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>3393.12</tns:Z_7>
+			<tns:Z_8>800.00</tns:Z_8>
+			<tns:Z_9>EUR</tns:Z_9>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Wartość</tns:Z_2>
+			<tns:Z_3>429-01</tns:Z_3>
+			<tns:Z_4>3393.12</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/17</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>fai5/25</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FAI-5/25</tns:D_10>
+		<tns:D_11>2120.70</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>2120.70</tns:Z_7>
+			<tns:Z_8>500.00</tns:Z_8>
+			<tns:Z_9>EUR</tns:Z_9>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Wartość</tns:Z_2>
+			<tns:Z_3>429-01</tns:Z_3>
+			<tns:Z_4>2120.70</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)DZK/25/05/18</tns:D_1>
+		<tns:D_2>Domyślny dziennik</tns:D_2>
+		<tns:D_3>6</tns:D_3>
+		<tns:D_4>fai4</tns:D_4>
+		<tns:D_5>faktura</tns:D_5>
+		<tns:D_6>2025-05-11</tns:D_6>
+		<tns:D_7>2025-05-11</tns:D_7>
+		<tns:D_8>2025-05-11</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>FAI-4/25</tns:D_10>
+		<tns:D_11>848.28</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Płatność</tns:Z_2>
+			<tns:Z_3>204-NL_HOLDING</tns:Z_3>
+			<tns:Z_7>848.28</tns:Z_7>
+			<tns:Z_8>200.00</tns:Z_8>
+			<tns:Z_9>EUR</tns:Z_9>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Wartość</tns:Z_2>
+			<tns:Z_3>429-01</tns:Z_3>
+			<tns:Z_4>848.28</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)NM/25/02/1</tns:D_1>
+		<tns:D_2>Dziennik not memoriałowych</tns:D_2>
+		<tns:D_4>UNM-2025/02/1</tns:D_4>
+		<tns:D_5>PK</tns:D_5>
+		<tns:D_6>2025-02-19</tns:D_6>
+		<tns:D_7>2025-02-19</tns:D_7>
+		<tns:D_8>2025-02-19</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>UNM-2025/02/1 Przeksięgowanie środków trwałych i wnip</tns:D_10>
+		<tns:D_11>264350.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Przeksięgowanie środków trwałych i wnip</tns:Z_2>
+			<tns:Z_3>083-01</tns:Z_3>
+			<tns:Z_4>145790.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Przeksięgowanie środków trwałych i wnip</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_7>145790.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>Przeksięgowanie środków trwałych i wnip</tns:Z_2>
+			<tns:Z_3>083-01</tns:Z_3>
+			<tns:Z_4>68560.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>Przeksięgowanie środków trwałych i wnip</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_7>68560.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>Przeksięgowanie środków trwałych i wnip</tns:Z_2>
+			<tns:Z_3>083-01</tns:Z_3>
+			<tns:Z_4>50000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>6</tns:Z_1>
+			<tns:Z_2>Przeksięgowanie środków trwałych i wnip</tns:Z_2>
+			<tns:Z_3>303-01</tns:Z_3>
+			<tns:Z_7>50000.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)NM/25/12/1</tns:D_1>
+		<tns:D_2>Dziennik not memoriałowych</tns:D_2>
+		<tns:D_4>UNM-2025/12/1</tns:D_4>
+		<tns:D_5>PK</tns:D_5>
+		<tns:D_6>2025-12-31</tns:D_6>
+		<tns:D_7>2025-12-31</tns:D_7>
+		<tns:D_8>2025-12-31</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>UNM-2025/12/1 Testowe ksiegowanie pozabilansowe</tns:D_10>
+		<tns:D_11>0.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>Testowe ksiegowanie pozabilansowe</tns:Z_2>
+			<tns:Z_3>903-01-01</tns:Z_3>
+
+			<tns:Z_4>5000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>Testowe ksiegowanie pozabilansowe</tns:Z_2>
+			<tns:Z_3>903-02-02</tns:Z_3>
+			<tns:Z_7>5000.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>Testowe ksiegowanie pozabilansowe</tns:Z_2>
+			<tns:Z_3>903-02-01</tns:Z_3>
+			<tns:Z_4>5000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>Testowe ksiegowanie pozabilansowe</tns:Z_2>
+			<tns:Z_3>903-01-02</tns:Z_3>
+			<tns:Z_7>5000.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/01/1</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>OT  00001/2025/</tns:D_4>
+		<tns:D_5>dokument środków trwałych</tns:D_5>
+		<tns:D_6>2025-01-19</tns:D_6>
+		<tns:D_7>2025-01-19</tns:D_7>
+		<tns:D_8>2025-01-19</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>OT  00001/2025/</tns:D_10>
+		<tns:D_11>145790.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>OT  00001/2025/</tns:Z_2>
+			<tns:Z_3>011-01-03</tns:Z_3>
+			<tns:Z_4>145790.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>OT  00001/2025/</tns:Z_2>
+			<tns:Z_3>083-01</tns:Z_3>
+			<tns:Z_7>145790.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/01/2</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>OT  00002/2025/</tns:D_4>
+		<tns:D_5>dokument środków trwałych</tns:D_5>
+		<tns:D_6>2025-01-19</tns:D_6>
+		<tns:D_7>2025-01-19</tns:D_7>
+		<tns:D_8>2025-01-19</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>OT  00002/2025/</tns:D_10>
+		<tns:D_11>68650.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>OT  00002/2025/</tns:Z_2>
+			<tns:Z_3>011-01-02</tns:Z_3>
+			<tns:Z_4>68650.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>OT  00002/2025/</tns:Z_2>
+			<tns:Z_3>083-01</tns:Z_3>
+			<tns:Z_7>68650.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/02/1</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00001/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-02-28</tns:D_6>
+		<tns:D_7>2025-02-28</tns:D_7>
+		<tns:D_8>2025-02-28</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00001/2025/</tns:D_10>
+		<tns:D_11>1700.88</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00001/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>1700.88</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00001/2025/</tns:Z_2>
+			<tns:Z_3>071-01-03</tns:Z_3>
+			<tns:Z_7>1700.88</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00001/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>1214.92</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/02/2</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00002/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-02-28</tns:D_6>
+		<tns:D_7>2025-02-28</tns:D_7>
+		<tns:D_8>2025-02-28</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00002/2025/</tns:D_10>
+		<tns:D_11>800.92</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00002/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>800.92</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00002/2025/</tns:Z_2>
+			<tns:Z_3>071-01-02</tns:Z_3>
+			<tns:Z_7>800.92</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00002/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>800.92</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/02/3</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>OT  00003/2025/</tns:D_4>
+		<tns:D_5>dokument środków trwałych</tns:D_5>
+		<tns:D_6>2025-02-19</tns:D_6>
+		<tns:D_7>2025-02-19</tns:D_7>
+		<tns:D_8>2025-02-19</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>OT  00003/2025/</tns:D_10>
+		<tns:D_11>50000.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>OT  00003/2025/</tns:Z_2>
+			<tns:Z_3>020-01</tns:Z_3>
+			<tns:Z_4>50000.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>OT  00003/2025/</tns:Z_2>
+			<tns:Z_3>083-01</tns:Z_3>
+			<tns:Z_7>50000.00</tns:Z_7>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/03/1</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00003/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-03-31</tns:D_6>
+		<tns:D_7>2025-03-31</tns:D_7>
+		<tns:D_8>2025-03-31</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00003/2025/</tns:D_10>
+		<tns:D_11>2501.79</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00003/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>1700.88</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00003/2025/</tns:Z_2>
+			<tns:Z_3>071-01-03</tns:Z_3>
+			<tns:Z_7>1700.88</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00003/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>800.91</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>AM  00003/2025/</tns:Z_2>
+			<tns:Z_3>071-01-02</tns:Z_3>
+			<tns:Z_7>800.91</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>AM  00003/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>1214.91</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>6</tns:Z_1>
+			<tns:Z_2>AM  00003/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>800.91</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/03/2</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00006/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-03-31</tns:D_6>
+		<tns:D_7>2025-03-31</tns:D_7>
+		<tns:D_8>2025-03-31</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00006/2025/</tns:D_10>
+		<tns:D_11>1250.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00006/2025/</tns:Z_2>
+			<tns:Z_3>401-01-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00006/2025/</tns:Z_2>
+			<tns:Z_3>073-01</tns:Z_3>
+			<tns:Z_7>1250.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00006/2025/</tns:Z_2>
+			<tns:Z_3>902-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/04/1</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00004/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-04-30</tns:D_6>
+		<tns:D_7>2025-04-30</tns:D_7>
+		<tns:D_8>2025-04-30</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00004/2025/</tns:D_10>
+		<tns:D_11>800.92</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00004/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>800.92</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00004/2025/</tns:Z_2>
+			<tns:Z_3>071-01-02</tns:Z_3>
+			<tns:Z_7>800.92</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00004/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>800.92</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/04/2</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00005/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-04-30</tns:D_6>
+		<tns:D_7>2025-04-30</tns:D_7>
+		<tns:D_8>2025-04-30</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00005/2025/</tns:D_10>
+		<tns:D_11>1700.88</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00005/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>1700.88</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00005/2025/</tns:Z_2>
+			<tns:Z_3>071-01-03</tns:Z_3>
+			<tns:Z_7>1700.88</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00005/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>1214.92</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/04/3</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00007/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-04-30</tns:D_6>
+		<tns:D_7>2025-04-30</tns:D_7>
+		<tns:D_8>2025-04-30</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00007/2025/</tns:D_10>
+		<tns:D_11>1250.00</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00007/2025/</tns:Z_2>
+			<tns:Z_3>401-01-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00007/2025/</tns:Z_2>
+			<tns:Z_3>073-01</tns:Z_3>
+			<tns:Z_7>1250.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00007/2025/</tns:Z_2>
+			<tns:Z_3>902-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/05/1</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00008/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-05-31</tns:D_6>
+		<tns:D_7>2025-05-31</tns:D_7>
+		<tns:D_8>2025-05-31</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00008/2025/</tns:D_10>
+		<tns:D_11>3751.79</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00008/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>1700.88</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00008/2025/</tns:Z_2>
+			<tns:Z_3>071-01-03</tns:Z_3>
+			<tns:Z_7>1700.88</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00008/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>800.91</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>AM  00008/2025/</tns:Z_2>
+			<tns:Z_3>071-01-02</tns:Z_3>
+			<tns:Z_7>800.91</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>AM  00008/2025/</tns:Z_2>
+			<tns:Z_3>401-01-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>6</tns:Z_1>
+			<tns:Z_2>AM  00008/2025/</tns:Z_2>
+			<tns:Z_3>073-01</tns:Z_3>
+			<tns:Z_7>1250.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>7</tns:Z_1>
+			<tns:Z_2>AM  00008/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>1214.91</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>8</tns:Z_1>
+			<tns:Z_2>AM  00008/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>800.91</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>9</tns:Z_1>
+			<tns:Z_2>AM  00008/2025/</tns:Z_2>
+			<tns:Z_3>902-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/06/1</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00009/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-06-30</tns:D_6>
+		<tns:D_7>2025-06-30</tns:D_7>
+		<tns:D_8>2025-06-30</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00009/2025/</tns:D_10>
+		<tns:D_11>3751.80</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00009/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>1700.88</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00009/2025/</tns:Z_2>
+			<tns:Z_3>071-01-03</tns:Z_3>
+			<tns:Z_7>1700.88</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00009/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>800.92</tns:Z_4>
+
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>AM  00009/2025/</tns:Z_2>
+			<tns:Z_3>071-01-02</tns:Z_3>
+			<tns:Z_7>800.92</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>AM  00009/2025/</tns:Z_2>
+			<tns:Z_3>401-01-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>6</tns:Z_1>
+			<tns:Z_2>AM  00009/2025/</tns:Z_2>
+			<tns:Z_3>073-01</tns:Z_3>
+			<tns:Z_7>1250.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>7</tns:Z_1>
+			<tns:Z_2>AM  00009/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>1214.92</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>8</tns:Z_1>
+			<tns:Z_2>AM  00009/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>800.92</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>9</tns:Z_1>
+			<tns:Z_2>AM  00009/2025/</tns:Z_2>
+			<tns:Z_3>902-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/07/1</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00010/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-07-31</tns:D_6>
+		<tns:D_7>2025-07-31</tns:D_7>
+		<tns:D_8>2025-07-31</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00010/2025/</tns:D_10>
+		<tns:D_11>3751.79</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00010/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>1700.88</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00010/2025/</tns:Z_2>
+			<tns:Z_3>071-01-03</tns:Z_3>
+			<tns:Z_7>1700.88</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00010/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>800.91</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>AM  00010/2025/</tns:Z_2>
+			<tns:Z_3>071-01-02</tns:Z_3>
+			<tns:Z_7>800.91</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>AM  00010/2025/</tns:Z_2>
+			<tns:Z_3>401-01-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>6</tns:Z_1>
+			<tns:Z_2>AM  00010/2025/</tns:Z_2>
+			<tns:Z_3>073-01</tns:Z_3>
+			<tns:Z_7>1250.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>7</tns:Z_1>
+			<tns:Z_2>AM  00010/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>1214.91</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>8</tns:Z_1>
+			<tns:Z_2>AM  00010/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>800.91</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>9</tns:Z_1>
+			<tns:Z_2>AM  00010/2025/</tns:Z_2>
+			<tns:Z_3>902-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/08/1</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00011/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-08-31</tns:D_6>
+		<tns:D_7>2025-08-31</tns:D_7>
+		<tns:D_8>2025-08-31</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00011/2025/</tns:D_10>
+		<tns:D_11>1700.88</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00011/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>1700.88</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00011/2025/</tns:Z_2>
+			<tns:Z_3>071-01-03</tns:Z_3>
+			<tns:Z_7>1700.88</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00011/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>1214.92</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Dziennik>
+		<tns:D_1>(BUFOR)ST/25/08/2</tns:D_1>
+		<tns:D_2>Dziennik środków trwałych</tns:D_2>
+		<tns:D_4>AM  00012/2025/</tns:D_4>
+		<tns:D_5>amortyzacja środków trwałych</tns:D_5>
+		<tns:D_6>2025-08-31</tns:D_6>
+		<tns:D_7>2025-08-31</tns:D_7>
+		<tns:D_8>2025-08-31</tns:D_8>
+		<tns:D_9>ADMIN</tns:D_9>
+		<tns:D_10>AM  00012/2025/</tns:D_10>
+		<tns:D_11>2050.92</tns:D_11>
+		<tns:KontoZapis>
+			<tns:Z_1>1</tns:Z_1>
+			<tns:Z_2>AM  00012/2025/</tns:Z_2>
+			<tns:Z_3>401-01-01</tns:Z_3>
+			<tns:Z_4>800.92</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>2</tns:Z_1>
+			<tns:Z_2>AM  00012/2025/</tns:Z_2>
+			<tns:Z_3>071-01-02</tns:Z_3>
+			<tns:Z_7>800.92</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>3</tns:Z_1>
+			<tns:Z_2>AM  00012/2025/</tns:Z_2>
+			<tns:Z_3>401-01-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>4</tns:Z_1>
+			<tns:Z_2>AM  00012/2025/</tns:Z_2>
+			<tns:Z_3>073-01</tns:Z_3>
+			<tns:Z_7>1250.00</tns:Z_7>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>5</tns:Z_1>
+			<tns:Z_2>AM  00012/2025/</tns:Z_2>
+			<tns:Z_3>902-01</tns:Z_3>
+			<tns:Z_4>800.92</tns:Z_4>
+		</tns:KontoZapis>
+		<tns:KontoZapis>
+			<tns:Z_1>6</tns:Z_1>
+			<tns:Z_2>AM  00012/2025/</tns:Z_2>
+			<tns:Z_3>902-02</tns:Z_3>
+			<tns:Z_4>1250.00</tns:Z_4>
+		</tns:KontoZapis>
+	</tns:Dziennik>
+	<tns:Ctrl>
+		<tns:C_1>65</tns:C_1>
+		<tns:C_2>3038907.93</tns:C_2>
+		<tns:C_3>228</tns:C_3>
+		<tns:C_4>3070518.75</tns:C_4>
+		<tns:C_5>3048907.93</tns:C_5>
+	</tns:Ctrl>
+	<tns:RPD>
+		<tns:K_1>0</tns:K_1>
+		<tns:K_2>0</tns:K_2>
+		<tns:K_3>0</tns:K_3>
+		<tns:K_4>0</tns:K_4>
+		<tns:K_5>0</tns:K_5>
+		<tns:K_6>0</tns:K_6>
+		<tns:K_7>0</tns:K_7>
+		<tns:K_8>0</tns:K_8>
+	</tns:RPD>
+</tns:JPK>

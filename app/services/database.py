@@ -1,5 +1,7 @@
 import sqlite3
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, AsyncIterator
+from contextlib import asynccontextmanager
+
 from pathlib import Path
 import logging
 
@@ -25,13 +27,27 @@ class DatabaseService:
         self._connection.row_factory = sqlite3.Row
         logger.info(f"Connected to database: {path}")
 
+    from contextlib import contextmanager
+
+    @contextmanager
+    def transaction(self):
+        """Context manager for database transactions."""
+        conn = self.get_connection()
+        try:
+            with conn:
+                yield conn
+        except Exception as e:
+            logger.error(f"Transaction failed: {e}")
+            raise e
+
+
     def get_connection(self) -> sqlite3.Connection:
-        if not self._connection:
+        if self._connection is None:
             raise RuntimeError("No active database connection")
         return self._connection
 
     def close(self):
-        if self._connection:
+        if self._connection is not None:
             self._connection.close()
             self._connection = None
             logger.info("Database connection closed")
@@ -131,6 +147,10 @@ class DatabaseService:
                 raise ValueError(f"Niezgodność wersji programu (Wymagana: 1.0, Znaleziono: {config.get('Wersja', 'brak')})")
             
             return True
+        except Exception as e:
+            if isinstance(e, ValueError): raise e
+            logger.error(f"Error verifying database: {e}")
+            return False
         finally:
             conn.close()
 
