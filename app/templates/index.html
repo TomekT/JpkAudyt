@@ -383,6 +383,19 @@
                                     </svg>
                                     <span>Wykres</span>
                                 </button>
+                                <button class="btn btn-sm btn-outline btn-secondary gap-2" hx-get="/api/zapisy/przeglad"
+                                    hx-include="#global-zois-q, #global-zois-type, #zapisy-local-q, #filter-month"
+                                    hx-target="#modal-container" hx-swap="innerHTML"
+                                    hx-on::after-request="if(event.detail.successful) document.getElementById('przeglad_modal').showModal()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <span>Przegląd</span>
+                                </button>
                                 <button class="btn btn-sm btn-outline btn-secondary gap-2" onclick="openMusModal()">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
@@ -666,6 +679,19 @@
 
                 // Switch tab
                 tabZapisy.checked = true;
+            }
+        }
+
+        function aplikujFiltrSyntetyki(kod) {
+            const modal = document.getElementById('przeglad_modal');
+            if (modal) modal.close();
+
+            const localQInput = document.getElementById('zapisy-local-q');
+            if (localQInput) {
+                // Use 'assoc:' prefix to trigger journal-level filtering in backend
+                localQInput.value = "assoc:" + kod;
+                htmx.trigger(localQInput, 'keyup');
+                htmx.trigger('body', 'filter-updated');
             }
         }
 
@@ -1060,6 +1086,12 @@
             </div>
         </div>
     </div>
+    <script>
+        document.body.addEventListener("db-changed", () => {
+            console.log("Database changed, reloading...");
+            location.reload();
+        });
+    </script>
 </body>
 
 </html>

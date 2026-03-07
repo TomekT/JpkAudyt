@@ -110,18 +110,33 @@ class ConfigManager:
         if not db_path:
             self.config.last_opened_db = None
         else:
-            self.config.last_opened_db = db_path.replace("\\", "/")
+            try:
+                p = Path(db_path).resolve()
+                self.config.last_opened_db = str(p).replace("\\", "/")
+            except Exception:
+                self.config.last_opened_db = db_path.replace("\\", "/")
         self.add_to_recent(db_path)
         self.save_config()
 
     def add_to_recent(self, db_path: str):
         if not db_path:
             return
-        # Normalize path to use forward slashes for consistency
-        norm_path = db_path.replace("\\", "/")
+            
+        # Try to get absolute resolved path to deduplicate effectively
+        try:
+            p = Path(db_path).resolve()
+            norm_path = str(p).replace("\\", "/")
+        except Exception:
+            norm_path = db_path.replace("\\", "/")
+            
+        # Case-insensitive comparison for Windows
+        norm_path_lower = norm_path.lower()
         
-        # Remove if already exists (both original and normalized) to move it to the top
-        self.config.recent_dbs = [d for d in self.config.recent_dbs if d.replace("\\", "/") != norm_path]
+        # Remove if already exists (checking both resolved string and lowercased)
+        self.config.recent_dbs = [
+            d for d in self.config.recent_dbs 
+            if d.replace("\\", "/").lower() != norm_path_lower
+        ]
         
         # Add to front
         self.config.recent_dbs.insert(0, norm_path)
@@ -133,16 +148,56 @@ class ConfigManager:
 
     def get_recent_dbs(self) -> List[str]:
         # Filter non-existent files and remove duplicates after normalization
-        seen = set()
+        seen_lower = set()
         clean_list = []
-        for d in self.config.recent_dbs:
-            norm = d.replace("\\", "/")
-            if Path(norm).exists() and norm not in seen:
-                clean_list.append(norm)
-                seen.add(norm)
+        original_count = len(self.config.recent_dbs)
         
-        self.config.recent_dbs = clean_list
+        for d in self.config.recent_dbs:
+            try:
+                # Try to resolve to catch duplicates like relative vs absolute
+                p = Path(d).resolve()
+                if p.exists():
+                    res_path = str(p).replace("\\", "/")
+                    if res_path.lower() not in seen_lower:
+                        clean_list.append(res_path)
+                        seen_lower.add(res_path.lower())
+                # If file doesn't exist, we don't add it to clean_list
+            except Exception:
+                # Fallback if resolve fails
+                if Path(d).exists():
+                    norm = d.replace("\\", "/")
+                    if norm.lower() not in seen_lower:
+                        clean_list.append(norm)
+                        seen_lower.add(norm.lower())
+        
+        if len(clean_list) != original_count:
+            self.config.recent_dbs = clean_list
+            self.save_config()
+            
         return self.config.recent_dbs
+
+    def remove_from_recent(self, db_path: str):
+        if not db_path:
+            return
+        try:
+            p = Path(db_path).resolve()
+            norm_path = str(p).replace("\\", "/")
+        except Exception:
+            norm_path = db_path.replace("\\", "/")
+            
+        norm_path_lower = norm_path.lower()
+        
+        self.config.recent_dbs = [
+            d for d in self.config.recent_dbs 
+            if d.replace("\\", "/").lower() != norm_path_lower
+        ]
+        
+        if self.config.last_opened_db:
+            if self.config.last_opened_db.replace("\\", "/").lower() == norm_path_lower:
+                self.config.last_opened_db = None
+        self.save_config()
+
+
 
 config_manager = ConfigManager()
 config_ai_manager = ConfigAIManager()

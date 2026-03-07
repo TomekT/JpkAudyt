@@ -3,12 +3,19 @@ import os
 import time
 import signal
 import asyncio
+import html
+import json
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from app.core.config import config_manager, config_ai_manager
 from app.services.database import db_service
@@ -59,6 +66,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+@app.middleware("http")
+async def add_privacy_headers(request: Request, call_next):
+    response = await call_next(request)
+    # List of routes containing sensitive JPK data
+    sensitive_paths = ["/zois", "/dziennik", "/active-podmiot-name"]
+    if request.url.path in sensitive_paths:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 @app.post("/api/heartbeat")
 async def heartbeat():
     app.state.last_heartbeat = time.time()
@@ -80,28 +98,25 @@ async def import_jpk(file: UploadFile = File(...)):
     upload_dir = Path("app/data/uploads")
     upload_dir.mkdir(parents=True, exist_ok=True)
     
-    file_path = upload_dir / file.filename
+    # Path Traversal protection
+    safe_filename = Path(file.filename).name
+    file_path = upload_dir / safe_filename
     
     try:
-        # 1. Save file (blocking but small for local)
+        # 1. Save file
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # 2. Extract metadata synchronously (fast enough)
-        # We need a placeholder metadata for DB name since route_import handles full ETL
-        # But we need to know the db_path to connect.
-        # router.route_import is synchronous, so we run it in a thread.
-        
         def run_etl():
             try:
-                # route_import handles detected version and runs appropriate import_jpk
+                # route_import handles version detection
                 db_path = jpk_router.route_import(str(file_path))
                 return db_path
             except Exception as e:
                 logger.error(f"Background ETL Error: {e}")
                 raise e
 
-        # Execute heavy ETL in worker thread to keep Event Loop free for heartbeats
+        # Execute in thread to keep app responsive
         db_path_str = await asyncio.to_thread(run_etl)
         db_path = Path(db_path_str)
 
@@ -109,17 +124,15 @@ async def import_jpk(file: UploadFile = File(...)):
         db_service.connect(str(db_path))
         config_manager.set_last_db(str(db_path))
         
-        response = HTMLResponse(content=db_path.name)
+        response = HTMLResponse(content=html.escape(db_path.name))
         response.headers["HX-Trigger"] = json.dumps({"db-changed": None, "show-consistency": None})
         return response
         
     except Exception as e:
         logger.error(f"Import failed: {e}")
-        return HTMLResponse(content=f"Error: {e}", status_code=500)
-        
-    except Exception as e:
-        print(f"Import failed: {e}")
-        return HTMLResponse(content=f"Error: {e}", status_code=500)
+        # XSS protection
+        error_msg = html.escape(str(e))
+        return HTMLResponse(content=f"Error: {error_msg}", status_code=500)
 
 @app.post("/connect-db")
 async def connect_db(file: UploadFile = File(...)):
@@ -127,31 +140,32 @@ async def connect_db(file: UploadFile = File(...)):
     db_dir = Path("databases")
     db_dir.mkdir(exist_ok=True)
     
-    target_path = db_dir / file.filename
+    # Path Traversal protection
+    safe_filename = Path(file.filename).name
+    target_path = db_dir / safe_filename
+    
     with open(target_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
     try:
         db_service.verify_db(str(target_path))
-        # Valid: connect and add to recent
         db_service.connect(str(target_path))
         config_manager.set_last_db(str(target_path))
         
-        # Trigger UI update and clear any previous errors
         response = HTMLResponse(content='<div id="alert-container" hx-swap-oob="true"></div>')
         response.headers["HX-Trigger"] = "db-changed"
         return response
     except Exception as e:
-        # Invalid: delete and return error
         if target_path.exists():
             target_path.unlink()
         
-        # Return error as OOB swap for the alert container
+        # XSS protection
+        escaped_error = html.escape(str(e))
         alert_html = f"""
         <div id="alert-container" hx-swap-oob="true" class="fixed bottom-4 right-4 z-50">
             <div class="alert alert-error shadow-lg border-2 border-base-100/20">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span class="text-xs font-bold leading-tight">{str(e)}</span>
+                <span class="text-xs font-bold leading-tight">{escaped_error}</span>
                 <button class="btn btn-ghost btn-xs" onclick="document.getElementById('alert-container').innerHTML=''">✕</button>
             </div>
         </div>
@@ -179,26 +193,113 @@ async def get_active_podmiot_name():
 @app.get("/recent", response_class=HTMLResponse)
 async def get_recent():
     recent = config_manager.get_recent_dbs()
-    if not recent:
-        return "<li><span class='text-gray-400 p-2'>Brak ostatnich baz</span></li>"
-    
-    html = ""
+    html_out = ""
     for db_path in recent:
-        name = Path(db_path).name
-        html += f"""
-        <li>
-            <a hx-post="/select-db" hx-vals='{{"path": "{db_path.replace("\\", "/")}"}}' hx-swap="none">
-                {name}
-            </a>
+        p = Path(db_path)
+        name = html.escape(p.name)
+        # Shorten path for subtitle
+        parts = p.parts
+        if len(parts) > 3:
+            short_path = html.escape(str(Path(*parts[-3:-1])))
+        else:
+            short_path = html.escape(str(p.parent))
+            
+        vals = html.escape(json.dumps({"path": db_path}))
+        
+        html_out += f"""
+        <li class="group relative flex flex-col p-2 hover:bg-base-200 transition-colors rounded-lg cursor-pointer"
+            hx-post="/select-db" hx-vals='{vals}' hx-swap="none">
+            <div class="truncate font-bold text-xs">{name}</div>
+            <div class="text-[9px] opacity-40 truncate pr-16">{short_path}</div>
+            
+            <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-base-100/80 backdrop-blur-sm pl-2 rounded-l-lg"
+                 onclick="event.stopPropagation()">
+                <button hx-post="/open-db-folder" hx-vals='{vals}' hx-swap="none" 
+                        class="btn btn-ghost btn-xs btn-square" title="Otwórz lokalizację">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                </button>
+                <button hx-post="/detach-db" hx-vals='{vals}' hx-swap="none" 
+                        class="btn btn-ghost btn-xs btn-square text-warning" title="Odłącz (usuń z listy)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="2" y1="2" x2="22" y2="22"></line>
+                        <path d="M18 13v1a4 4 0 0 1-4 4h-1"></path>
+                        <path d="M10 18h-1a4 4 0 0 1-4-4v-1"></path>
+                        <path d="M6 11V10a4 4 0 0 1 4-4h1"></path>
+                        <path d="M14 6h1a4 4 0 0 1 4 4v1"></path>
+                    </svg>
+                </button>
+                <button hx-post="/delete-db" hx-vals='{vals}' hx-confirm="CZY NA PEWNO CHCESZ TRWALE USUNĄĆ PLIK BAZY: {name}?" hx-swap="none" 
+                        class="btn btn-ghost btn-xs btn-square text-error" title="USUŃ PLIK Z DYSKU">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
         </li>
         """
-    return html
+    return html_out
+
+@app.post("/detach-db")
+async def detach_db(path: str = Form(...)):
+    config_manager.remove_from_recent(path)
+    return HTMLResponse(content="Detached", headers={"HX-Trigger": "db-changed"})
+
+@app.post("/delete-db")
+async def delete_db(path: str = Form(...)):
+    try:
+        norm_path = Path(path).resolve()
+        # Close connection BEFORE unlinking
+        if db_service.current_db_path and db_service.current_db_path.resolve() == norm_path:
+            db_service.close()
+            config_manager.set_last_db(None)
+            
+        if norm_path.exists():
+            norm_path.unlink()
+            
+        config_manager.remove_from_recent(str(norm_path).replace("\\", "/"))
+        return HTMLResponse(content="Deleted", headers={"HX-Trigger": "db-changed"})
+    except Exception as e:
+        logger.error(f"Failed to delete database: {e}")
+        return HTMLResponse(content=f"Błąd usuwania pliku (może być otwarty): {html.escape(str(e))}", status_code=500)
+
+@app.post("/open-db-folder")
+async def open_db_folder(path: str = Form(...)):
+    try:
+        folder = Path(path).parent
+        if folder.exists():
+            os.startfile(str(folder)) # Windows only
+        return HTMLResponse(content="Opened")
+    except Exception as e:
+        logger.error(f"Failed to open folder: {e}")
+        return HTMLResponse(content=f"Error: {e}", status_code=500)
+
 
 @app.post("/select-db")
 async def select_db(path: str = Form(...)):
-    if Path(path).exists():
-        db_service.connect(path)
-        config_manager.set_last_db(path)
+    requested_path = Path(path).resolve()
+    
+    # Path whitelist: resolve against app's known data folders
+    base_uploads = Path("app/data/uploads").resolve()
+    base_databases = Path("databases").resolve()
+    
+    # Boundary check
+    is_allowed = False
+    try:
+        # Check if requested path is inside allowed directories
+        is_allowed = requested_path.is_relative_to(base_uploads) or requested_path.is_relative_to(base_databases)
+    except (ValueError, AttributeError):
+        # Fallback for older python or complex path errors
+        is_allowed = str(requested_path).startswith(str(base_uploads)) or str(requested_path).startswith(str(base_databases))
+
+    if not is_allowed:
+        logger.warning(f"Security: Blocked path traversal attempt at {requested_path}")
+        raise HTTPException(status_code=403, detail="Forbidden: Unauthorized directory access")
+
+    if requested_path.exists():
+        db_service.connect(str(requested_path))
+        config_manager.set_last_db(str(requested_path))
         response = HTMLResponse(content="OK")
         response.headers["HX-Trigger"] = "db-changed"
         return response
@@ -263,8 +364,13 @@ def _build_where_clause(q: str = "", type: str = "", zq: str = "", month: str = 
             term_clauses = []
             for i, term in enumerate(terms):
                 key = f"zq{i}"
-                term_clauses.append(f"(z.Z_3 LIKE :{key} OR z.Z_2 LIKE :{key})")
-                params[key] = f"%{term}%"
+                if term.startswith("assoc:"):
+                    val = term[6:]
+                    term_clauses.append(f"z.Dziennik_Id IN (SELECT Dziennik_Id FROM Zapisy WHERE Z_3 LIKE :{key} || '%')")
+                    params[key] = val
+                else:
+                    term_clauses.append(f"(z.Z_3 LIKE :{key} OR z.Z_2 LIKE :{key})")
+                    params[key] = f"%{term}%"
             where_clauses.append("(" + " OR ".join(term_clauses) + ")")
             
     if month and month.isdigit():
@@ -680,6 +786,105 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
         """
     except Exception as e:
         return f"<div class='alert alert-error font-mono text-xs'>Błąd: {str(e)}</div>"
+
+@app.get("/api/zapisy/przeglad", response_class=HTMLResponse)
+async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: str = ""):
+    try:
+        conn = db_service.get_connection()
+        where_sql, params = _build_where_clause(q, type, zq, month)
+
+        # Using CTE to find matching Dziennik_Id, then grouping ALL Zapisy from those Dziennik_Id
+        query = f"""
+            WITH WybraneDzienniki AS (
+                SELECT DISTINCT z.Dziennik_Id 
+                FROM Zapisy z
+                LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
+                LEFT JOIN ZOiS s ON z.Z_3 = s.S_1
+                {where_sql}
+            )
+            SELECT 
+                substr(Z_3, 1, 3) as Syntetyka,
+                SUM(CASE WHEN Z_4 > 0 THEN 1 ELSE 0 END) as Liczba_Wn,
+                SUM(CASE WHEN Z_7 > 0 THEN 1 ELSE 0 END) as Liczba_Ma
+            FROM Zapisy
+            WHERE Dziennik_Id IN (SELECT Dziennik_Id FROM WybraneDzienniki)
+            GROUP BY substr(Z_3, 1, 3)
+            ORDER BY Syntetyka
+        """
+        rows = conn.execute(query, params).fetchall()
+
+        html_rows = ""
+        for row in rows:
+            synt = row['Syntetyka']
+            if not synt:
+                continue
+            wn = row['Liczba_Wn'] or 0
+            ma = row['Liczba_Ma'] or 0
+            
+            # Use int(...) to ensure format_amount works gracefully
+            wn_str = format_amount(wn).replace(',00', '')
+            ma_str = format_amount(ma).replace(',00', '')
+            
+            # Clickable rows invoking frontend `aplikujFiltrSyntetyki`
+            html_rows += f'''
+            <tr class="hover cursor-pointer" onclick="aplikujFiltrSyntetyki('{html.escape(synt)}')">
+                <td class="font-mono text-primary font-bold">{html.escape(synt)}</td>
+                <td class="text-right font-mono">{wn_str}</td>
+                <td class="text-right font-mono">{ma_str}</td>
+            </tr>
+            '''
+        
+        if not html_rows:
+            html_rows = "<tr><td colspan='3' class='text-center opacity-50 italic'>Brak danych z kont przeciwstawnych</td></tr>"
+
+        modal_html = f"""
+        <dialog id="przeglad_modal" class="modal">
+            <div class="modal-box w-11/12 max-w-2xl relative shadow-2xl">
+                <form method="dialog">
+                    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                </form>
+                <h3 class="font-bold text-lg mb-4 text-secondary flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Przegląd powiązań (konta przeciwstawne)
+                </h3>
+                <div class="overflow-x-auto max-h-[60vh]">
+                    <table class="table table-zebra table-sm w-full">
+                        <thead class="bg-base-200 sticky top-0 z-10">
+                            <tr>
+                                <th>Konto (Syntetyka)</th>
+                                <th class="text-right">Wystąpienia Wn</th>
+                                <th class="text-right">Wystąpienia Ma</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{HTML_ROWS}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button>close</button>
+            </form>
+        </dialog>
+        """
+        return modal_html.replace("{HTML_ROWS}", html_rows)
+        
+    except Exception as e:
+        logger.error(f"Error in przeglad: {e}")
+        error_msg = html.escape(str(e))
+        return f"""
+        <dialog id="przeglad_modal" class="modal">
+            <div class="modal-box">
+                <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+                <h3 class="font-bold text-lg text-error">Błąd przeglądu</h3>
+                <p class="py-4 font-mono text-xs">{error_msg}</p>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+        """
 
 @app.get("/data/chart", response_class=HTMLResponse)
 @app.get("/api/chart-fragment", response_class=HTMLResponse)
