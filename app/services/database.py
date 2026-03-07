@@ -14,7 +14,7 @@ class DatabaseService:
         self._connection: Optional[sqlite3.Connection] = None
 
     def connect(self, db_path: str):
-        """Connects to a specific SQLite database file."""
+        """Connects to a specific SQLite database file with high-performance READ pragma settings."""
         path = Path(db_path)
         if not path.exists():
             raise FileNotFoundError(f"Database file not found: {db_path}")
@@ -23,9 +23,18 @@ class DatabaseService:
             self._connection.close()
         
         self.current_db_path = path
+        # check_same_thread=False is essential for FastAPI/Uvicorn multi-threading
         self._connection = sqlite3.connect(path, check_same_thread=False)
         self._connection.row_factory = sqlite3.Row
-        logger.info(f"Connected to database: {path}")
+        
+        # Read-heavy optimizations
+        cursor = self._connection.cursor()
+        cursor.execute("PRAGMA temp_store = MEMORY;")      # Keep temp tables/indexes in RAM
+        cursor.execute("PRAGMA mmap_size = 3000000000;")   # Map up to 3GB into memory (OS level)
+        cursor.execute("PRAGMA cache_size = -64000;")      # 64MB Application cache
+        cursor.execute("PRAGMA synchronous = NORMAL;")     # Faster writes while maintaining safety
+        
+        logger.info(f"Connected to database: {path} with optimized READ PRAGMAs")
 
     from contextlib import contextmanager
 

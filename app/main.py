@@ -28,12 +28,11 @@ async def lifespan(app: FastAPI):
 
     async def check_connection():
         while True:
-            await asyncio.sleep(2)
-            # Increased timeout to 30s to be safer for local operations
-            if time.time() - app.state.last_heartbeat > 30:
-                db_service.close()
-                print("Brak aktywności - zamykanie serwera...")
-                os.kill(os.getpid(), signal.SIGINT)
+            await asyncio.sleep(5)
+            # Kill if no heartbeat for > 15 seconds
+            if time.time() - app.state.last_heartbeat > 15:
+                print("Brak aktywności (timeout 15s) - zamykanie serwera...")
+                os.kill(os.getpid(), signal.SIGTERM)
                 break
 
     asyncio.create_task(check_connection())
@@ -52,8 +51,11 @@ async def lifespan(app: FastAPI):
     if pyi_splash:
         pyi_splash.close()
     yield
-    # Shutdown
-    db_service.close()
+    # Shutdown logic
+    try:
+        db_service.close()
+    except:
+        pass
 
 app = FastAPI(lifespan=lifespan)
 
@@ -75,46 +77,45 @@ async def dashboard(request: Request):
 @app.post("/upload", response_class=HTMLResponse)
 @app.post("/import", response_class=HTMLResponse)
 async def import_jpk(file: UploadFile = File(...)):
-    # Save uploaded file temporarily?
-    # Or strict requirement: "Tworzy bazę .db w tym samym folderze co XML".
-    # User selects file from LOCAL disk via browser.
-    # Browser upload means the file is sent to the server.
-    # Since this is a LOCAL app, users might expect to pick a path, OR upload.
-    # "okno wyboru pliku" usually means <input type="file">.
-    # When using Browser <-> FastAPI on localhost, the file is effectively copied to temp.
-    # We need to save it to a known location to treat it as "Source XML".
-    # Let's save it to 'data/imports' or keep it in temp?
-    # Requirement: "Tworzy bazę .db w tym samym folderze co XML".
-    # If we save to `app/data/uploads`, DB goes there. That's fine.
-    
     upload_dir = Path("app/data/uploads")
     upload_dir.mkdir(parents=True, exist_ok=True)
     
     file_path = upload_dir / file.filename
     
     try:
+        # 1. Save file (blocking but small for local)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-            
-        print(f"File saved to {file_path}")
         
-        # Trigger ETL in a separate thread to avoid blocking the heartbeat event loop
-        # and manually update heartbeat before and after
-        app.state.last_heartbeat = time.time()
-        db_path = await asyncio.to_thread(jpk_router.route_import, str(file_path))
-        app.state.last_heartbeat = time.time()
+        # 2. Extract metadata synchronously (fast enough)
+        # We need a placeholder metadata for DB name since route_import handles full ETL
+        # But we need to know the db_path to connect.
+        # router.route_import is synchronous, so we run it in a thread.
         
-        # Ensure we are connected to the newly created database in the main service
-        db_service.connect(db_path)
+        def run_etl():
+            try:
+                # route_import handles detected version and runs appropriate import_jpk
+                db_path = jpk_router.route_import(str(file_path))
+                return db_path
+            except Exception as e:
+                logger.error(f"Background ETL Error: {e}")
+                raise e
+
+        # Execute heavy ETL in worker thread to keep Event Loop free for heartbeats
+        db_path_str = await asyncio.to_thread(run_etl)
+        db_path = Path(db_path_str)
+
+        # 3. Finalize
+        db_service.connect(str(db_path))
+        config_manager.set_last_db(str(db_path))
         
-        # Update config
-        config_manager.set_last_db(db_path)
-        
-        # We return the filename, but also trigger UI refresh and consistency check via HTMX header
-        response = HTMLResponse(content=Path(db_path).name)
-        import json
+        response = HTMLResponse(content=db_path.name)
         response.headers["HX-Trigger"] = json.dumps({"db-changed": None, "show-consistency": None})
         return response
+        
+    except Exception as e:
+        logger.error(f"Import failed: {e}")
+        return HTMLResponse(content=f"Error: {e}", status_code=500)
         
     except Exception as e:
         print(f"Import failed: {e}")
