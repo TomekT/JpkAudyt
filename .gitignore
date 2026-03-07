@@ -23,6 +23,8 @@ env/
 *.wal
 config.json
 configAI.json
+app/data/uploads/
+*.xml
 
 # Temporary / Logs
 logs/
