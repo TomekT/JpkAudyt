@@ -33,13 +33,21 @@ def build():
         add_data_args.extend(['--add-data', f"{src};{dst}"])
 
     # 3. Konfiguracja PyInstallera
+    # OPCJE BUDOWANIA:
+    # A) Wersja z konsolą (do testów z automatycznym ukrywaniem okna):
+    #    '--console'
+    # B) Wersja okienkowa (produkcyjna, bez okna konsoli w tle):
+    #    '--windowed' (lub '--noconsole')
+    
     cmd = [
         'pyinstaller',
         '--noconfirm',
-        '--windowed',  # Synonim dla --noconsole
+        '--console',  # Domyślnie używamy konsoli, launcher ją ukryje po starcie
         '--name', 'JpkAudytor',
         '--icon', 'app/static/favicon.ico',
         '--splash', 'splash.png',
+        '--hidden-import=app.main',
+        '--collect-submodules=app',
         *add_data_args,
         'run.py'
     ]

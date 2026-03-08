@@ -20,28 +20,21 @@ from pydantic import BaseModel
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Moduły aplikacji
 from app.core.config import config_manager, config_ai_manager
 from app.services.database import db_service
 from app.services.router import jpk_router
-
-try:
-    import pyi_splash
-    pyi_splash.update_text("Uruchamianie serwera...")
-except ImportError:
-    pyi_splash = None
 
 # Define lifespan event handler to manage startup/shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    logger.info("Start aplikacji (lifespan startup)...")
     app.state.last_heartbeat = time.time()
 
-    if pyi_splash:
-        pyi_splash.close()
-
     async def check_connection():
-        # Początkowy grace period (30s) na start systemu/przeglądarki
-        await asyncio.sleep(30)
+        # Początkowy grace period (5s) na start systemu
+        await asyncio.sleep(5)
         while True:
             await asyncio.sleep(5)
             # Kill if no heartbeat for > 15 seconds
@@ -52,15 +45,18 @@ async def lifespan(app: FastAPI):
 
     asyncio.create_task(check_connection())
 
+    logger.info("Wczytywanie konfiguracji...")
+
     last_db = config_manager.get_last_db()
     if last_db and Path(last_db).exists():
         try:
-            if pyi_splash:
-                pyi_splash.update_text(f"Ładowanie bazy: {Path(last_db).name}")
+            msg = f"Otwieranie bazy: {Path(last_db).name}..."
+            logger.info(msg)
             db_service.connect(last_db)
             print(f"Restored last database: {last_db}")
         except Exception as e:
-            print(f"Could not restore last DB: {e}")
+            err_msg = f"KRYTYCZNY BŁĄD BAZY: {e}"
+            logger.critical(err_msg)
             config_manager.set_last_db(None)
     
     yield
