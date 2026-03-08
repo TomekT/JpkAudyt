@@ -36,7 +36,12 @@ async def lifespan(app: FastAPI):
     # Startup
     app.state.last_heartbeat = time.time()
 
+    if pyi_splash:
+        pyi_splash.close()
+
     async def check_connection():
+        # Początkowy grace period (30s) na start systemu/przeglądarki
+        await asyncio.sleep(30)
         while True:
             await asyncio.sleep(5)
             # Kill if no heartbeat for > 15 seconds
@@ -58,8 +63,6 @@ async def lifespan(app: FastAPI):
             print(f"Could not restore last DB: {e}")
             config_manager.set_last_db(None)
     
-    if pyi_splash:
-        pyi_splash.close()
     yield
     # Shutdown logic
     try:
@@ -98,6 +101,10 @@ async def hard_reset():
 @app.post("/api/heartbeat")
 async def heartbeat():
     app.state.last_heartbeat = time.time()
+    return {"status": "ok"}
+
+@app.get("/health")
+async def health_check():
     return {"status": "ok"}
 
 class ZScoreRequest(BaseModel):

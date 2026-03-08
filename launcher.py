@@ -10,7 +10,18 @@ def open_browser():
     """
     Waits a moment for the server to start, then opens the default web browser.
     """
-    time.sleep(1.5)
+def open_browser():
+    """Otwiera przeglądarkkę po upewnieniu się, że serwer żyje."""
+    import urllib.request
+    for _ in range(10):  # 10 prób co 500ms
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:8000/health") as response:
+                if response.getcode() == 200:
+                    webbrowser.open("http://127.0.0.1:8000")
+                    return
+        except Exception:
+            pass
+        time.sleep(0.5)
     webbrowser.open("http://127.0.0.1:8000")
 
 def main():

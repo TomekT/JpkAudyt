@@ -36,13 +36,18 @@ Lokalna aplikacja webowa zbudowana w FastAPI do analizy plików JPK_KR (Księgi 
 
 Aplikację można skompilować do samodzielnego folderu, który nie wymaga zainstalowanego środowiska Python na komputerze docelowym. Proces ten tworzy w folderze `dist/JpkAudytor` kompletną paczkę plików, którą można skompresować (ZIP) i przesłać do użytkownika końcowego.
 
-### Kompilacja przy użyciu PyInstaller
+### Kompilacja przy użyciu skryptu budującego
 
-Upewnij się, że masz zainstalowany PyInstaller (`pip install pyinstaller`), a następnie wykonaj poniższą komendę w głównym katalogu projektu:
+Najprostszą metodą budowania jest użycie dedykowanego skryptu `build_app.py`, który przygotowuje wszystkie zależności i flagi:
 
 ```bash
-pyinstaller --noconfirm --onedir --windowed --name "JpkAudytor" --add-data "app/templates;app/templates" --add-data "app/static;app/static" --add-data "schema.sql;." --add-data "insert_slownik.sql;." --icon "app/static/favicon.ico" run.py
+python build_app.py
 ```
+
+Skrypt ten automatycznie wywoła `pyinstaller` z odpowiednimi parametrami:
+- `--name "JpkAudytor"`
+- `--add-data` dla szablonów, statyk oraz plików SQL.
+- `--icon` (favicon) oraz `--splash` (ekran powitalny).
 
 ### Użytkowanie wersji binarnej
 

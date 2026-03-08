@@ -36,9 +36,8 @@ def build():
     cmd = [
         'pyinstaller',
         '--noconfirm',
-        '--onedir',
         '--windowed',  # Synonim dla --noconsole
-        '--name', 'JPK_Audytor_AI',
+        '--name', 'JpkAudytor',
         '--icon', 'app/static/favicon.ico',
         '--splash', 'splash.png',
         *add_data_args,
@@ -51,7 +50,7 @@ def build():
         subprocess.run(cmd, check=True)
         print("\n" + "="*50)
         print("BUDOWA ZAKOŃCZONA SUKCESEM!")
-        print(f"Pliki aplikacji znajdują się w: {os.path.abspath('dist/JPK_Audytor_AI')}")
+        print(f"Pliki aplikacji znajdują się w: {os.path.abspath('dist/JpkAudytor')}")
         print("="*50)
     except subprocess.CalledProcessError as e:
         print(f"\nBłąd podczas budowania: {e}")

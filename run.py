@@ -44,8 +44,20 @@ def kill_process_on_port(port: int):
         print(f"Błąd podczas sprawdzania portów: {e}")
 
 def open_browser():
-    """Otwiera przeglądarkę automatycznie po uruchomieniu serwera."""
-    time.sleep(2.5)
+    """Otwiera przeglądarkę po upewnieniu się, że serwer żyje."""
+    import urllib.request
+    print("Oczekiwanie na gotowość serwera...")
+    for _ in range(10):  # 10 prób
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:8000/health") as response:
+                if response.getcode() == 200:
+                    print("Serwer gotowy. Otwieranie przeglądarki.")
+                    webbrowser.open("http://127.0.0.1:8000")
+                    return
+        except Exception:
+            pass
+        time.sleep(0.5)
+    print("Ostrzeżenie: Timeout oczekiwania na serwer. Próba wymuszonego otwarcia.")
     webbrowser.open("http://127.0.0.1:8000")
 
 if __name__ == "__main__":
@@ -73,7 +85,8 @@ if __name__ == "__main__":
                 "port": 8000,
                 "workers": 1,
                 "loop": "asyncio",
-                "log_config": log_config
+                "log_config": log_config,
+                "log_level": "info"
             }
         )
         
