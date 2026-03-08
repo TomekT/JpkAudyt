@@ -743,12 +743,14 @@
         // Global HTMX cleanup for Plotly to prevent memory leaks and "crosshair" cursor issues
         document.addEventListener('htmx:beforeCleanupElement', (evt) => {
             const el = evt.detail.elt;
-            // Check if the element itself is a Plotly plot or contains one
-            if (el.classList && el.classList.contains('js-plotly-plot')) {
-                Plotly.purge(el);
-            } else {
-                const plots = el.querySelectorAll('.js-plotly-plot');
-                plots.forEach(plot => Plotly.purge(plot));
+            if (el && typeof el.querySelectorAll === 'function') {
+                // Check if the element itself is a Plotly plot or contains one
+                if (el.classList && el.classList.contains('js-plotly-plot')) {
+                    Plotly.purge(el);
+                } else {
+                    const plots = el.querySelectorAll('.js-plotly-plot');
+                    plots.forEach(plot => Plotly.purge(plot));
+                }
             }
         });
 
@@ -764,14 +766,16 @@
         });
 
         document.addEventListener('htmx:afterSwap', (evt) => {
-            // Initializing other charts with .plotly-chart class if they exist
-            const otherCharts = evt.detail.elt.querySelectorAll('.plotly-chart');
-            otherCharts.forEach(chart => {
-                if (window.Plotly && !chart.classList.contains('js-plotly-plot')) {
-                    // This is a placeholder for other potential charts as requested
-                    // Plotly.newPlot(chart, data, layout, { staticPlot: true });
-                }
-            });
+            const el = evt.detail.elt;
+            if (el && typeof el.querySelectorAll === 'function') {
+                // Initializing other charts with .plotly-chart class if they exist
+                const otherCharts = el.querySelectorAll('.plotly-chart');
+                otherCharts.forEach(chart => {
+                    if (window.Plotly && !chart.classList.contains('js-plotly-plot')) {
+                        // This is a placeholder for other potential charts as requested
+                    }
+                });
+            }
         });
 
 
