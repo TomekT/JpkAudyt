@@ -11,7 +11,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JPK Auditor</title>
+    <title>JPK Audytor</title>
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 
     <!-- Tailwind + DaisyUI -->
@@ -177,7 +177,7 @@
             </div>
 
             <div class="p-4 border-t text-[10px] text-center text-gray-500 truncate">
-                v0.1.0 Alpha
+                v. 1.0.0
             </div>
         </div>
 
@@ -494,7 +494,7 @@
                 </div>
 
                 <!-- AI Tab (Ustawienia) -->
-                <input id="tab-ai" type="radio" name="main_tabs" role="tab" class="tab" aria-label="AI ustaw." />
+                <input id="tab-ai" type="radio" name="main_tabs" role="tab" class="tab" aria-label="AI" />
                 <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
                     <div id="ai-tab-container" hx-get="/api/ai-tab" hx-trigger="load">
                         <span class="loading loading-spinner loading-lg"></span> Ładowanie konfiguracji AI...
@@ -1087,8 +1087,15 @@
         </div>
     </div>
     <script>
-        document.body.addEventListener("db-changed", () => {
-            console.log("Database changed, reloading...");
+        document.body.addEventListener("db-changed", (evt) => {
+            console.log("Database changed, checking for reload...");
+            // Jeśli event ma no_reload=true, nie przeładowujemy całej strony
+            // Pozwala to na wyświetlenie modali (np. spójności) bez przerywania ich działania
+            if (evt.detail && evt.detail.no_reload === true) {
+                console.log("Skipping reload (no_reload=true)");
+                return;
+            }
+            console.log("Reloading...");
             location.reload();
         });
     </script>

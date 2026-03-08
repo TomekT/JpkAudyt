@@ -125,7 +125,10 @@ async def import_jpk(file: UploadFile = File(...)):
         config_manager.set_last_db(str(db_path))
         
         response = HTMLResponse(content=html.escape(db_path.name))
-        response.headers["HX-Trigger"] = json.dumps({"db-changed": None, "show-consistency": None})
+        response.headers["HX-Trigger"] = json.dumps({
+            "db-changed": {"no_reload": True}, 
+            "show-consistency": None
+        })
         return response
         
     except Exception as e:
@@ -538,14 +541,15 @@ async def get_zois(request: Request, q: str = "", type: str = ""):
             """
             rows = conn.execute(sql, params).fetchall()
             
-            # Calculate totals and check types for the filtered set
+            # Calculate totals and check types for the filtered set - only analytical accounts for sums
+            totals_where = where_sql + (" AND " if where_sql else "WHERE ") + "IsAnalytical = 1"
             totals_sql = f"""
                 SELECT 
                     SUM(S_10) as sum_wn, 
                     SUM(S_11) as sum_ma,
                     COUNT(*) as total_count,
                     SUM(CASE WHEN TypKonta LIKE 'PASYWA%' OR TypKonta LIKE 'WYNIKOWE%' THEN 1 ELSE 0 END) as special_count
-                FROM ZOiS {where_sql}
+                FROM ZOiS {totals_where}
             """
             totals = conn.execute(totals_sql, params).fetchone()
             sum_wn = totals['sum_wn'] or 0
@@ -571,6 +575,23 @@ async def get_zois(request: Request, q: str = "", type: str = ""):
             
         return f"""
         <div class="flex flex-col h-full overflow-hidden">
+            <!-- Summation Panel (Top) -->
+            <div class="mb-4 p-3 bg-base-200 rounded-xl border border-base-content/5 flex justify-end items-center gap-8 px-6 shadow-inner">
+                <div class="flex flex-col items-end">
+                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Wn</span>
+                    <span class="text-lg font-black text-secondary font-mono">{format_amount(sum_wn)}</span>
+                </div>
+                <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
+                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Ma</span>
+                    <span class="text-lg font-black text-secondary font-mono">{format_amount(sum_ma)}</span>
+                </div>
+                <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
+                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">{persaldo_label}</span>
+                    <span class="text-lg font-black text-primary font-mono">{format_amount(persaldo)}</span>
+                </div>
+            </div>
+
+            <!-- Table Container (Bottom) -->
             <div class="overflow-x-auto flex-grow bg-base-100 pb-8">
                 <div class="w-full">
                     <!-- Tree Table Header -->
@@ -588,21 +609,6 @@ async def get_zois(request: Request, q: str = "", type: str = ""):
                     <div class="flex flex-col">
                         {html_rows}
                     </div>
-                </div>
-            </div>
-            <!-- Summation Footer -->
-            <div class="bg-base-300 p-2 border-t border-base-content/10 flex justify-end items-center gap-8 px-6 shadow-inner">
-                <div class="flex flex-col items-end">
-                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Wn</span>
-                    <span class="text-sm font-black text-secondary font-mono">{format_amount(sum_wn)}</span>
-                </div>
-                <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
-                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Ma</span>
-                    <span class="text-sm font-black text-secondary font-mono">{format_amount(sum_ma)}</span>
-                </div>
-                <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
-                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">{persaldo_label}</span>
-                    <span class="text-sm font-black text-primary font-mono">{format_amount(persaldo)}</span>
                 </div>
             </div>
         </div>
