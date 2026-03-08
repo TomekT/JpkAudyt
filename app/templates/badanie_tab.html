@@ -71,6 +71,24 @@
                                         class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-base-content/70 font-black">PLN</span>
                                 </div>
                             </div>
+
+                            <div class="form-control w-full">
+                                <label class="label">
+                                    <span class="label-text text-xs font-bold text-secondary uppercase mb-1">Kwoty
+                                        trywialne:</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="istotnosc_trywialna_display"
+                                        value="{{ format_pl(params.Istotnosc_Trywialna.Kwota or 0) }}"
+                                        oninput="formatCurrencyInput(this)"
+                                        class="input input-bordered input-md w-full text-sm font-mono font-bold text-accent pr-12 bg-base-100 focus:border-secondary transition-colors"
+                                        placeholder="0" />
+                                    <input type="hidden" name="istotnosc_trywialna" id="istotnosc_trywialna_raw"
+                                        value="{{ params.Istotnosc_Trywialna.Kwota or 0 }}" />
+                                    <span
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-base-content/70 font-black">PLN</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -103,29 +121,17 @@
 </div>
 
 <script>
-    function formatCurrencyInput(input) {
-        // Remove all non-numeric characters
-        let value = input.value.replace(/\D/g, '');
-
-        // Update the hidden input with the raw number
-        const rawId = input.id.replace('_display', '_raw');
-        document.getElementById(rawId).value = value;
-
-        // Format for display with space group separator
-        if (value === '') {
-            input.value = '';
-            return;
-        }
-
-        // Format with spaces
-        input.value = parseInt(value, 10).toLocaleString('pl-PL').replace(/\u00A0/g, ' ');
-    }
-
-    // Initialize formatting on load in case browser autofills
-    document.addEventListener('DOMContentLoaded', () => {
+    // Initialize formatting on load for the parameters form
+    (function initLocalFormatting() {
         const ogolna = document.getElementById('istotnosc_ogolna_display');
         const wykonawcza = document.getElementById('istotnosc_wykonawcza_display');
-        if (ogolna) formatCurrencyInput(ogolna);
-        if (wykonawcza) formatCurrencyInput(wykonawcza);
-    });
+        const trywialna = document.getElementById('istotnosc_trywialna_display');
+
+        // Use the global window.formatCurrencyInput defined in index.html
+        if (window.formatCurrencyInput) {
+            if (ogolna) window.formatCurrencyInput(ogolna);
+            if (wykonawcza) window.formatCurrencyInput(wykonawcza);
+            if (trywialna) window.formatCurrencyInput(trywialna);
+        }
+    })();
 </script>

@@ -268,4 +268,74 @@ class DatabaseService:
         
         return results
 
+    def get_trivial_materiality(self) -> float:
+        """Pobiera wartość Istotnosc_Trywialna z tabeli ParametryBadania."""
+        try:
+            conn = self.get_connection()
+            row = conn.execute("SELECT Kwota FROM ParametryBadania WHERE Klucz = 'Istotnosc_Trywialna'").fetchone()
+            if row and row['Kwota'] is not None:
+                return float(row['Kwota'])
+        except Exception:
+            pass
+        return 0.0
+
+    def get_zscore_anomaly_ids(self, record_ids: list, min_amount: float) -> list:
+        """
+        Wykrywa anomalie statystyczne (Z-Score) z uwzględnieniem progu istotności.
+        - Robust Z-Score (Mediana, MAD, K=0.6745)
+        - Filtracja: |Z_Score| > 3.0 ORAZ max(Wn, Ma) >= min_amount
+        """
+        if not record_ids or len(record_ids) < 3:
+            return []
+            
+        try:
+            import pandas as pd
+        except ImportError:
+            logger.error("Brak biblioteki pandas.")
+            return []
+            
+        placeholders = ','.join('?' for _ in record_ids)
+        query = f"SELECT Id, Z_4 as Wn, Z_7 as Ma FROM Zapisy WHERE Id IN ({placeholders})"
+        
+        conn = self.get_connection()
+        df = pd.read_sql_query(query, conn, params=record_ids)
+        
+        # Obliczamy max(Wn, Ma) dla filtracji końcowej
+        df['max_amount'] = df[['Wn', 'Ma']].max(axis=1)
+        
+        anomaly_ids = set()
+        
+        for col in ['Wn', 'Ma']:
+            # Pomiń wpisy z zerami dla celów obliczania odchyleń statystycznych
+            series = df[df[col] != 0][col].dropna()
+            
+            if len(series) < 3:
+                continue
+                
+            median = series.median()
+            mad = (series - median).abs().median()
+            
+            if mad == 0:
+                continue
+                
+            K = 0.6745
+            # Obliczanie Robust Z-Score
+            z_scores = (K * (series - median)) / mad
+            
+            # Identyfikacja anomalii zgodnie z wymaganiami:
+            # (|Z_Score| > 3.0) ORAZ (max(Wn, Ma) >= min_amount)
+            # Musimy odnieść się do oryginalnego DataFrame, aby sprawdzić max_amount
+            for idx in series.index:
+                z_score = z_scores[idx]
+                max_val = df.loc[idx, 'max_amount']
+                
+                if abs(z_score) > 3.0 and max_val >= min_amount:
+                    anomaly_ids.add(int(df.loc[idx, 'Id']))
+                
+        return sorted(list(anomaly_ids))
+
+    def detect_zscore_anomalies(self, record_ids: list) -> list:
+        """Legacy alias or simple version if needed, redirected to new logic with 0 threshold."""
+        return self.get_zscore_anomaly_ids(record_ids, 0.0)
+
 db_service = DatabaseService()

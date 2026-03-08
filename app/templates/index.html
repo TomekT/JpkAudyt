@@ -313,7 +313,6 @@
                     </span>
                 </div>
             </div>
-            </div>
         </header>
 
         <!-- Tabs & Content -->
@@ -467,6 +466,12 @@
                                                 </svg>
                                                 Metoda MUS
                                             </a>
+                                        </li>
+                                        <li>
+                                            <div class="p-2">
+                                                <button class="btn btn-sm btn-warning w-full"
+                                                    onclick="applyZScoreFilter()">Anomalie Z-Score</button>
+                                            </div>
                                         </li>
                                     </ul>
                                 </div>
@@ -639,6 +644,75 @@
         </form>
     </dialog>
 
+    <!-- Z-Score Anomaly Modal -->
+    <dialog id="modal-zscore" class="modal">
+        <div class="modal-box w-11/12 max-w-lg relative shadow-2xl border border-base-300">
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+            </form>
+
+            <h3 class="font-bold text-lg mb-4 text-warning flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Test Anomalii Z-Score
+            </h3>
+
+            <div class="space-y-6 py-4">
+                <p class="text-xs opacity-70 leading-relaxed">
+                    Test wykrywa odchylenia statystyczne (Robust Z-Score) w aktualnie widocznych zapisach.
+                    Rekordy o wartościach poniżej <strong>kwoty trywialnej</strong> zostaną zignorowane w wynikach
+                    końcowych.
+                </p>
+
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text font-bold text-xs uppercase opacity-60">Próg istotności
+                            trywialnej:</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="zscore_threshold_display"
+                            oninput="if(window.formatCurrencyInput) window.formatCurrencyInput(this)"
+                            class="input input-bordered input-md w-full text-sm font-mono font-bold text-warning pr-12 bg-base-200 shadow-inner"
+                            placeholder="0" />
+                        <input type="hidden" id="zscore_threshold_raw" value="0" />
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black opacity-40">PLN</span>
+                    </div>
+                </div>
+
+                <div class="alert bg-base-200 border-base-300 text-[10px] py-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        class="stroke-info shrink-0 w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Analiza zostanie przeprowadzona na podstawie mediany i MAD (Median Absolute Deviation).</span>
+                </div>
+            </div>
+
+            <div class="modal-action">
+                <form method="dialog">
+                    <button class="btn btn-ghost btn-sm">Anuluj</button>
+                </form>
+                <button onclick="runZScoreTest()" class="btn btn-warning btn-sm px-6 gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Uruchom Test
+                </button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
     <script>
         // Set initial state of the toggle
         document.addEventListener('DOMContentLoaded', () => {
@@ -646,6 +720,25 @@
             const toggle = document.getElementById('theme-toggle');
             if (toggle) toggle.checked = (theme === 'dark');
         });
+
+        // Global formatting function
+        window.formatCurrencyInput = function (input) {
+            let value = input.value.replace(/\D/g, '');
+            const rawId = input.id.replace('_display', '_raw');
+            const rawElem = document.getElementById(rawId);
+            if (rawElem) rawElem.value = value;
+
+            if (value === '') {
+                input.value = '';
+                return;
+            }
+
+            const formatted = parseInt(value, 10).toLocaleString('pl-PL').replace(/\u00A0/g, ' ');
+            if (input.value !== formatted) {
+                input.value = formatted;
+            }
+        }
+
 
         // Global HTMX cleanup for Plotly to prevent memory leaks and "crosshair" cursor issues
         document.addEventListener('htmx:beforeCleanupElement', (evt) => {
@@ -777,7 +870,9 @@
             const formatPL = (val) => {
                 if (val === null || val === undefined) return "";
                 // Format for display: space as thousand separator, comma as decimal
-                return parseFloat(val).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\u00A0/g, ' ');
+                return parseFloat(val).toLocaleString('pl-PL', {
+                    minimumFractionDigits: 2, maximumFractionDigits: 2
+                }).replace(/\u00A0/g, ' ');
             };
 
             let rowsHtml = "";
@@ -790,7 +885,9 @@
 
             rowsHtml += "<tr>";
             headers.forEach(h => {
-                rowsHtml += `<th style="border: 0.5pt solid #ccc; background-color: #eeeeee; font-weight: bold; text-align: center;">${h}</th>`;
+                rowsHtml += `<th
+                style="border: 0.5pt solid #ccc; background-color: #eeeeee; font-weight: bold; text-align: center;">${h}
+            </th>`;
             });
             rowsHtml += "</tr>";
 
@@ -827,24 +924,44 @@
             });
 
             const excelHtml = `
-<html xmlns:o="urn:schemas-microsoft-com:office:office" 
-      xmlns:x="urn:schemas-microsoft-com:office:excel" 
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta http-equiv="content-type" content="text/html; charset=utf-8">
-<style>
-    td { border: 0.5pt solid #ccc; white-space: nowrap; color: black; background: white; font-family: Arial, sans-serif; font-size: 9pt; }
-    .xl-text { mso-number-format:"\\@"; }
-    .xl-num { mso-number-format:"\\#\\ \\#\\#0\\.00"; text-align: right; }
-    .xl-date { mso-number-format:"yyyy\\-mm\\-dd"; text-align: center; }
-</style>
-</head>
-<body>
-    <table border="1" style="border-collapse: collapse;">
-        ${rowsHtml}
-    </table>
-</body>
-</html>`;
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"
+            xmlns="http://www.w3.org/TR/REC-html40">
+
+        <head>
+            <meta http-equiv="content-type" content="text/html; charset=utf-8">
+            <style>
+                td {
+                    border: 0.5pt solid #ccc;
+                    white-space: nowrap;
+                    color: black;
+                    background: white;
+                    font-family: Arial, sans-serif;
+                    font-size: 9pt;
+                }
+
+                .xl-text {
+                    mso-number-format: "\\@";
+                }
+
+                .xl-num {
+                    mso-number-format: "\\#\\ \\#\\#0\\.00";
+                    text-align: right;
+                }
+
+                .xl-date {
+                    mso-number-format: "yyyy\\-mm\\-dd";
+                    text-align: center;
+                }
+            </style>
+        </head>
+
+        <body>
+            <table border="1" style="border-collapse: collapse;">
+                ${rowsHtml}
+            </table>
+        </body>
+
+        </html>`;
 
             try {
                 const blobHtml = new Blob([excelHtml], { type: "text/html" });
@@ -913,8 +1030,8 @@
                         <span class="opacity-60 font-semibold uppercase tracking-widest">Suma analiz. próby: </span>
                         <span class="flex-1 text-right font-bold pl-2 ml-2">Wn: <span id="mus-pop-wn"
                                 class="font-mono text-emerald-500">0,00</span> PLN</span>
-                        <span class="flex-1 text-right font-bold border-l pl-2 ml-2 border-base-content/20">Ma: <span
-                                id="mus-pop-ma" class="font-mono text-rose-500">0,00</span> PLN</span>
+                        <span class="flex-1 text-right font-bold border-l pl-2 ml-2 border-base-content/20">Ma:
+                            <span id="mus-pop-ma" class="font-mono text-rose-500">0,00</span> PLN</span>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -940,7 +1057,8 @@
                         </div>
 
                         <div class="form-control w-full">
-                            <label class="label"><span class="label-text font-bold text-xs text-primary">Interwał (krok
+                            <label class="label"><span class="label-text font-bold text-xs text-primary">Interwał
+                                    (krok
                                     testu)</span></label>
                             <input type="number" step="0.01" id="mus-interwal" readonly
                                 class="input input-sm input-bordered w-full font-mono text-right bg-base-300/50 shadow-inner" />
@@ -964,7 +1082,8 @@
                                 class="label-text font-bold text-[10px] uppercase opacity-60 tracking-widest text-secondary">Przewidywana
                                 próba łączna</span></label>
                         <div class="flex items-center gap-6">
-                            <div class="text-4xl font-black text-secondary drop-shadow-sm" id="mus-proba-count">0</div>
+                            <div class="text-4xl font-black text-secondary drop-shadow-sm" id="mus-proba-count">0
+                            </div>
                             <div class="text-xs opacity-60 flex-1 border-l pl-4 border-base-content/10">Szacowana
                                 całkowita liczba prób do wylosowania (obejmuje narastające obroty Wn i osobno
                                 narastające obroty Ma) w oparciu o sumę populacji.</div>
@@ -1154,6 +1273,108 @@
         </div>
     </div>
     <script>
+        async function applyZScoreFilter() {
+            const modal = document.getElementById('modal-zscore');
+            if (!modal) {
+                console.error("Critical: Z-Score modal missing from DOM.");
+                alert("Błąd krytyczny: Brak modułu testu Z-Score.");
+                return;
+            }
+
+            // Get JPK ID from labels
+            const jpkId = document.getElementById('active-db-label')?.innerText?.trim() || "current";
+
+            try {
+                // Pre-fill trivial materiality from API
+                const res = await fetch(`/api/parameters/${encodeURIComponent(jpkId)}`);
+                if (!res.ok) throw new Error("API Error");
+                const data = await res.json();
+                const defaultVal = data.Istotnosc_Trywialna || 0;
+
+                const displayInput = document.getElementById('zscore_threshold_display');
+                const rawInput = document.getElementById('zscore_threshold_raw');
+
+                if (rawInput) rawInput.value = Math.round(defaultVal);
+                if (displayInput) {
+                    displayInput.value = Math.round(defaultVal).toLocaleString('pl-PL').replace(/\u00A0/g, ' ');
+                }
+
+                modal.showModal();
+            } catch (err) {
+                console.warn("Failed to fetch materiality parameters, using 0:", err);
+                modal.showModal();
+            }
+        }
+
+        async function runZScoreTest() {
+            const modal = document.getElementById('modal-zscore');
+            const thresholdInput = document.getElementById('zscore_threshold_raw');
+            const threshold = thresholdInput ? parseFloat(thresholdInput.value) || 0 : 0;
+
+            // Get visible IDs from table
+            const tableRows = document.querySelectorAll('#zapisy-container tbody tr[data-id]');
+            const recordIds = Array.from(tableRows).map(row => parseInt(row.getAttribute('data-id')));
+
+            if (recordIds.length === 0) {
+                alert("Brak rekordów do analizy.");
+                modal.close();
+                return;
+            }
+
+            // Close modal immediately
+            modal.close();
+
+            // Show spinner in container
+            const container = document.getElementById('zapisy-container');
+            const originalContent = container.innerHTML;
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center p-20 gap-4">
+                    <span class="loading loading-spinner text-secondary w-16 h-16"></span>
+                    <div class="text-sm font-bold uppercase tracking-widest opacity-60">Analiza statystyczna Z-Score...</div>
+                    <div class="text-[10px] opacity-40">Trwa przeliczanie populacji wg Median/MAD...</div>
+                </div>`;
+
+            try {
+                const response = await fetch('/api/test/z-score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ record_ids: recordIds, min_amount: threshold })
+                });
+
+                if (!response.ok) throw new Error('Błąd serwera');
+
+                const data = await response.json();
+                const anomalies = data.anomaly_ids || [];
+
+                // Restore content
+                container.innerHTML = originalContent;
+
+                // Select rows again
+                const updatedRows = document.querySelectorAll('#zapisy-container tbody tr[data-id]');
+
+                let hiddenCount = 0;
+                updatedRows.forEach(row => {
+                    const rowId = parseInt(row.getAttribute('data-id'));
+                    if (!anomalies.includes(rowId)) {
+                        row.style.display = 'none';
+                        hiddenCount++;
+                    } else {
+                        row.style.display = '';
+                        row.style.backgroundColor = 'rgba(255, 174, 0, 0.1)'; // Subtle highlight
+                    }
+                });
+
+                // Auto-close dropdown if it was open
+                if (document.activeElement) document.activeElement.blur();
+
+                console.log(`Z-Score: ${anomalies.length} found, ${hiddenCount} filtered.`);
+            } catch (error) {
+                console.error('Z-Score Error:', error);
+                container.innerHTML = originalContent;
+                alert('Wystąpił błąd podczas analizy Z-Score.');
+            }
+        }
+
         function handleHardReset() {
             // Prosty overlay informacyjny
             const overlay = document.createElement('div');

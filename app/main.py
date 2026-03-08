@@ -13,6 +13,8 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from typing import List
+from pydantic import BaseModel
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -88,7 +90,7 @@ async def hard_reset():
             db_service.close()
         except Exception as e:
             logger.error(f"Błąd zamykania bazy: {e}")
-        os._exit(0)
+        os._exit(5) # Kod 5 oznacza prośbę o RESTART dla launchera
     
     asyncio.create_task(_do_shutdown())
     return HTMLResponse("System is restarting...")
@@ -97,6 +99,32 @@ async def hard_reset():
 async def heartbeat():
     app.state.last_heartbeat = time.time()
     return {"status": "ok"}
+
+class ZScoreRequest(BaseModel):
+    record_ids: List[int]
+    min_amount: float
+
+class AnomalyRequest(BaseModel):
+    record_ids: List[int]
+
+@app.get("/api/parameters/{jpk_id}")
+async def get_parameters(jpk_id: str):
+    """Zwraca wartość Istotnosc_Trywialna dla danego badania."""
+    # jpk_id is currently ignored as we use the active database connection
+    val = db_service.get_trivial_materiality()
+    return {"Istotnosc_Trywialna": val}
+
+@app.post("/api/test/z-score")
+async def test_z_score(request_data: ZScoreRequest):
+    """Endpoint do wykrywania anomalii Z-Score z progiem kwotowym."""
+    anomaly_ids = db_service.get_zscore_anomaly_ids(request_data.record_ids, request_data.min_amount)
+    return {"anomaly_ids": anomaly_ids}
+
+@app.post("/api/test/z-score-anomalies")
+async def test_z_score_anomalies(request_data: AnomalyRequest):
+    """Legacy endpoint (aliased to new logic with 0 threshold)."""
+    anomaly_ids = db_service.detect_zscore_anomalies(request_data.record_ids)
+    return {"anomaly_ids": anomaly_ids}
 
 # Setup Templates & Static Files
 BASE_DIR = Path(__file__).resolve().parent
@@ -712,7 +740,7 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
         # CREATE INDEX IF NOT EXISTS idx_zapisy_filter ON Zapisy (Z_3, Z_Data);
 
         query = f"""
-            SELECT z.Dziennik_Id, z.Z_3, z.Z_2, z.Z_Data, d.D_1, z.Z_4, z.Z_5, z.Z_6, z.Z_7, z.Z_8, z.Z_9, s.S_2,
+            SELECT z.Id, z.Dziennik_Id, z.Z_3, z.Z_2, z.Z_Data, d.D_1, z.Z_4, z.Z_5, z.Z_6, z.Z_7, z.Z_8, z.Z_9, s.S_2,
                    d.D_4 as Dowod, d.D_10 as Operacja, d.D_3 as Kontrahent, d.D_12 as KSeF
             FROM Zapisy z
             LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
@@ -764,7 +792,7 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
                     operacja_html = f'<div class="max-w-[200px] truncate">{html.escape(operacja_full)}</div>'
 
                 html_rows += f"""
-                <tr class="hover whitespace-nowrap text-xs">
+                <tr class="hover whitespace-nowrap text-xs" data-id="{row['Id']}">
                     <td data-type="text">{konto_html}</td>
                     <td data-type="text">{opis_html}</td>
                     <td data-type="date" data-value="{row['Z_Data'] or ''}">{data_val}</td>
@@ -786,7 +814,7 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
                 ma_waluta_str = f"{ma_waluta_val} {ma_waluta_code}".strip() if ma_waluta_val else ""
 
                 html_rows += f"""
-                <tr class="hover whitespace-nowrap text-xs">
+                <tr class="hover whitespace-nowrap text-xs" data-id="{row['Id']}">
                     <td data-type="text">{konto_html}</td>
                     <td data-type="text">{opis_html}</td>
                     <td data-type="date" data-value="{row['Z_Data'] or ''}">{data_val}</td>
@@ -1252,7 +1280,7 @@ async def get_ai_tab(request: Request):
 async def get_badanie_tab(request: Request):
     try:
         conn = db_service.get_connection()
-        keys = ["Biegly", "Istotnosc_Ogolna", "Istotnosc_Wykonawcza", "Uwagi"]
+        keys = ["Biegly", "Istotnosc_Ogolna", "Istotnosc_Wykonawcza", "Istotnosc_Trywialna", "Uwagi"]
         params = {}
         for key in keys:
             row = conn.execute("SELECT Tekst, Kwota FROM ParametryBadania WHERE Klucz = ?", (key,)).fetchone()
@@ -1275,6 +1303,7 @@ async def save_badanie(
     biegly: str = Form(""),
     istotnosc_ogolna: str = Form("0"),
     istotnosc_wykonawcza: str = Form("0"),
+    istotnosc_trywialna: str = Form("0"),
     uwagi: str = Form("")
 ):
     try:
@@ -1282,15 +1311,18 @@ async def save_badanie(
         try:
             val_ogolna = int(round(float(istotnosc_ogolna.replace(" ", ""))))
             val_wykonawcza = int(round(float(istotnosc_wykonawcza.replace(" ", ""))))
+            val_trywialna = int(round(float(istotnosc_trywialna.replace(" ", ""))))
         except (ValueError, TypeError):
             val_ogolna = 0
             val_wykonawcza = 0
+            val_trywialna = 0
 
         conn = db_service.get_connection()
         data = [
             ("Biegly", "Kluczowy biegły rewident", biegly, None),
             ("Istotnosc_Ogolna", "Istotność Ogólna", None, val_ogolna),
             ("Istotnosc_Wykonawcza", "Istotność Wykonawcza", None, val_wykonawcza),
+            ("Istotnosc_Trywialna", "Kwota pomijalna w badaniu", None, val_trywialna),
             ("Uwagi", "Uwagi do pliku", uwagi, None)
         ]
         

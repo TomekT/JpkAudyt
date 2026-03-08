@@ -79,9 +79,23 @@ if __name__ == "__main__":
         
         try:
             server_process.start()
-            server_process.join()  # Czeka, aż proces uvicorn zakończy się (np. przez os._exit)
+            server_process.join()  # Czeka, aż proces uvicorn zakończy się
+            
+            # Protokół wyjścia:
+            # exitcode == 0: Zamknięcie przez timeout (inactivity) -> Kończymy pętlę launchera
+            # exitcode == 5: Restart wymuszony (hard-reset) -> Kontynuujemy pętlę
+            # exitcode != 0: Błąd/Crash -> Kontynuujemy pętlę (autostart)
+            
+            if server_process.exitcode == 0:
+                print("Serwer zamknięty poprawnie (Inactivity Timeout). Zamykanie launchera.")
+                break
+            elif server_process.exitcode == 5:
+                print("Zarządzono restart aplikacji (Hard Reset)...")
+            else:
+                print(f"Serwer zakończył pracę z kodem {server_process.exitcode}. Restartowanie...")
+                
         except Exception as e:
             print(f"Błąd procesu serwera: {e}")
+            time.sleep(2)
         
-        print("Restartowanie serwera za 2 sekundy...")
-        time.sleep(2)
+        time.sleep(1)
