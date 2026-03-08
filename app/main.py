@@ -1,5 +1,6 @@
 import shutil
 import os
+import sys
 import time
 import signal
 import asyncio
@@ -39,7 +40,7 @@ async def lifespan(app: FastAPI):
             # Kill if no heartbeat for > 15 seconds
             if time.time() - app.state.last_heartbeat > 15:
                 print("Brak aktywności (timeout 15s) - zamykanie serwera...")
-                os.kill(os.getpid(), signal.SIGTERM)
+                os._exit(0)
                 break
 
     asyncio.create_task(check_connection())
@@ -76,6 +77,21 @@ async def add_privacy_headers(request: Request, call_next):
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
     return response
+
+@app.post("/api/hard-reset")
+async def hard_reset():
+    logger.info("Zarządzono twardy restart aplikacji.")
+    
+    async def _do_shutdown():
+        await asyncio.sleep(0.5)
+        try:
+            db_service.close()
+        except Exception as e:
+            logger.error(f"Błąd zamykania bazy: {e}")
+        os._exit(0)
+    
+    asyncio.create_task(_do_shutdown())
+    return HTMLResponse("System is restarting...")
 
 @app.post("/api/heartbeat")
 async def heartbeat():

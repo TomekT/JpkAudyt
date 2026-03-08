@@ -289,22 +289,30 @@
                     </span>
                 </h2>
             </div>
-            <div class="flex-none">
-                <div class="flex items-center gap-6">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold uppercase opacity-50">Tryb ciemny:</span>
-                        <input type="checkbox" id="theme-toggle" class="toggle toggle-primary toggle-sm"
-                            onchange="toggleTheme()" />
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold uppercase opacity-50">Podmiot:</span>
-                        <span class="text-sm font-bold text-primary" id="active-podmiot-label"
-                            hx-get="/active-podmiot-name" hx-trigger="load, db-changed from:body">
-                            ---
-                        </span>
-                    </div>
+            <div class="flex items-center gap-6">
+                <button class="btn btn-ghost btn-xs gap-2 opacity-60 hover:opacity-100 transition-opacity"
+                    onclick="handleHardReset()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    ODŚWIEŻ
+                </button>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold uppercase opacity-50">Tryb ciemny:</span>
+                    <input type="checkbox" id="theme-toggle" class="toggle toggle-primary toggle-sm"
+                        onchange="toggleTheme()" />
                 </div>
+
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold uppercase opacity-50">Podmiot:</span>
+                    <span class="text-sm font-bold text-primary" id="active-podmiot-label" hx-get="/active-podmiot-name"
+                        hx-trigger="load, db-changed from:body">
+                        ---
+                    </span>
+                </div>
+            </div>
             </div>
         </header>
 
@@ -1146,6 +1154,40 @@
         </div>
     </div>
     <script>
+        function handleHardReset() {
+            // Prosty overlay informacyjny
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
+            overlay.style.zIndex = '99999';
+            overlay.style.display = 'flex';
+            overlay.style.flexDirection = 'column';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.color = 'white';
+            overlay.style.fontFamily = 'sans-serif';
+            overlay.innerHTML = `
+                <div class="flex flex-col items-center gap-4">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <div class="text-xl font-bold tracking-widest uppercase">System restartuje się...</div>
+                    <div class="text-sm opacity-50">Proszę czekać, aplikacja zostanie załadowana ponownie.</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            // Wywołanie endpointu resetu
+            fetch('/api/hard-reset', { method: 'POST' });
+
+            // Przekierowanie na stronę główną po 3 sekundach (czyszczenie filtrów i cache)
+            setTimeout(() => {
+                window.location.href = "/";
+            }, 3000);
+        }
+
         document.body.addEventListener("db-changed", (evt) => {
             console.log("Database changed, checking for reload...");
             // Jeśli event ma no_reload=true, nie przeładowujemy całej strony

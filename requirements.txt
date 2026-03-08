@@ -6,3 +6,4 @@ lxml
 python-multipart
 aiofiles
 pyinstaller
+psutil

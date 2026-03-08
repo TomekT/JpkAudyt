@@ -22,6 +22,8 @@ pause
 exit /b
 
 :start
-echo Uruchamianie aplikacji za pomoca: %PY_CMD%
-%PY_CMD% -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-pause
+echo Uruchamianie aplikacji...
+%PY_CMD% -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+echo Serwer został zatrzymany. Restartowanie za 2 sekundy...
+timeout /t 2 >nul
+goto :start
