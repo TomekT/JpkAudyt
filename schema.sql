@@ -200,6 +200,4 @@ CREATE INDEX IF NOT EXISTS idx_zapisy_data_val ON Zapisy(Z_Data);
 CREATE INDEX IF NOT EXISTS idx_zois_s1 ON ZOiS(S_1);
 CREATE INDEX IF NOT EXISTS idx_zois_s12_1 ON ZOiS(S_12_1);
 CREATE INDEX IF NOT EXISTS idx_zois_typkonta ON ZOiS(TypKonta);
-
-
-
+CREATE INDEX IF NOT EXISTS idx_zapisy_dziennikid ON Zapisy(Dziennik_Id);

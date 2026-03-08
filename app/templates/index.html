@@ -372,38 +372,97 @@
                 <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold">Zapisy Księgowe</h3>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-4">
+                            <!-- Toggle Szczegóły -->
+                            <div class="form-control">
+                                <label class="label cursor-pointer gap-2 p-0">
+                                    <input type="checkbox" id="toggle-szczegoly" name="details" value="1"
+                                        class="toggle toggle-sm toggle-primary" hx-trigger="change"
+                                        hx-on:change="htmx.trigger('body', 'filter-updated')" />
+                                    <span class="label-text text-[10px] uppercase font-bold opacity-80">Szczegóły</span>
+                                </label>
+                            </div>
                             <div class="flex gap-2">
-                                <button id="btn-show-chart" class="btn btn-sm btn-outline btn-primary gap-2"
-                                    onclick="document.getElementById('chart_modal').showModal()">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                                    </svg>
-                                    <span>Wykres</span>
-                                </button>
-                                <button class="btn btn-sm btn-outline btn-secondary gap-2" hx-get="/api/zapisy/przeglad"
-                                    hx-include="#global-zois-q, #global-zois-type, #zapisy-local-q, #filter-month"
-                                    hx-target="#modal-container" hx-swap="innerHTML"
-                                    hx-on::after-request="if(event.detail.successful) document.getElementById('przeglad_modal').showModal()">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    <span>Przegląd</span>
-                                </button>
-                                <button class="btn btn-sm btn-outline btn-secondary gap-2" onclick="openMusModal()">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                    </svg>
-                                    <span>MUS</span>
-                                </button>
+                                <!-- Grupa Przegląd -->
+                                <div class="dropdown dropdown-bottom dropdown-end">
+                                    <label tabindex="0" class="btn btn-sm btn-outline btn-secondary gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        <span>Przegląd</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 opacity-50" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </label>
+                                    <ul tabindex="0"
+                                        class="dropdown-content z-[100] menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-300 mt-1">
+                                        <li>
+                                            <a id="btn-show-chart"
+                                                onclick="document.getElementById('chart_modal').showModal()"
+                                                class="flex gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                                                </svg>
+                                                Wykres
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a hx-get="/api/zapisy/przeglad"
+                                                hx-include="#global-zois-q, #global-zois-type, #zapisy-local-q, #filter-month"
+                                                hx-target="#modal-container" hx-swap="innerHTML"
+                                                hx-on::after-request="if(event.detail.successful) document.getElementById('przeglad_modal').showModal()"
+                                                class="flex gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                </svg>
+                                                Powiązania
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Grupa Testy -->
+                                <div class="dropdown dropdown-bottom dropdown-end">
+                                    <label tabindex="0" class="btn btn-sm btn-outline btn-primary gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
+                                        <span>Testy</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 opacity-50" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </label>
+                                    <ul tabindex="0"
+                                        class="dropdown-content z-[100] menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-300 mt-1">
+                                        <li>
+                                            <a onclick="openMusModal()" class="flex gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                                </svg>
+                                                Metoda MUS
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+
                                 <button class="btn btn-sm btn-outline btn-accent"
                                     onclick="copyTableToClipboard('zapisy-container', this)">
                                     <span>Kopiuj</span>
@@ -414,7 +473,7 @@
                                 <select id="filter-month" name="month"
                                     class="select select-bordered select-sm text-xs h-8 px-2" hx-trigger="change"
                                     hx-on:change="htmx.trigger('body', 'filter-updated')">
-                                    <option value="">Wszystkie (Rok)</option>
+                                    <option value="">Rok</option>
                                     <option value="1">Styczeń</option>
                                     <option value="2">Luty</option>
                                     <option value="3">Marzec</option>
@@ -434,7 +493,7 @@
                                     class="input input-bordered input-sm join-item w-48"
                                     placeholder="Szukaj lokalnie..." hx-get="/data/table" hx-target="#zapisy-container"
                                     hx-trigger="keyup changed delay:500ms"
-                                    hx-include="#global-zois-q, #global-zois-type, #filter-month"
+                                    hx-include="#global-zois-q, #global-zois-type, #filter-month, #toggle-szczegoly"
                                     hx-indicator="#main-spinner" hx-on:keyup="htmx.trigger('body', 'filter-updated')" />
                                 <button class="btn btn-sm btn-primary join-item">Szukaj</button>
                             </div>
@@ -443,7 +502,7 @@
 
                     <div id="zapisy-container" hx-get="/data/table"
                         hx-trigger="load, db-changed from:body, filter-updated from:body"
-                        hx-include="#global-zois-q, #global-zois-type, #zapisy-local-q, #filter-month"
+                        hx-include="#global-zois-q, #global-zois-type, #zapisy-local-q, #filter-month, #toggle-szczegoly"
                         hx-swap="innerHTML" hx-indicator="#main-spinner">
                         <div class="flex justify-center items-center p-12">
                             <span class="loading loading-spinner loading-lg text-primary"></span>

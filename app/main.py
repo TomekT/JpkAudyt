@@ -685,7 +685,7 @@ async def get_dziennik():
 @app.get("/data/table", response_class=HTMLResponse)
 @app.get("/data/zapisy", response_class=HTMLResponse)
 @app.get("/zapisy", response_class=HTMLResponse)
-async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", page: int = 1):
+async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", details: str = "", page: int = 1):
     pageSize = 1000
     offset = (page - 1) * pageSize
     try:
@@ -696,7 +696,8 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
         # CREATE INDEX IF NOT EXISTS idx_zapisy_filter ON Zapisy (Z_3, Z_Data);
 
         query = f"""
-            SELECT z.Dziennik_Id, z.Z_3, z.Z_2, z.Z_Data, d.D_1, z.Z_4, z.Z_5, z.Z_6, z.Z_7, z.Z_8, z.Z_9, s.S_2
+            SELECT z.Dziennik_Id, z.Z_3, z.Z_2, z.Z_Data, d.D_1, z.Z_4, z.Z_5, z.Z_6, z.Z_7, z.Z_8, z.Z_9, s.S_2,
+                   d.D_4 as Dowod, d.D_10 as Operacja, d.D_3 as Kontrahent, d.D_12 as KSeF
             FROM Zapisy z
             LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
             LEFT JOIN ZOiS s ON z.Z_3 = s.S_1
@@ -721,6 +722,7 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
         sum_ma = totals['sum_ma'] or 0
 
         html_rows = ""
+        is_details = details == "1"
         for row in rows:
             dziennik_id = row['Dziennik_Id']
             konto_full = sanitize_text(row['Z_3'])
@@ -728,32 +730,87 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
             data_val = row['Z_Data'] or "---"
             nazwa_full = sanitize_text(row['S_2'])
             
-            tip_content = f"{konto_full}\\n{nazwa_full or '---'}"
-            konto_html = f'<div class="tooltip tooltip-right text-left" data-tip="{tip_content}"><div class="max-w-[150px] truncate">{konto_full}</div></div>'
-            opis_html = f'<div class="tooltip tooltip-right text-left" data-tip="{opis_full}"><div class="max-w-xs truncate">{opis_full}</div></div>'
+            # Escape strings for attributes
+            tip_content = f"{html.escape(konto_full)}\\n{html.escape(nazwa_full or '---')}"
+            konto_html = f'<div class="tooltip tooltip-right text-left" data-tip="{tip_content}"><div class="max-w-[150px] truncate">{html.escape(konto_full)}</div></div>'
+            opis_html = f'<div class="tooltip tooltip-right text-left" data-tip="{html.escape(opis_full)}"><div class="max-w-xs truncate">{html.escape(opis_full)}</div></div>'
 
-            wn_waluta_val = format_amount(row['Z_5'])
-            wn_waluta_code = row['Z_6'] or ""
-            wn_waluta_str = f"{wn_waluta_val} {wn_waluta_code}".strip() if wn_waluta_val else ""
-            ma_waluta_val = format_amount(row['Z_8'])
-            ma_waluta_code = row['Z_9'] or ""
-            ma_waluta_str = f"{ma_waluta_val} {ma_waluta_code}".strip() if ma_waluta_val else ""
+            if is_details:
+                dowod = sanitize_text(row['Dowod'])
+                kontrahent = sanitize_text(row['Kontrahent'])
+                ksef = sanitize_text(row['KSeF'])
+                
+                operacja_full = sanitize_text(row['Operacja'])
+                if len(operacja_full) > 50:
+                    op_trimmed = operacja_full[:47] + "..."
+                    operacja_html = f'<div class="tooltip tooltip-right text-left" data-tip="{html.escape(operacja_full)}"><div class="max-w-[200px] truncate">{html.escape(op_trimmed)}</div></div>'
+                else:
+                    operacja_html = f'<div class="max-w-[200px] truncate">{html.escape(operacja_full)}</div>'
 
-            html_rows += f"""
-            <tr class="hover whitespace-nowrap text-xs">
-                <td data-type="text">{konto_html}</td>
-                <td data-type="text">{opis_html}</td>
-                <td data-type="date" data-value="{row['Z_Data'] or ''}">{data_val}</td>
-                <td data-type="text" class="text-primary cursor-pointer hover:underline" onclick="openDziennikModal({dziennik_id})">{row['D_1']}</td>
-                <td data-type="number" data-value="{row['Z_4'] or 0}" class="text-right font-mono">{format_amount(row['Z_4'])}</td>
-                <td data-type="text" class="text-right font-mono">{wn_waluta_str}</td>
-                <td data-type="number" data-value="{row['Z_7'] or 0}" class="text-right font-mono">{format_amount(row['Z_7'])}</td>
-                <td data-type="text" class="text-right font-mono">{ma_waluta_str}</td>
-            </tr>
-            """
+                html_rows += f"""
+                <tr class="hover whitespace-nowrap text-xs">
+                    <td data-type="text">{konto_html}</td>
+                    <td data-type="text">{opis_html}</td>
+                    <td data-type="date" data-value="{row['Z_Data'] or ''}">{data_val}</td>
+                    <td data-type="text" class="text-primary cursor-pointer hover:underline" onclick="openDziennikModal({dziennik_id})">{row['D_1']}</td>
+                    <td data-type="number" data-value="{row['Z_4'] or 0}" class="text-right font-mono">{format_amount(row['Z_4'])}</td>
+                    <td data-type="number" data-value="{row['Z_7'] or 0}" class="text-right font-mono">{format_amount(row['Z_7'])}</td>
+                    <td data-type="text">{dowod}</td>
+                    <td data-type="text" data-value="{html.escape(operacja_full)}">{operacja_html}</td>
+                    <td data-type="text">{kontrahent}</td>
+                    <td data-type="text">{ksef}</td>
+                </tr>
+                """
+            else:
+                wn_waluta_val = format_amount(row['Z_5'])
+                wn_waluta_code = row['Z_6'] or ""
+                wn_waluta_str = f"{wn_waluta_val} {wn_waluta_code}".strip() if wn_waluta_val else ""
+                ma_waluta_val = format_amount(row['Z_8'])
+                ma_waluta_code = row['Z_9'] or ""
+                ma_waluta_str = f"{ma_waluta_val} {ma_waluta_code}".strip() if ma_waluta_val else ""
+
+                html_rows += f"""
+                <tr class="hover whitespace-nowrap text-xs">
+                    <td data-type="text">{konto_html}</td>
+                    <td data-type="text">{opis_html}</td>
+                    <td data-type="date" data-value="{row['Z_Data'] or ''}">{data_val}</td>
+                    <td data-type="text" class="text-primary cursor-pointer hover:underline" onclick="openDziennikModal({dziennik_id})">{row['D_1']}</td>
+                    <td data-type="number" data-value="{row['Z_4'] or 0}" class="text-right font-mono">{format_amount(row['Z_4'])}</td>
+                    <td data-type="text" class="text-right font-mono">{wn_waluta_str}</td>
+                    <td data-type="number" data-value="{row['Z_7'] or 0}" class="text-right font-mono">{format_amount(row['Z_7'])}</td>
+                    <td data-type="text" class="text-right font-mono">{ma_waluta_str}</td>
+                </tr>
+                """
         
+        if is_details:
+            headers_html = """
+                <th>Konto</th>
+                <th>Opis</th>
+                <th>Data</th>
+                <th>Dziennik</th>
+                <th class="text-right">Kwota Wn</th>
+                <th class="text-right">Kwota Ma</th>
+                <th>Dowód</th>
+                <th>Operacja</th>
+                <th>Kontrahent</th>
+                <th>KSeF</th>
+            """
+            colspan = 10
+        else:
+            headers_html = """
+                <th>Konto</th>
+                <th>Opis</th>
+                <th>Data</th>
+                <th>Dziennik</th>
+                <th class="text-right">Kwota Wn</th>
+                <th class="text-right">Waluta Wn</th>
+                <th class="text-right">Kwota Ma</th>
+                <th class="text-right">Waluta Ma</th>
+            """
+            colspan = 8
+
         if not html_rows:
-            html_rows = "<tr><td colspan='8' class='text-center'>Brak danych</td></tr>"
+            html_rows = f"<tr><td colspan='{colspan}' class='text-center'>Brak danych</td></tr>"
             
         return f"""
         <div class="mb-4 p-3 bg-base-200 rounded-xl border border-base-content/5 flex gap-8 justify-end items-center shadow-inner">
@@ -774,14 +831,7 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
             <table id="zapisy-table" class="table table-xs">
                 <thead>
                     <tr>
-                        <th>Konto</th>
-                        <th>Opis</th>
-                        <th>Data</th>
-                        <th>Dziennik</th>
-                        <th class="text-right">Kwota Wn</th>
-                        <th class="text-right">Waluta Wn</th>
-                        <th class="text-right">Kwota Ma</th>
-                        <th class="text-right">Waluta Ma</th>
+                        {headers_html}
                     </tr>
                 </thead>
                 <tbody>
