@@ -72,13 +72,15 @@ CREATE TABLE ZOiS (
     S_4 DECIMAL(18, 2) DEFAULT 0,  
     S_5 DECIMAL(18, 2) DEFAULT 0,  
     
-    -- Obroty i Salda
-    S_6 DECIMAL(18, 2) DEFAULT 0,  
-    S_7 DECIMAL(18, 2) DEFAULT 0,  
-    S_8 DECIMAL(18, 2) DEFAULT 0,  
-    S_9 DECIMAL(18, 2) DEFAULT 0,  
-    S_10 DECIMAL(18, 2) DEFAULT 0, 
-    S_11 DECIMAL(18, 2) DEFAULT 0, 
+    -- Obroty
+    S_6 DECIMAL(18, 2) DEFAULT 0,  -- Obroty Wn
+    S_7 DECIMAL(18, 2) DEFAULT 0,  -- Obroty Ma
+    S_8 DECIMAL(18, 2) DEFAULT 0,  -- Obroty Narastające Wn
+    S_9 DECIMAL(18, 2) DEFAULT 0,  -- Obroty Narastające Ma
+
+    --Salda  
+    S_10 DECIMAL(18, 2) DEFAULT 0, -- Saldo Wn
+    S_11 DECIMAL(18, 2) DEFAULT 0, -- Saldo Ma
     
     -- Znaczniki Podatkowe
     S_12_1 TEXT,                   
@@ -86,7 +88,7 @@ CREATE TABLE ZOiS (
     S_12_3 TEXT,                   
     
     TypKonta TEXT,                 
-    IsAnalytical INTEGER DEFAULT 0,
+    IsAnalytical INTEGER DEFAULT 0,  -- 1 = Analityczne, 0 = Syntetyczne
     
     FOREIGN KEY (S_12_1) REFERENCES Slownik_Kategorii(Kod),
     FOREIGN KEY (S_12_2) REFERENCES Slownik_Kategorii(Kod),

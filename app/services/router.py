@@ -1,8 +1,13 @@
 import logging
 import os
+import time
 from pathlib import Path
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
 from app.services.etl import etl_service
 from app.services.legacy_etl import legacy_etl_service
+from app.services.gemini_agent import JpkAgent
+from app.core.config import config_manager
 
 logger = logging.getLogger(__name__)
 
@@ -74,3 +79,34 @@ class JPKRouter:
 
 # Instance for easy import
 jpk_router = JPKRouter()
+
+# --- AI AGENT SECTION ---
+
+ai_router = APIRouter()
+
+class ChatRequest(BaseModel):
+    message: str
+
+@ai_router.post("/api/chat")
+async def chat_with_ai(request_data: ChatRequest, request: Request):
+    """
+    Endpoint obsługujący interakcję z agentem AI.
+    Inicjalizuje JpkAgent na aktualnie otwartej bazie i przesyła pytanie.
+    Potrzymuje heartbeat serwera.
+    """
+    # Reset licznika bezczynności (heartbeat)
+    request.app.state.last_heartbeat = time.time()
+    
+    db_path = config_manager.get_last_db()
+    if not db_path:
+        return {"response": "System nie wykrył aktywnej bazy danych. Proszę zaimportować plik JPK lub wybrać bazę z listy ostatnich plików."}
+    
+    try:
+        # Konstruktor JpkAgent wczytuje schemat i konfiguruje model
+        agent = JpkAgent(db_path)
+        answer = agent.ask(request_data.message)
+        return {"response": answer}
+    except Exception as e:
+        logger.error(f"Błąd w /api/chat: {e}")
+        # Nie rzucamy 500, aby frontend mógł wyświetlić czytelny komunikat o błędzie
+        return {"response": f"Wystąpił błąd podczas przetwarzania pytania: {str(e)}"}

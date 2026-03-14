@@ -1,8 +1,14 @@
-import json
 import os
+import json
 from pathlib import Path
 from typing import Optional, List
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 DEFAULT_PROMPTS = {
     "Produkcyjna": "Rola: Działaj jako doświadczony biegły rewident (senior manager/partner) przeprowadzający badanie sprawozdania finansowego polskiej firmy produkcyjnej. Twoim zadaniem jest przeprowadzenie analitycznych procedur przeglądowych na dostarczonym Zestawieniu Obrotów i Sald (ZOiS) w celu identyfikacji ryzyk istotnego zniekształcenia.\n\nKontekst:\n- Podmiot: Polska spółka produkcyjna.\n- Dane: Plik CSV zawiera obroty i salda (BO, obroty Wn/Ma, Saldo Końcowe).\n- Waluta: PLN.\n\nZadania analityczne:\n1. Analiza spójności logicznej: Sprawdź, czy salda wykazują typowe dla danej grupy kont znaki (np. czy nie występują nienaturalne salda kredytowe na należnościach lub debetowe na zobowiązaniach bez widocznych zaliczek).\n2. Identyfikacja ryzyk specyficznych dla produkcji:\n   - Analizuj strukturę kosztów wytworzenia i zapasów (materiały, półprodukty, wyroby gotowe) do kosztów rodzajowych i przychodów.\n   - Zwróć uwagę na konta odchyleń od cen ewidencyjnych i rozliczenia kosztów (zespół 5) pod kątem potencjalnych błędów w wycenie produkcji.\n3. Wychwycenie anomalii w obrotach: Zidentyfikuj konta o nienaturalnie wysokiej dynamice lub nietypowych relacjach (np. wysokie koszty remontów przy niskich środkach trwałych, brak kosztów energii przy wysokiej produkcji itp.).\n4. Weryfikacja podatkowa i rezerwy: Sprawdź kompletność ujęcia rezerw, rozliczeń międzyokresowych oraz poprawność sald z tytułu podatków i ZUS.\n5. Analiza \"Cut-off\" i \"Window Dressing\": Poszukaj śladów sugerujących manipulację wynikiem na koniec okresu (np. nietypowe salda na kontach przejściowych).\n\nOczekiwany format raportu: Podziel odpowiedź na sekcje:\n- Kluczowe ryzyka: (Tabela z kolumnami: Konto, Opis ryzyka, Sugerowana procedura badania).\n- Anomalie kwotowe: Lista pozycji wymagających natychmiastowego wyjaśnienia przez Zarząd.\n- Wskaźniki: Krótka analiza podstawowych wskaźników (rentowność sprzedaży, rotacja zapasów, płynność), jeśli dane na to pozwalają.\n\nUwaga: Jeśli dane w CSV są nieczytelne lub brakuje nazw kont, poproś o doprecyzowanie przed rozpoczęciem analizy.",

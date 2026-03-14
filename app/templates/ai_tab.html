@@ -125,9 +125,54 @@
             </div>
         </div>
     </div>
+
+    <!-- Chat Section -->
+    <div class="card bg-base-100 border border-base-300 shadow-xl overflow-hidden">
+        <div class="card-body p-0 flex flex-col h-[600px]">
+            <div class="bg-base-200 p-4 border-b border-base-300 flex justify-between items-center">
+                <h3 class="text-sm font-bold uppercase opacity-60 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    Interaktywny Czat z Agentem AI
+                </h3>
+                <button class="btn btn-ghost btn-xs text-error" onclick="clearAiChat()">Wyczyść czat</button>
+            </div>
+            
+            <!-- Chat History -->
+            <div id="ai-chat-history" class="flex-grow overflow-y-auto space-y-4 p-6 bg-base-200/50 scroll-smooth">
+                <div class="chat chat-start">
+                    <div class="chat-image avatar">
+                        <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">AI</div>
+                    </div>
+                    <div class="chat-bubble chat-bubble-primary text-xs shadow-md">
+                        Witaj! Jestem Twoim asystentem AI. Mam dostęp do bazy danych JPK przez narzędzie SQL Tool. O co chciałbyś zapytać?
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="p-4 bg-base-100 border-t border-base-300">
+                <div class="flex gap-2">
+                    <input type="text" id="ai-chat-input" 
+                        class="input input-bordered flex-grow text-sm focus:border-primary transition-all shadow-inner" 
+                        placeholder="Zadaj pytanie o dane... (np. Pokaż bilans konta 101 w marcu)" 
+                        onkeypress="if(event.key === 'Enter') sendAiChatMessage()">
+                    <button id="ai-chat-send-btn" class="btn btn-primary px-8 gap-2 shadow-lg" onclick="sendAiChatMessage()">
+                        <span>Wyślij</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-2-9-18-9 18 9 2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="text-[9px] opacity-40 mt-2 text-center">Obsługiwane przez Gemini 1.5 Flash • Automatytczne wywoływanie narzędzi SQL</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
+    // --- EXISTING CONFIG SCRIPTS ---
     async function saveCurrentAiPrompt(btn) {
         const type = document.getElementById('ai-company-type').value;
         const promptText = document.getElementById('ai-tab-prompt-text').value;
@@ -201,4 +246,127 @@
             btn.classList.remove('btn-success');
         }, 2000);
     }
+
+    // --- NEW CHAT SCRIPTS ---
+
+    async function sendAiChatMessage() {
+        const input = document.getElementById('ai-chat-input');
+        const message = input.value.trim();
+        if (!message) return;
+        
+        // Add user message to history
+        addMessageToChat('user', message);
+        input.value = '';
+        
+        // Add loading indicator
+        const loadingId = addLoadingIndicator();
+        
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            });
+            const data = await response.json();
+            removeLoadingIndicator(loadingId);
+            addMessageToChat('ai', data.response);
+        } catch (error) {
+            removeLoadingIndicator(loadingId);
+            addMessageToChat('ai', 'Błąd: Nie udało się połączyć z agentem AI. Sprawdź czy baza jest otwarta i czy posiadasz klucz API.');
+        }
+    }
+
+    function addMessageToChat(role, text) {
+        const history = document.getElementById('ai-chat-history');
+        const chatDiv = document.createElement('div');
+        chatDiv.className = `chat ${role === 'user' ? 'chat-end' : 'chat-start'}`;
+        
+        const avatarHtml = role === 'user' 
+            ? '<div class="chat-image avatar"><div class="w-10 rounded-full bg-secondary text-secondary-content flex items-center justify-center font-bold">Ty</div></div>'
+            : '<div class="chat-image avatar"><div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">AI</div></div>';
+            
+        const bubbleClass = role === 'user' ? 'chat-bubble-secondary' : 'chat-bubble-primary';
+        
+        // Basic markdown-like formatting for tables and bold
+        let formattedText = text
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            
+        chatDiv.innerHTML = `
+            ${avatarHtml}
+            <div class="chat-bubble ${bubbleClass} text-xs shadow-md prose prose-sm max-w-full">
+                ${formattedText}
+            </div>
+        `;
+        
+        history.appendChild(chatDiv);
+        history.scrollTop = history.scrollHeight;
+    }
+
+    function addLoadingIndicator() {
+        const history = document.getElementById('ai-chat-history');
+        const id = 'loading-' + Date.now();
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = id;
+        loadingDiv.className = 'chat chat-start opacity-50';
+        loadingDiv.innerHTML = `
+            <div class="chat-image avatar">
+                <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold animate-pulse">AI</div>
+            </div>
+            <div class="chat-bubble chat-bubble-primary text-xs">
+                <span class="loading loading-dots loading-xs"></span> Agent analizuje dane...
+            </div>
+        `;
+        history.appendChild(loadingDiv);
+        history.scrollTop = history.scrollHeight;
+        return id;
+    }
+
+    function removeLoadingIndicator(id) {
+        const loader = document.getElementById(id);
+        if (loader) loader.remove();
+    }
+
+    function clearAiChat() {
+        const history = document.getElementById('ai-chat-history');
+        history.innerHTML = `
+            <div class="chat chat-start">
+                <div class="chat-image avatar">
+                    <div class="w-10 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">AI</div>
+                </div>
+                <div class="chat-bubble chat-bubble-primary text-xs shadow-md">
+                    Czat wyczyszczony. W czym mogę pomóc?
+                </div>
+            </div>
+        `;
+    }
+
+    // Globalne wstrzykiwanie wiadomości dla openChatWithContext
+    window.injectChatMessage = function(text, autoSend = false) {
+        const input = document.getElementById('ai-chat-input');
+        if (input) {
+            input.value = text;
+            if (autoSend) {
+                sendAiChatMessage();
+            }
+        }
+    };
 </script>
+
+<style>
+    /* Formatowanie tabel wewnątrz dymków chata */
+    .prose table {
+        font-size: 0.75rem;
+        margin: 0.5rem 0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        border-collapse: collapse;
+    }
+    .prose th, .prose td {
+        padding: 0.25rem 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .chat-bubble-primary .prose {
+        color: inherit;
+    }
+</style>

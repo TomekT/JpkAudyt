@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # Moduły aplikacji
 from app.core.config import config_manager, config_ai_manager
 from app.services.database import db_service
-from app.services.router import jpk_router
+from app.services.router import jpk_router, ai_router
 
 # Define lifespan event handler to manage startup/shutdown
 @asynccontextmanager
@@ -37,9 +37,9 @@ async def lifespan(app: FastAPI):
         await asyncio.sleep(5)
         while True:
             await asyncio.sleep(5)
-            # Kill if no heartbeat for > 15 seconds
-            if time.time() - app.state.last_heartbeat > 15:
-                print("Brak aktywności (timeout 15s) - zamykanie serwera...")
+            # Kill if no heartbeat for > 120 seconds
+            if time.time() - app.state.last_heartbeat > 120:
+                print("Brak aktywności (timeout 120s) - zamykanie serwera...")
                 os._exit(0)
                 break
 
@@ -67,6 +67,7 @@ async def lifespan(app: FastAPI):
         pass
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(ai_router)
 
 @app.middleware("http")
 async def add_privacy_headers(request: Request, call_next):

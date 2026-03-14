@@ -8,3 +8,5 @@ aiofiles
 pyinstaller
 psutil
 pandas
+google-genai
+python-dotenv

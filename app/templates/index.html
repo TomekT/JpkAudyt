@@ -24,6 +24,9 @@
     <!-- Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
 
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
         :root {
             --tab-height: calc(100vh - 12rem);
@@ -328,7 +331,14 @@
                         <h3 class="text-lg font-bold">Zestawienie Obrotów i Sald</h3>
                         <div class="flex items-center gap-4">
                             <div class="flex gap-2">
-                                <button class="btn btn-sm btn-outline btn-secondary gap-2" hx-get="/api/get-ai-modal"
+                                <button class="btn btn-sm btn-outline btn-secondary gap-2"
+                                    onclick="openAiAssistantModal()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                                    </svg>
+                                    <span>Asystent AI</span>
+                                </button>
+                                <button class="btn btn-sm btn-outline btn-accent gap-2" hx-get="/api/get-ai-modal"
                                     hx-target="#modal-container" hx-swap="innerHTML">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
@@ -337,7 +347,7 @@
                                     </svg>
                                     <span>AI</span>
                                 </button>
-                                <button class="btn btn-sm btn-outline btn-accent"
+                                <button class="btn btn-sm btn-outline btn-ghost"
                                     onclick="copyTableToClipboard('zois-container', this)">
                                     <span>Kopiuj</span>
                                 </button>
@@ -1412,6 +1422,25 @@
                 window.location.href = "/";
             }, 3000);
         }
+        
+        function openChatWithContext(contextText) {
+            // Przełącz na zakładkę AI
+            const aiTab = document.getElementById('tab-ai');
+            if (aiTab) {
+                aiTab.click();
+                
+                // Poczekaj chwilę na przełączenie i wstrzyknij wiadomość
+                const checkInterval = setInterval(() => {
+                    if (window.injectChatMessage) {
+                        window.injectChatMessage(contextText, true);
+                        clearInterval(checkInterval);
+                    }
+                }, 100);
+                
+                // Timeout na wypadek błędu
+                setTimeout(() => clearInterval(checkInterval), 2000);
+            }
+        }
 
         document.body.addEventListener("db-changed", (evt) => {
             console.log("Database changed, checking for reload...");
@@ -1424,6 +1453,136 @@
             console.log("Reloading...");
             location.reload();
         });
+    </script>
+    <!-- AI Assistant Modal -->
+    <dialog id="ai_assistant_modal" class="modal">
+        <div class="modal-box w-11/12 max-w-2xl h-[600px] flex flex-col p-0 overflow-hidden relative border border-base-300">
+            <!-- Header -->
+            <div class="bg-base-200 p-4 border-b flex justify-between items-center bg-gradient-to-r from-primary/10 to-secondary/10">
+                <h3 class="font-bold text-sm uppercase opacity-70 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                    Asystent AI - Analiza ZOiS
+                </h3>
+                <form method="dialog">
+                    <button class="btn btn-sm btn-circle btn-ghost">✕</button>
+                </form>
+            </div>
+
+            <!-- Chat Content -->
+            <div id="ai-assistant-history" class="flex-grow overflow-y-auto p-4 space-y-4 bg-base-100/50 scroll-smooth">
+                <div class="chat chat-start">
+                    <div class="chat-image avatar">
+                        <div class="w-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">AI</div>
+                    </div>
+                    <div class="chat-bubble chat-bubble-primary text-xs shadow-sm shadow-primary/20">
+                        Witaj! Jestem Twoim asystentem AI dedykowanym do analizy Zestawienia Obrotów i Sald (ZOiS). Mogę pomóc Ci sprawdzić konta, przeanalizować salda lub wykryć nieprawidłowości. W czym mogę pomóc?
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 bg-base-content/5 border-t border-base-300">
+                <div class="flex gap-2">
+                    <input type="text" id="ai-assistant-input" 
+                        class="input input-bordered flex-grow text-sm shadow-inner focus:border-primary transition-all" 
+                        placeholder="Zadaj pytanie o dane..."
+                        onkeypress="if(event.key === 'Enter') sendMessageToAi()">
+                    <button id="ai-assistant-send-btn" class="btn btn-primary px-6 gap-2 shadow-lg hover:shadow-xl transition-all" onclick="sendMessageToAi()">
+                        <span>Wyślij</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-2-9-18-9 18 9 2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <script>
+        function openAiAssistantModal() {
+            const modal = document.getElementById('ai_assistant_modal');
+            if (modal) {
+                modal.showModal();
+            }
+        }
+
+        async function sendMessageToAi() {
+            const input = document.getElementById('ai-assistant-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addAssistantMessage('user', message);
+            input.value = '';
+
+            const loadingId = addAssistantLoading();
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+                removeAssistantLoading(loadingId);
+                addAssistantMessage('ai', data.response);
+            } catch (error) {
+                removeAssistantLoading(loadingId);
+                addAssistantMessage('ai', 'Błąd połączenia.');
+            }
+        }
+
+        function addAssistantMessage(role, text) {
+            const history = document.getElementById('ai-assistant-history');
+            const chatDiv = document.createElement('div');
+            chatDiv.className = `chat ${role === 'user' ? 'chat-end' : 'chat-start'}`;
+            
+            const avatarHtml = role === 'user' 
+                ? '<div class="chat-image avatar"><div class="w-8 rounded-full bg-secondary text-secondary-content flex items-center justify-center font-bold text-[10px]">Ty</div></div>'
+                : '<div class="chat-image avatar"><div class="w-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">AI</div></div>';
+            
+            const bubbleClass = role === 'user' ? 'chat-bubble-secondary' : 'chat-bubble-primary';
+            
+            const formattedContent = marked.parse(text);
+            
+            chatDiv.innerHTML = `
+                ${avatarHtml}
+                <div class="chat-bubble ${bubbleClass} text-xs shadow-sm prose prose-sm max-w-full">
+                    ${formattedContent}
+                </div>
+            `;
+            
+            history.appendChild(chatDiv);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function addAssistantLoading() {
+            const history = document.getElementById('ai-assistant-history');
+            const id = 'assist-load-' + Date.now();
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = id;
+            loadingDiv.className = 'chat chat-start opacity-50';
+            loadingDiv.innerHTML = `
+                <div class="chat-image avatar">
+                    <div class="w-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px] animate-pulse">AI</div>
+                </div>
+                <div class="chat-bubble chat-bubble-primary text-xs">
+                    <span class="loading loading-dots loading-xs"></span>
+                </div>
+            `;
+            history.appendChild(loadingDiv);
+            history.scrollTop = history.scrollHeight;
+            return id;
+        }
+
+        function removeAssistantLoading(id) {
+            const loader = document.getElementById(id);
+            if (loader) loader.remove();
+        }
     </script>
 </body>
 
