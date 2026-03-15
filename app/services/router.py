@@ -86,6 +86,8 @@ ai_router = APIRouter()
 
 class ChatRequest(BaseModel):
     message: str
+    model: str = "gemini-2.5-flash-lite"
+    session_id: str = "default"
 
 @ai_router.post("/api/chat")
 async def chat_with_ai(request_data: ChatRequest, request: Request):
@@ -102,8 +104,22 @@ async def chat_with_ai(request_data: ChatRequest, request: Request):
         return {"response": "System nie wykrył aktywnej bazy danych. Proszę zaimportować plik JPK lub wybrać bazę z listy ostatnich plików."}
     
     try:
-        # Konstruktor JpkAgent wczytuje schemat i konfiguruje model
-        agent = JpkAgent(db_path)
+        current_session = request_data.session_id
+        # Get session dictionary if not present
+        if not hasattr(request.app.state, "ai_sessions"):
+            request.app.state.ai_sessions = {}
+            
+        existing_agent = request.app.state.ai_sessions.get(current_session)
+        
+        # Reset condition: No agent OR model changed
+        if not existing_agent or existing_agent.model_name != request_data.model:
+            logger.info(f"Inicjalizacja nowego agenta dla sesji {current_session} (Model: {request_data.model})")
+            new_agent = JpkAgent(db_path, model_name=request_data.model)
+            request.app.state.ai_sessions[current_session] = new_agent
+            agent = new_agent
+        else:
+            agent = existing_agent
+            
         answer = agent.ask(request_data.message)
         return {"response": answer}
     except Exception as e:

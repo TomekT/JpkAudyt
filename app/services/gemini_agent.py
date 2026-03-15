@@ -12,14 +12,16 @@ class JpkAgent:
     Używa nowoczesnego SDK google-genai i poprawnej konfiguracji typów.
     """
     
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str, model_name: str = "gemini-2.5-flash-lite"):
         """
         Inicjalizacja agenta.
         
         Args:
             db_path: Ścieżka do pliku bazy danych SQLite.
+            model_name: Nazwa modelu LLM do użycia.
         """
         self.db_path = db_path
+        self.model_name = model_name
         self.client = None
         self.chat = None
         
@@ -56,9 +58,9 @@ class JpkAgent:
                 f"{schema_content}"
             )
 
-            # Poprawna inicjalizacja czatu z użyciem modelu gemini-2.0-flash
+            # Poprawna inicjalizacja czatu z użyciem wybranego modelu
             self.chat = self.client.chats.create(
-                model="gemini-2.5-flash",
+                model=model_name,
                 config=types.GenerateContentConfig(
                     tools=[self.execute_sql],
                     automatic_function_calling=types.AutomaticFunctionCallingConfig(

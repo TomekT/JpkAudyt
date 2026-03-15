@@ -575,8 +575,8 @@
                     </div>
                 </div>
 
-                <!-- AI Tab (Ustawienia) -->
-                <input id="tab-ai" type="radio" name="main_tabs" role="tab" class="tab" aria-label="AI" />
+                <!-- ParamAI Tab (Ustawienia) -->
+                <input id="tab-ai" type="radio" name="main_tabs" role="tab" class="tab" aria-label="ParamAI" />
                 <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
                     <div id="ai-tab-container" hx-get="/api/ai-tab" hx-trigger="load">
                         <span class="loading loading-spinner loading-lg"></span> Ładowanie konfiguracji AI...
@@ -1424,21 +1424,14 @@
         }
         
         function openChatWithContext(contextText) {
-            // Przełącz na zakładkę AI
-            const aiTab = document.getElementById('tab-ai');
-            if (aiTab) {
-                aiTab.click();
-                
-                // Poczekaj chwilę na przełączenie i wstrzyknij wiadomość
-                const checkInterval = setInterval(() => {
-                    if (window.injectChatMessage) {
-                        window.injectChatMessage(contextText, true);
-                        clearInterval(checkInterval);
-                    }
-                }, 100);
-                
-                // Timeout na wypadek błędu
-                setTimeout(() => clearInterval(checkInterval), 2000);
+            // Open the AI Assistant Modal
+            openAiAssistantModal();
+            
+            // Inject message and send
+            const input = document.getElementById('ai-assistant-input');
+            if (input) {
+                input.value = contextText;
+                sendMessageToAi();
             }
         }
 
@@ -1496,6 +1489,15 @@
                         </svg>
                     </button>
                 </div>
+                <!-- Model Selection Row -->
+                <div class="flex justify-between items-center mt-2 px-1">
+                    <select id="ai-model-select" class="select select-ghost select-xs text-[10px] opacity-70 hover:opacity-100 transition-opacity">
+                        <option value="gemini-2.5-flash-lite" selected>Gemini 2.5 Flash Lite - Szybki/Domyślny</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash - Precyzyjny</option>
+                        <option value="gemini-flash-latest">Gemini Flash Latest</option>
+                    </select>
+                    <div class="text-[9px] opacity-40 text-right">Automatytczne wywoływanie narzędzi SQL</div>
+                </div>
             </div>
         </div>
         <form method="dialog" class="modal-backdrop">
@@ -1504,6 +1506,32 @@
     </dialog>
 
     <script>
+        // Unique session ID for AI Chat, cleared on refresh
+        let aiSessionId = Math.random().toString(36).substring(7);
+        
+        // Listen for model change to clear context
+        document.addEventListener('DOMContentLoaded', () => {
+            const modelSelect = document.getElementById('ai-model-select');
+            if (modelSelect) {
+                modelSelect.addEventListener('change', () => {
+                    aiSessionId = Math.random().toString(36).substring(7);
+                    const history = document.getElementById('ai-assistant-history');
+                    if (history) {
+                        history.innerHTML = `
+                            <div class="chat chat-start">
+                                <div class="chat-image avatar">
+                                    <div class="w-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">AI</div>
+                                </div>
+                                <div class="chat-bubble chat-bubble-primary text-xs shadow-sm shadow-primary/20">
+                                    Model został zmieniony. Rozpoczynamy nową rozmowę (kontekst wyczyszczony).
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            }
+        });
+
         function openAiAssistantModal() {
             const modal = document.getElementById('ai_assistant_modal');
             if (modal) {
@@ -1521,11 +1549,18 @@
 
             const loadingId = addAssistantLoading();
             
+            // Get selected model
+            const model = document.getElementById('ai-model-select').value;
+            
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ 
+                        message: message,
+                        model: model,
+                        session_id: aiSessionId
+                    })
                 });
                 const data = await response.json();
                 removeAssistantLoading(loadingId);

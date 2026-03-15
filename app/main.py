@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Start aplikacji (lifespan startup)...")
     app.state.last_heartbeat = time.time()
+    app.state.ai_sessions = {}
 
     async def check_connection():
         # Początkowy grace period (5s) na start systemu
