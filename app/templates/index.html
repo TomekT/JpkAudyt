@@ -444,11 +444,24 @@
                                                 <option value="">Wszystkie (Etykieta)</option>
                                             </select>
                                         </div>
-                                        <div class="card-actions justify-end mt-4">
-                                            <button class="btn btn-xs btn-ghost" onclick="resetAllZoisFilters()">Resetuj</button>
+                                        <div class="card-actions flex flex-col items-stretch mt-4">
+                                            <button class="btn btn-xs btn-ghost text-success hover:bg-success/10 w-full justify-start gap-2" onclick="document.getElementById('modal_mapping').showModal()">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                                                Mapowanie kont
+                                            </button>
+                                            <hr class="my-3 border-base-content/10" />
+                                            <div class="flex justify-end w-full">
+                                                <button class="btn btn-xs btn-ghost text-error gap-1 hover:bg-error/10" onclick="resetAllZoisFilters()">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                    Resetuj
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <input type="hidden" id="zois-forced-ids" name="forced_ids" class="zois-filter" value="">
+
                             </div> <!-- me-2 end -->
 
                             <div class="join">
@@ -1559,7 +1572,7 @@
 
     <!-- Global Spinner -->
     <div id="main-spinner"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-base-300/20 backdrop-blur-sm htmx-indicator">
+        class="fixed inset-0 z-[99999] flex items-center justify-center bg-base-300/20 backdrop-blur-sm htmx-indicator">
         <div
             class="flex flex-col items-center gap-4 bg-base-100 p-8 rounded-2xl shadow-2xl border border-base-content/10">
             <span class="loading loading-spinner loading-lg text-primary"></span>
@@ -2033,17 +2046,19 @@
         const q = document.getElementById('global-zois-q');
         const type = document.getElementById('filter-account-type');
         const label = document.getElementById('filter-label-tag');
+        const forced = document.getElementById('zois-forced-ids');
         
         if (q) q.value = '';
         if (type) type.value = '';
         if (label) label.value = '';
+        if (forced) forced.value = '';
         
         updateFilterState('ZOiS');
         
         // Trigger HTMX to reload the container with empty filters
         htmx.ajax('GET', '/zois', {
             target: '#zois-container',
-            values: { q: '', type: '', label_id: '' }
+            values: { q: '', type: '', label_id: '', forced_ids: '' }
         });
         htmx.trigger('body', 'filter-updated');
     }
@@ -2155,6 +2170,127 @@
         }
     }
 
+    // Account Mapping Handler
+    function formatCurrencyInput(input, blur = false) {
+        let val = input.value.replace(/[^0-9,-]/g, '').replace(',', '.');
+        if (isNaN(parseFloat(val))) {
+            if (blur) input.value = '';
+            return;
+        }
+        
+        // Handle negative and decimals
+        let parts = val.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        
+        if (blur) {
+            let num = parseFloat(val);
+            input.value = num.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\u00A0/g, ' ');
+        } else {
+            input.value = parts.join(',');
+        }
+    }
+
+    async function handleMappingSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        
+        // Helper to unformat PL numbers
+        const unformat = (val) => {
+            if (!val) return "";
+            return val.toString().replace(/[\s\u00A0]/g, '').replace(',', '.');
+        };
+
+        const bzRaw = formData.get('bz');
+        const boRaw = formData.get('bo');
+        
+        const bzVal = unformat(bzRaw);
+        const boVal = unformat(boRaw);
+        
+        if (!bzVal) {
+            if (window.showNotification) showNotification("Pole BZ jest wymagane", "warning");
+            return;
+        }
+
+        const prefixes = formData.get('prefixes')?.trim();
+        if (!prefixes) {
+            if (window.showNotification) showNotification("Musisz podać prefixy kont (np. 01, 20), aby ograniczyć zakres wyszukiwania.", "warning");
+            return;
+        }
+
+        formData.set('bz', bzVal);
+        if (boVal) {
+            formData.set('bo', boVal);
+        } else {
+            formData.delete('bo');
+        }
+        
+        // Ensure side is always set
+        if (!formData.get('side')) {
+            formData.set('side', 'Wn');
+        }
+
+        const spinner = document.getElementById('main-spinner');
+        const textEl = spinner?.querySelector('.uppercase');
+        const originalText = textEl?.innerText;
+        let heartbeatInterval;
+
+        try {
+            // Close modal immediately as requested by user
+            document.getElementById('modal_mapping').close();
+            
+            // Show global spinner using HTMX class
+            document.body.classList.add('htmx-request');
+            if (textEl) textEl.innerText = 'Wyszukiwanie kombinacji kont...';
+
+            // Start heartbeat to prevent server timeout during slow backtracking
+            heartbeatInterval = setInterval(() => {
+                fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
+            }, 5000);
+
+            const response = await fetch('/api/zois/map-accounts', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                const qInput = document.getElementById('global-zois-q');
+                if (qInput) qInput.value = '';
+                
+                const forcedInput = document.getElementById('zois-forced-ids');
+                if (forcedInput) forcedInput.value = data.forced_ids.join(',');
+
+                // Clear categorical filters to focus on the mapped account(s)
+                const typeInput = document.getElementById('filter-account-type');
+                const labelInput = document.getElementById('filter-label-tag');
+                if (typeInput) typeInput.value = '';
+                if (labelInput) labelInput.value = '';
+                
+                updateFilterState('ZOiS');
+                
+                // Reload ZOiS with the new query
+                await htmx.ajax('GET', '/zois', {
+                    target: '#zois-container',
+                    values: { q: '', type: '', label_id: '', forced_ids: data.forced_ids.join(',') }
+                });
+                
+                htmx.trigger('body', 'filter-updated');
+            } else {
+                if (window.showNotification) showNotification(data.message || "Nie znaleziono dopasowania", "warning");
+                else alert(data.message || "Nie znaleziono dopasowania");
+            }
+        } catch (error) {
+            console.error('Mapping error:', error);
+            if (window.showNotification) showNotification("Wystąpił błąd podczas wyszukiwania.", "error");
+            else alert("Wystąpił błąd podczas wyszukiwania.");
+        } finally {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            document.body.classList.remove('htmx-request');
+            if (textEl) textEl.innerText = originalText;
+        }
+    }
+
     // Initialize Filter Indicators and Listeners
     document.addEventListener('DOMContentLoaded', () => {
         const zoisInputs = ['global-zois-q', 'filter-account-type', 'filter-label-tag'];
@@ -2180,6 +2316,70 @@
         updateFilterState('Zapisy');
     });
     </script>
+    <!-- Account Mapping Modal -->
+    <dialog id="modal_mapping" class="modal">
+        <div class="modal-box w-96 border border-base-300 shadow-2xl">
+            <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.485V5.515a2 2 0 011.553-1.943L9 2l5.447 2.724A2 2 0 0116 6.669v9.916a2 2 0 01-1.553 1.943L9 20z" />
+                </svg>
+                Mapowanie kont
+            </h3>
+            <p class="text-[10px] opacity-70 mb-6 leading-relaxed">Program wyszuka konta pasujące do wartości na BZ. Jeśli ustawisz również wartość na BO, to dopasowanie będzie dotyczyło obu tych wartości.</p>
+            
+            <form id="form_mapping" class="space-y-4" onsubmit="handleMappingSubmit(event)">
+                <div class="form-control">
+                    <label class="label py-1">
+                        <span class="label-text text-[10px] uppercase font-bold opacity-60">Wartość BZ</span>
+                    </label>
+                    <input type="text" name="bz" 
+                        oninput="formatCurrencyInput(this)" 
+                        onblur="formatCurrencyInput(this, true)"
+                        placeholder="0,00"
+                        class="input input-bordered input-sm w-full font-mono text-right" required />
+                </div>
+                
+                <div class="form-control">
+                    <label class="label py-1">
+                        <span class="label-text text-[10px] uppercase font-bold opacity-60">Wartość BO (opcjonalne)</span>
+                    </label>
+                    <input type="text" name="bo" 
+                        oninput="formatCurrencyInput(this)" 
+                        onblur="formatCurrencyInput(this, true)"
+                        placeholder="0,00"
+                        class="input input-bordered input-sm w-full font-mono text-right" />
+                </div>
+                
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-4 py-1">
+                        <span class="label-text text-xs font-bold uppercase opacity-60">Strona:</span>
+                        <div class="flex items-center gap-2 bg-base-200 p-1 rounded-lg px-2">
+                            <span class="text-[10px] font-bold">Wn</span>
+                            <input type="checkbox" name="side" class="toggle toggle-primary toggle-xs" value="Ma" />
+                            <span class="text-[10px] font-bold">Ma</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="divider my-0"></div>
+                
+                <div class="form-control">
+                    <label class="label py-1">
+                        <span class="label-text text-[10px] uppercase font-bold opacity-60 tracking-wider">Ogranicz przeszukiwanie do grup</span>
+                    </label>
+                    <input type="text" name="prefixes" placeholder="np. 01 lub 07" class="input input-bordered input-sm w-full text-xs" required />
+                </div>
+                
+                <div class="modal-action flex justify-between mt-8">
+                    <button type="button" class="btn btn-sm btn-ghost" onclick="document.getElementById('modal_mapping').close()">Zamknij</button>
+                    <button type="submit" class="btn btn-sm btn-primary px-6">Szukaj</button>
+                </div>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
 </body>
 
-</html>
+</html>

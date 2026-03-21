@@ -18,9 +18,14 @@ class DatabaseService:
         parts = re.split(r'\s+LUB\s+|[,|]', q, flags=re.IGNORECASE)
         return [p.strip() for p in parts if p.strip()]
 
-    def build_zois_where(self, q: str = "", type: str = "", label_id: str = ""):
+    def build_zois_where(self, q: str = "", type: str = "", label_id: str = "", forced_ids: Optional[List[str]] = None):
         where_clauses = []
         params = {}
+        if forced_ids:
+            placeholders = ", ".join(f":fid_{i}" for i in range(len(forced_ids)))
+            where_clauses.append(f"S_1 IN ({placeholders})")
+            for i, fid in enumerate(forced_ids):
+                params[f"fid_{i}"] = fid
         if q:
             terms = self.parse_smart_query(q)
             if terms:
@@ -39,8 +44,13 @@ class DatabaseService:
             where_clauses.append("TypKonta = :type")
             params["type"] = type
         if label_id:
-            where_clauses.append("S_1 IN (SELECT ZOiS_S1 FROM Etykiety_ZOiS WHERE EtykietaId = :label_id)")
-            params["label_id"] = label_id
+            if label_id == "__NONE__":
+                where_clauses.append("S_1 NOT IN (SELECT ZOiS_S1 FROM Etykiety_ZOiS)")
+            elif label_id == "__MULTIPLE__":
+                where_clauses.append("S_1 IN (SELECT ZOiS_S1 FROM Etykiety_ZOiS GROUP BY ZOiS_S1 HAVING COUNT(*) > 1)")
+            else:
+                where_clauses.append("S_1 IN (SELECT ZOiS_S1 FROM Etykiety_ZOiS WHERE EtykietaId = :label_id)")
+                params["label_id"] = label_id
             
         where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         return where_sql, params
@@ -672,5 +682,74 @@ class DatabaseService:
             cursor = conn.execute(delete_query, params)
             return cursor.rowcount
 
+    def find_account_mapping(self, bz_target: float, bo_target: Optional[float], side: str, prefixes: str, timeout: int = 30) -> Optional[List[str]]:
+        import time
+        start_time = time.perf_counter()
+        
+        prefix_clauses = []
+        params = {}
+        if prefixes:
+            prefix_list = self.parse_smart_query(prefixes)
+            for i, p in enumerate(prefix_list):
+                key = f"p{i}"
+                prefix_clauses.append(f"S_1 LIKE :{key} || '%'")
+                params[key] = p
+        
+        where_prefix = (" AND (" + " OR ".join(prefix_clauses) + ")") if prefix_clauses else ""
+        
+        conn = self.get_connection()
+        sql = f"SELECT S_1, S_4, S_5, S_10, S_11 FROM ZOiS WHERE IsAnalytical = 1 {where_prefix} ORDER BY S_1"
+        rows = conn.execute(sql, params).fetchall()
+        
+        accounts = []
+        for row in rows:
+            bz = (row['S_10'] - row['S_11']) if side == "Wn" else (row['S_11'] - row['S_10'])
+            bo = (row['S_4'] - row['S_5']) if side == "Wn" else (row['S_5'] - row['S_4'])
+            accounts.append({
+                's1': row['S_1'],
+                'bz': float(bz or 0.0),
+                'bo': float(bo or 0.0)
+            })
+            
+        # Optymalizacja: filtrowanie kont z zerowym saldem (chyba że szukamy dokładnie 0)
+        if bo_target is None:
+            accounts = [a for a in accounts if abs(a['bz']) > 0.001]
+        else:
+            accounts = [a for a in accounts if abs(a['bz']) > 0.001 or abs(a['bo']) > 0.001]
+            
+        best_match = None
+        
+        def backtrack(index, current_bz, current_bo, path):
+            nonlocal best_match
+            if time.perf_counter() - start_time > timeout:
+                raise TimeoutError("Przekroczono czas wyszukiwania")
+                
+            if abs(current_bz - bz_target) < 0.001:
+                if bo_target is None or abs(current_bo - bo_target) < 0.001:
+                    best_match = list(path)
+                    return True
+                    
+            if index >= len(accounts):
+                return False
+                
+            acc = accounts[index]
+            path.append(acc['s1'])
+            if backtrack(index + 1, current_bz + acc['bz'], current_bo + acc['bo'], path):
+                return True
+            path.pop()
+            
+            if backtrack(index + 1, current_bz, current_bo, path):
+                return True
+                
+            return False
+
+        try:
+            backtrack(0, 0.0, 0.0, [])
+        except TimeoutError as e:
+            raise e
+            
+        return best_match
+
 db_service = DatabaseService()
+
 

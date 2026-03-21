@@ -7,13 +7,14 @@ import asyncio
 import html
 import json
 import logging
+import re
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 # Setup logging
@@ -127,6 +128,38 @@ async def test_z_score(request_data: ZScoreRequest):
     """Endpoint do wykrywania anomalii Z-Score z progiem kwotowym."""
     anomaly_ids = db_service.get_zscore_anomaly_ids(request_data.record_ids, request_data.min_amount)
     return {"anomaly_ids": anomaly_ids}
+
+@app.post("/api/zois/map-accounts")
+def map_zois_accounts(
+    bz: float = Form(...),
+    bo: Optional[float] = Form(None),
+    side: str = Form("Wn"),
+    prefixes: str = Form("")
+):
+    try:
+        matched_leaves = db_service.find_account_mapping(bz_target=bz, bo_target=bo, side=side, prefixes=prefixes, timeout=30)
+        
+        if not matched_leaves:
+            return {"status": "error", "message": "Nie znaleziono dopasowania"}
+            
+        conn = db_service.get_connection()
+        rows = conn.execute("SELECT S_1, S_3 FROM ZOiS").fetchall()
+        parent_map = {row['S_1']: row['S_3'] for row in rows}
+        
+        forced_ids = set(matched_leaves)
+        for leaf in matched_leaves:
+            curr = leaf
+            while curr in parent_map and parent_map[curr]:
+                if parent_map[curr] == curr: break
+                curr = parent_map[curr]
+                forced_ids.add(curr)
+                
+        return {"status": "success", "forced_ids": list(forced_ids)}
+    except TimeoutError:
+        return {"status": "error", "message": "Zbyt długi czas wyszukiwania. Spróbuj zawęzić prefixy."}
+    except Exception as e:
+        logger.error(f"Map accounts error: {e}")
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/test/z-score-anomalies")
 async def test_z_score_anomalies(request_data: AnomalyRequest):
@@ -438,6 +471,19 @@ def sanitize_text(text):
     raw_text = str(text)
     return raw_text.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ').strip()
 
+def polish_sort_key(text):
+    if not text: return ""
+    # Map Polish characters to base character + a unique sorting suffix.
+    # Using a dictionary with str.maketrans allows mapping 1 character to multiple characters correctly.
+    # \ufff0 and \ufff1 are used as suffixes that sort after standard alphanumeric characters.
+    d = {
+        'ą': 'a\ufff0', 'ć': 'c\ufff0', 'ę': 'e\ufff0', 'ł': 'l\ufff0', 'ń': 'n\ufff0',
+        'ó': 'o\ufff0', 'ś': 's\ufff0', 'ź': 'z\ufff0', 'ż': 'z\ufff1',
+        'Ą': 'a\ufff0', 'Ć': 'c\ufff0', 'Ę': 'e\ufff0', 'Ł': 'l\ufff0', 'Ń': 'n\ufff0',
+        'Ó': 'o\ufff0', 'Ś': 's\ufff0', 'Ź': 'z\ufff0', 'Ż': 'z\ufff1'
+    }
+    return text.translate(str.maketrans(d)).lower()
+
 # parse_smart_query and _build_where_clause moved to db_service
 
 def build_zois_tree(rows):
@@ -558,10 +604,12 @@ def render_zois_tree(nodes, depth=0):
     return html
 
 @app.get("/zois", response_class=HTMLResponse)
-async def get_zois(request: Request, q: str = "", type: str = "", label_id: str = ""):
+async def get_zois(request: Request, q: str = "", type: str = "", label_id: str = "", forced_ids: str = ""):
     # Skeleton of table
     try:
         conn = db_service.get_connection()
+        
+        forced_ids_list = forced_ids.split(",") if forced_ids else None
         
         # Ensure empty strings are treated as None for filtering purposes in build_zois_where
         # This allows build_zois_where to correctly ignore parameters that are not provided.
@@ -569,7 +617,8 @@ async def get_zois(request: Request, q: str = "", type: str = "", label_id: str 
         where_sql, params = db_service.build_zois_where(
             q=q if q else None,
             type=type if type else None,
-            label_id=label_id if label_id else None
+            label_id=label_id if label_id else None,
+            forced_ids=forced_ids_list
         )
 
         try:
@@ -661,10 +710,14 @@ async def get_zois(request: Request, q: str = "", type: str = "", label_id: str 
 async def get_zois_filters():
     try:
         conn = db_service.get_connection()
-        rows = conn.execute("SELECT DISTINCT TypKonta FROM ZOiS WHERE TypKonta IS NOT NULL AND TypKonta != '' ORDER BY TypKonta").fetchall()
+        rows = conn.execute("SELECT DISTINCT TypKonta FROM ZOiS WHERE TypKonta IS NOT NULL AND TypKonta != ''").fetchall()
+        
+        # Polish-aware sorting
+        sorted_types = sorted([r["TypKonta"] for r in rows], key=polish_sort_key)
+        
         options = '<option value="">Wszystkie (Typ Konta)</option>'
-        for r in rows:
-            options += f'<option value="{r["TypKonta"]}">{r["TypKonta"]}</option>'
+        for val in sorted_types:
+            options += f'<option value="{val}">{val}</option>'
         return options
     except Exception as e:
         logger.error(f"Error getting ZOiS filters: {e}")
@@ -672,25 +725,33 @@ async def get_zois_filters():
 
 @app.get("/zois/labels", response_class=HTMLResponse)
 async def get_zois_labels():
+    options = '<option value="">Wszystkie (Etykieta)</option>'
+    options += '<option value="__NONE__">Brak</option>'
+    options += '<option value="__MULTIPLE__">Wiele</option>'
     try:
-        # Get labels used in ZOiS
-        options = '<option value="">Wszystkie (Etykieta)</option>'
         conn = db_service.get_connection()
-        rows = conn.execute("SELECT Id, Nazwa FROM Etykiety WHERE Obszar = 'ZOiS' ORDER BY Nazwa").fetchall()
-        for r in rows:
+        rows = conn.execute("SELECT Id, Nazwa FROM Etykiety WHERE Obszar = 'ZOiS'").fetchall()
+        
+        # Polish-aware sorting
+        sorted_rows = sorted(rows, key=lambda r: polish_sort_key(r['Nazwa']))
+        
+        for r in sorted_rows:
             options += f'<option value="{r["Id"]}">{r["Nazwa"]}</option>'
-        return options
     except Exception as e:
         logger.error(f"Error getting ZOiS labels: {e}")
-        return '<option value="">Wszystkie (Etykieta)</option>'
+    return options
 
 @app.get("/api/labels/Zapisy", response_class=HTMLResponse)
 async def get_zapisy_labels():
     try:
         options = '<option value="">Wszystkie (Etykieta)</option>'
         conn = db_service.get_connection()
-        rows = conn.execute("SELECT Id, Nazwa FROM Etykiety WHERE Obszar = 'Zapisy' ORDER BY Nazwa").fetchall()
-        for r in rows:
+        rows = conn.execute("SELECT Id, Nazwa FROM Etykiety WHERE Obszar = 'Zapisy'").fetchall()
+        
+        # Polish-aware sorting
+        sorted_rows = sorted(rows, key=lambda r: polish_sort_key(r['Nazwa']))
+        
+        for r in sorted_rows:
             options += f'<option value="{r["Id"]}">{r["Nazwa"]}</option>'
         return options
     except Exception as e:
