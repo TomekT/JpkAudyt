@@ -203,3 +203,41 @@ CREATE INDEX IF NOT EXISTS idx_zois_s1 ON ZOiS(S_1);
 CREATE INDEX IF NOT EXISTS idx_zois_s12_1 ON ZOiS(S_12_1);
 CREATE INDEX IF NOT EXISTS idx_zois_typkonta ON ZOiS(TypKonta);
 CREATE INDEX IF NOT EXISTS idx_zapisy_dziennikid ON Zapisy(Dziennik_Id);
+
+-- 7. System Etykietowania (Tagowania)
+-- ---------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS Etykiety (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Nazwa TEXT UNIQUE NOT NULL,
+    Obszar TEXT NOT NULL CHECK (Obszar IN ('ZOiS', 'Zapisy', 'Dziennik'))
+);
+
+CREATE TABLE IF NOT EXISTS Etykiety_ZOiS (
+    EtykietaId INTEGER NOT NULL,
+    ZOiS_S1 TEXT NOT NULL,
+    PRIMARY KEY (EtykietaId, ZOiS_S1),
+    FOREIGN KEY (EtykietaId) REFERENCES Etykiety(Id) ON DELETE CASCADE,
+    FOREIGN KEY (ZOiS_S1) REFERENCES ZOiS(S_1) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Etykiety_Dziennik (
+    EtykietaId INTEGER NOT NULL,
+    DziennikId INTEGER NOT NULL,
+    PRIMARY KEY (EtykietaId, DziennikId),
+    FOREIGN KEY (EtykietaId) REFERENCES Etykiety(Id) ON DELETE CASCADE,
+    FOREIGN KEY (DziennikId) REFERENCES Dziennik(Id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Etykiety_Zapisy (
+    EtykietaId INTEGER NOT NULL,
+    ZapisyId INTEGER NOT NULL,
+    PRIMARY KEY (EtykietaId, ZapisyId),
+    FOREIGN KEY (EtykietaId) REFERENCES Etykiety(Id) ON DELETE CASCADE,
+    FOREIGN KEY (ZapisyId) REFERENCES Zapisy(Id) ON DELETE CASCADE
+);
+
+-- Indeksy optymalizujące zapytania Many-to-Many
+CREATE INDEX IF NOT EXISTS idx_etykiety_zois_fk ON Etykiety_ZOiS(ZOiS_S1);
+CREATE INDEX IF NOT EXISTS idx_etykiety_dziennik_fk ON Etykiety_Dziennik(DziennikId);
+CREATE INDEX IF NOT EXISTS idx_etykiety_zapisy_fk ON Etykiety_Zapisy(ZapisyId);

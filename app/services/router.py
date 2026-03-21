@@ -1,9 +1,12 @@
 import logging
+import sqlite3
 import os
 import time
 from pathlib import Path
+from typing import List, Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
+from app.services.database import db_service
 from app.services.etl import etl_service
 from app.services.legacy_etl import legacy_etl_service
 from app.services.gemini_agent import JpkAgent
@@ -126,3 +129,101 @@ async def chat_with_ai(request_data: ChatRequest, request: Request):
         logger.error(f"Błąd w /api/chat: {e}")
         # Nie rzucamy 500, aby frontend mógł wyświetlić czytelny komunikat o błędzie
         return {"response": f"Wystąpił błąd podczas przetwarzania pytania: {str(e)}"}
+# --- LABELING SECTION ---
+
+label_router = APIRouter()
+
+class BulkLabelRequest(BaseModel):
+    area: str
+    label: str
+    ids: Optional[List[Any]] = None
+    filters: Optional[Dict[str, Any]] = None
+
+@label_router.get("/api/labels/list")
+async def list_labels(area: str):
+    return {"labels": db_service.get_labels(area)}
+
+@label_router.get("/api/debug/db-status")
+async def db_status():
+    try:
+        conn = db_service.get_connection()
+        path = str(db_service.current_db_path.absolute()) if db_service.current_db_path else "None"
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cursor.fetchall()]
+        return {
+            "path": path,
+            "tables": tables,
+            "sqlite_version": sqlite3.sqlite_version
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@label_router.post("/api/labels/assigned")
+async def list_assigned_labels(request_data: Dict[str, Any]):
+    area = request_data.get("area")
+    ids = request_data.get("ids")
+    filters = request_data.get("filters")
+    
+    if filters and not ids:
+        # Pobierz etykiety na podstawie filtrów
+        return {"labels": db_service.get_assigned_labels_by_filter(area, filters)}
+    
+    return {"labels": db_service.get_assigned_labels_for_ids(area, ids or [])}
+
+@label_router.post("/api/labels/bulk-add")
+async def bulk_add(request_data: BulkLabelRequest):
+    try:
+        if request_data.filters:
+            count = db_service.bulk_add_labels_by_filter(request_data.area, request_data.filters, request_data.label)
+        else:
+            db_service.bulk_add_labels(request_data.area, request_data.ids or [], request_data.label)
+            count = len(request_data.ids or [])
+        return {"status": "success", "message": f"Dodano etykietę '{request_data.label}' do {count} rekordów."}
+    except Exception as e:
+        logger.error(f"Bulk add error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@label_router.post("/api/labels/bulk-remove")
+async def bulk_remove(request_data: BulkLabelRequest):
+    try:
+        if request_data.filters:
+            count = db_service.bulk_remove_labels_by_filter(request_data.area, request_data.filters, request_data.label)
+        else:
+            db_service.bulk_remove_labels(request_data.area, request_data.ids or [], request_data.label)
+            count = len(request_data.ids or [])
+        return {"status": "success", "message": f"Usunięto etykietę '{request_data.label}' z {count} rekordów."}
+    except Exception as e:
+        logger.error(f"Bulk remove error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@label_router.get("/api/zois/filtered-ids")
+async def get_zois_filtered_ids(q: str = "", type: str = ""):
+    """Zwraca listę S_1 (numerów kont) pasujących do filtrów."""
+    try:
+        # Reusing the filter logic (this will be moved to db_service for better sharing)
+        where_sql, params = db_service.build_zois_where(q, type)
+        sql = f"SELECT S_1 FROM ZOiS {where_sql}"
+        conn = db_service.get_connection()
+        rows = conn.execute(sql, params).fetchall()
+        return {"ids": [row['S_1'] for row in rows]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@label_router.get("/api/dziennik/filtered-ids")
+async def get_dziennik_filtered_ids(zq: str = "", month: str = "", q: str = "", type: str = ""):
+    """Zwraca listę ID dziennika pasujących do filtrów zapisów."""
+    try:
+        # Reusing the filter logic
+        where_sql, params = db_service.build_zapisy_where(q, type, zq, month)
+        sql = f"""
+            SELECT DISTINCT z.Dziennik_Id 
+            FROM Zapisy z 
+            LEFT JOIN ZOiS s ON z.Z_3 = s.S_1 
+            {where_sql}
+        """
+        conn = db_service.get_connection()
+        rows = conn.execute(sql, params).fetchall()
+        return {"ids": [row['Dziennik_Id'] for row in rows]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

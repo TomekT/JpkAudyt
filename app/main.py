@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # Moduły aplikacji
 from app.core.config import config_manager, config_ai_manager
 from app.services.database import db_service
-from app.services.router import jpk_router, ai_router
+from app.services.router import jpk_router, ai_router, label_router
 from app.services.gemini_agent import JpkAgent
 
 # Define lifespan event handler to manage startup/shutdown
@@ -70,6 +70,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(ai_router)
+app.include_router(label_router)
 
 @app.middleware("http")
 async def add_privacy_headers(request: Request, call_next):
@@ -436,60 +437,7 @@ def sanitize_text(text):
     raw_text = str(text)
     return raw_text.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ').strip()
 
-def parse_smart_query(q: str):
-    if not q:
-        return []
-    # Split by common separators: LUB (case insensitive), comma, pipe
-    # Using regex to handle LUB case insensitively
-    import re
-    parts = re.split(r'\s+LUB\s+|[,|]', q, flags=re.IGNORECASE)
-    return [p.strip() for p in parts if p.strip()]
-
-def _build_where_clause(q: str = "", type: str = "", zq: str = "", month: str = ""):
-    """Helper for dynamic SQL WHERE clause construction with parameter binding."""
-    where_clauses = []
-    params = {}
-    
-    if q:
-        terms = parse_smart_query(q)
-        if terms:
-            term_clauses = []
-            for i, term in enumerate(terms):
-                key = f"q{i}"
-                if term.startswith("konto:"):
-                    val = term[6:]
-                    term_clauses.append(f"(z.Z_3 = :{key} OR z.Z_3 LIKE :{key} || '-%')")
-                    params[key] = val
-                else:
-                    term_clauses.append(f"(z.Z_3 LIKE :{key} OR s.S_2 LIKE :{key})")
-                    params[key] = f"%{term}%"
-            where_clauses.append("(" + " OR ".join(term_clauses) + ")")
-            
-    if type:
-        where_clauses.append("s.TypKonta = :type")
-        params["type"] = type
-
-    if zq:
-        terms = parse_smart_query(zq)
-        if terms:
-            term_clauses = []
-            for i, term in enumerate(terms):
-                key = f"zq{i}"
-                if term.startswith("assoc:"):
-                    val = term[6:]
-                    term_clauses.append(f"z.Dziennik_Id IN (SELECT Dziennik_Id FROM Zapisy WHERE Z_3 LIKE :{key} || '%')")
-                    params[key] = val
-                else:
-                    term_clauses.append(f"(z.Z_3 LIKE :{key} OR z.Z_2 LIKE :{key})")
-                    params[key] = f"%{term}%"
-            where_clauses.append("(" + " OR ".join(term_clauses) + ")")
-            
-    if month and month.isdigit():
-        where_clauses.append("z.Z_DataMiesiac = :month")
-        params["month"] = int(month)
-        
-    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
-    return where_sql, params
+# parse_smart_query and _build_where_clause moved to db_service
 
 def build_zois_tree(rows):
     nodes = {}
@@ -609,37 +557,19 @@ def render_zois_tree(nodes, depth=0):
     return html
 
 @app.get("/zois", response_class=HTMLResponse)
-async def get_zois(request: Request, q: str = "", type: str = ""):
+async def get_zois(request: Request, q: str = "", type: str = "", label_id: str = ""):
     # Skeleton of table
     try:
         conn = db_service.get_connection()
         
-        where_clauses = []
-        params = {}
-        
-        if q:
-            terms = parse_smart_query(q)
-            if terms:
-                term_clauses = []
-                for i, term in enumerate(terms):
-                    key = f"q{i}"
-                    if term.startswith("konto:"):
-                        val = term[6:]
-                        # Strict account code and its children match
-                        term_clauses.append(f"(S_1 = :{key} OR S_1 LIKE :{key} || '-%')")
-                        params[key] = val
-                    else:
-                        term_clauses.append(f"(S_1 LIKE :{key} OR S_2 LIKE :{key})")
-                        params[key] = f"%{term}%"
-                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
-        
-        if type:
-            where_clauses.append("TypKonta = :type")
-            params["type"] = type
-            
-        where_sql = ""
-        if where_clauses:
-            where_sql = "WHERE " + " AND ".join(where_clauses)
+        # Ensure empty strings are treated as None for filtering purposes in build_zois_where
+        # This allows build_zois_where to correctly ignore parameters that are not provided.
+        # The instruction for build_zois_where is applied conceptually here.
+        where_sql, params = db_service.build_zois_where(
+            q=q if q else None,
+            type=type if type else None,
+            label_id=label_id if label_id else None
+        )
 
         try:
             sql = f"""
@@ -730,15 +660,41 @@ async def get_zois(request: Request, q: str = "", type: str = ""):
 async def get_zois_filters():
     try:
         conn = db_service.get_connection()
-        rows = conn.execute("SELECT DISTINCT TypKonta FROM ZOiS WHERE TypKonta IS NOT NULL ORDER BY TypKonta").fetchall()
-        
+        rows = conn.execute("SELECT DISTINCT TypKonta FROM ZOiS WHERE TypKonta IS NOT NULL AND TypKonta != '' ORDER BY TypKonta").fetchall()
         options = '<option value="">Wszystkie (Typ Konta)</option>'
-        for row in rows:
-            val = sanitize_text(row['TypKonta'])
-            options += f'<option value="{val}">{val}</option>'
+        for r in rows:
+            options += f'<option value="{r["TypKonta"]}">{r["TypKonta"]}</option>'
         return options
-    except:
+    except Exception as e:
+        logger.error(f"Error getting ZOiS filters: {e}")
         return '<option value="">Wszystkie (Typ Konta)</option>'
+
+@app.get("/zois/labels", response_class=HTMLResponse)
+async def get_zois_labels():
+    try:
+        # Get labels used in ZOiS
+        options = '<option value="">Wszystkie (Etykieta)</option>'
+        conn = db_service.get_connection()
+        rows = conn.execute("SELECT Id, Nazwa FROM Etykiety WHERE Obszar = 'ZOiS' ORDER BY Nazwa").fetchall()
+        for r in rows:
+            options += f'<option value="{r["Id"]}">{r["Nazwa"]}</option>'
+        return options
+    except Exception as e:
+        logger.error(f"Error getting ZOiS labels: {e}")
+        return '<option value="">Wszystkie (Etykieta)</option>'
+
+@app.get("/api/labels/Zapisy", response_class=HTMLResponse)
+async def get_zapisy_labels():
+    try:
+        options = '<option value="">Wszystkie (Etykieta)</option>'
+        conn = db_service.get_connection()
+        rows = conn.execute("SELECT Id, Nazwa FROM Etykiety WHERE Obszar = 'Zapisy' ORDER BY Nazwa").fetchall()
+        for r in rows:
+            options += f'<option value="{r["Id"]}">{r["Nazwa"]}</option>'
+        return options
+    except Exception as e:
+        logger.error(f"Error getting Zapisy labels: {e}")
+        return '<option value="">Wszystkie (Etykieta)</option>'
 
 @app.get("/dziennik", response_class=HTMLResponse)
 async def get_dziennik():
@@ -793,12 +749,12 @@ async def get_dziennik():
 @app.get("/data/table", response_class=HTMLResponse)
 @app.get("/data/zapisy", response_class=HTMLResponse)
 @app.get("/zapisy", response_class=HTMLResponse)
-async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", details: str = "", page: int = 1):
+async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", details: str = "", page: int = 1):
     pageSize = 1000
     offset = (page - 1) * pageSize
     try:
         conn = db_service.get_connection()
-        where_sql, params = _build_where_clause(q, type, zq, month)
+        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
 
         # Performance optimization: Recommended Index
         # CREATE INDEX IF NOT EXISTS idx_zapisy_filter ON Zapisy (Z_3, Z_Data);
@@ -946,16 +902,18 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
                     {html_rows}
                 </tbody>
             </table>
+            </div>
         </div>
         """
     except Exception as e:
         return f"<div class='alert alert-error font-mono text-xs'>Błąd: {str(e)}</div>"
 
+
 @app.get("/api/zapisy/przeglad", response_class=HTMLResponse)
-async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: str = ""):
+async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = ""):
     try:
         conn = db_service.get_connection()
-        where_sql, params = _build_where_clause(q, type, zq, month)
+        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
 
         # Using CTE to find matching Dziennik_Id, then grouping ALL Zapisy from those Dziennik_Id
         query = f"""
@@ -1052,10 +1010,10 @@ async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: 
 
 @app.get("/data/chart", response_class=HTMLResponse)
 @app.get("/api/chart-fragment", response_class=HTMLResponse)
-async def get_data_chart(q: str = "", type: str = "", zq: str = "", month: str = ""):
+async def get_data_chart(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = ""):
     try:
         conn = db_service.get_connection()
-        where_sql, params = _build_where_clause(q, type, zq, month)
+        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
 
         # 1. PRIMARY AGGREGATE SUMMARY
         agg_sql = f"""
@@ -1804,10 +1762,10 @@ def calculate_mus(populacja_rows, interval, start_point):
     return wybrane_id
 
 @app.get("/api/mus/prepare", response_class=HTMLResponse)
-async def mus_prepare(q: str = "", type: str = "", zq: str = "", month: str = ""):
+async def mus_prepare(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = ""):
     try:
         conn = db_service.get_connection()
-        where_sql, params = _build_where_clause(q, type, zq, month)
+        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
 
         sum_query = f"""
             SELECT SUM(z.Z_4) as sum_wn, SUM(z.Z_7) as sum_ma
@@ -1836,6 +1794,8 @@ async def mus_execute(
     type: str = Form(""), 
     zq: str = Form(""),
     month: str = Form(""),
+    label_id: str = Form(""),
+    label_zapisy_id: str = Form(""),
     istotnosc: float = Form(...),
     wspolczynnik: float = Form(...),
     punkt_startowy: float = Form(...)
@@ -1847,7 +1807,7 @@ async def mus_execute(
         interval = float(istotnosc) / float(wspolczynnik)
         
         conn = db_service.get_connection()
-        where_sql, params = _build_where_clause(q, type, zq, month)
+        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
 
         # Pobieramy rzędy tylko do zbudowania próby MUS iterując
         pop_query = f"""
