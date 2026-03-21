@@ -566,20 +566,62 @@
                     </div>
                 </div>
 
-                <input id="tab-badanie" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Badanie"
+                <!-- Settings Tab (Ustawienia) -->
+                <input id="tab-settings" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Ustawienia"
                     onclick="triggerAiSave()" />
-                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
-                    <!-- Badanie View -->
-                    <div id="badanie-tab-container" hx-get="/api/badanie-tab" hx-trigger="load, db-changed from:body">
-                        <span class="loading loading-spinner loading-lg"></span> Ładowanie parametrów badania...
-                    </div>
-                </div>
+                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-hidden">
+                    <div class="flex h-full gap-6">
+                        <!-- Sub-nav radio inputs -->
+                        <input type="radio" name="sub_settings" id="sub-badanie" class="hidden peer/badanie" checked />
+                        <input type="radio" name="sub_settings" id="sub-export-llm" class="hidden peer/export-llm" />
+                        <input type="radio" name="sub_settings" id="sub-asystent" class="hidden peer/asystent" />
 
-                <!-- ParamAI Tab (Ustawienia) -->
-                <input id="tab-ai" type="radio" name="main_tabs" role="tab" class="tab" aria-label="ParamAI" />
-                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
-                    <div id="ai-tab-container" hx-get="/api/ai-tab" hx-trigger="load">
-                        <span class="loading loading-spinner loading-lg"></span> Ładowanie konfiguracji AI...
+                        <!-- Sidebar (Left) -->
+                        <ul class="menu bg-base-100 w-64 rounded-box border border-base-300 h-fit shadow-sm p-0 overflow-hidden
+                            peer-checked/badanie:[&_.l-badanie]:bg-primary peer-checked/badanie:[&_.l-badanie]:text-primary-content
+                            peer-checked/export-llm:[&_.l-export-llm]:bg-primary peer-checked/export-llm:[&_.l-export-llm]:text-primary-content
+                            peer-checked/asystent:[&_.l-asystent]:bg-primary peer-checked/asystent:[&_.l-asystent]:text-primary-content">
+                            <li class="menu-title text-primary/50 text-[10px] uppercase font-bold p-4 pb-2">Konfiguracja</li>
+                            <li>
+                                <label for="sub-badanie" 
+                                    onclick="triggerAiSave()"
+                                    class="l-badanie flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-base-200 font-bold text-xs uppercase rounded-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    </svg>
+                                    Badanie
+                                </label>
+                            </li>
+                            <li>
+                                <label for="sub-export-llm" 
+                                    class="l-export-llm flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-base-200 font-bold text-xs uppercase rounded-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    Eksport do LLM
+                                </label>
+                            </li>
+                            <li>
+                                <label for="sub-asystent" 
+                                    class="l-asystent flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-base-200 font-bold text-xs uppercase rounded-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                    </svg>
+                                    Asystent AI
+                                </label>
+                            </li>
+                        </ul>
+
+                        <!-- Content Area (Right) -->
+                        <div class="hidden peer-checked/badanie:block flex-1 overflow-y-auto h-full pr-2 px-4 border-l border-base-300/30">
+                            {% include 'badanie_tab.html' %}
+                        </div>
+                        <div class="hidden peer-checked/export-llm:block flex-1 overflow-y-auto h-full pr-2 px-4 border-l border-base-300/30">
+                            {% include 'export_llm_tab.html' %}
+                        </div>
+                        <div class="hidden peer-checked/asystent:block flex-1 overflow-y-auto h-full pr-2 px-4 border-l border-base-300/30">
+                            {% include 'asystent_ai_tab.html' %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1533,10 +1575,47 @@
         });
 
         function openAiAssistantModal() {
+            // Check if API key exists in the context passed from backend
+            const apiKey = `{{ ai_assistant.api_key }}`;
+            if (!apiKey || apiKey.trim() === "") {
+                showNotification("Nie podano klucza API. Funkcjonalność jest niedostępna.", "warning");
+                return;
+            }
+            
             const modal = document.getElementById('ai_assistant_modal');
             if (modal) {
                 modal.showModal();
             }
+        }
+
+        /**
+         * System powiadomień oparty na tostach DaisyUI
+         */
+        function showNotification(message, type = 'info') {
+            // Usuwamy istniejące tosty jeśli są
+            const existing = document.querySelector('.toast-container');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-top toast-center toast-container z-[99999]';
+            
+            const alertClass = type === 'success' ? 'alert-success' : (type === 'warning' ? 'alert-warning' : 'alert-error');
+            
+            toast.innerHTML = `
+                <div class="alert ${alertClass} shadow-xl border-2 border-white/10 flex items-center gap-3 pr-8 min-w-[350px] animate-in slide-in-from-top duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-xs font-bold uppercase tracking-tight">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('animate-out', 'fade-out', 'duration-500');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
         }
 
         async function sendMessageToAi() {

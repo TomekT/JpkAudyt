@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import json
 from typing import List, Dict, Any, Optional
 from google import genai
 from google.genai import types
@@ -12,53 +13,44 @@ class JpkAgent:
     Używa nowoczesnego SDK google-genai i poprawnej konfiguracji typów.
     """
     
+    CONFIG_FILE = "configAI.json"
+    DEFAULT_SYSTEM_INSTRUCTION = (
+        "Jesteś ekspertem ds. analizy JPK (Jednolity Plik Kontrolny) i audytu finansowego. "
+        "Twoim zadaniem jest odpowiadanie na pytania użytkownika dotyczące danych w bazie SQLite. "
+        "Zawsze odpowiadaj po polsku w sposób profesjonalny i pomocny. "
+        "\n\nMASZ DOSTĘP DO NARZĘDZIA 'execute_sql'. STOSUJ SIĘ DO PONIŻSZYCH ZASAD:\n"
+        "1. Możesz wykonywać WYŁĄCZNIE zapytania typu SELECT. Instrukcje modyfikujące (INSERT, UPDATE, DELETE, DROP itp.) są ZAKAZANE.\n"
+        "2. Jeśli użytkownik prosi o analizę, spróbuj sformułować odpowiednie zapytanie SQL, aby pobrać dane.\n"
+        "3. Wyniki prezentuj w czytelny sposób, najlepiej używając tabel Markdown.\n"
+        "4. Jeśli zapytanie SQL zwróci błąd, poinformuj o tym i spróbuj je poprawić.\n"
+        "5. Użytkownik najczęściej będzie podawał numer konta sytnetyccznego, ale interesują go wszystkie podrzędne konta analityczne. Uwzględnij przeszukiwanie kont podrzędnych, czyli np. dla konta 400 użyj warunku S_1 LIKE '400%' oraz is_analytical = 1.\n"
+    )
+    
     def __init__(self, db_path: str, model_name: str = "gemini-2.5-flash-lite"):
         """
         Inicjalizacja agenta.
-        
-        Args:
-            db_path: Ścieżka do pliku bazy danych SQLite.
-            model_name: Nazwa modelu LLM do użycia.
         """
         self.db_path = db_path
         self.model_name = model_name
         self.client = None
         self.chat = None
         
-        if not GOOGLE_API_KEY:
+        # Load config from file or environment
+        self.config = self._load_persistent_config()
+        effective_api_key = self.config.get("api_key") or GOOGLE_API_KEY
+        self.config["api_key"] = effective_api_key or "" # Ensure it is exposed to UI
+        
+        if not effective_api_key:
             return
 
         try:
-            # Inicjalizacja klienta SDK google-genai
-            self.client = genai.Client(api_key=GOOGLE_API_KEY)
-            
-            # Diagnostyka: Wypisanie dostępnych modeli
-            print("--- Diagnostyka AI: Dostępne modele ---")
-            try:
-                for m in self.client.models.list():
-                    print(f"Model ID: {m.name} | Display: {m.display_name}")
-            except Exception as diag_err:
-                print(f"Nie udało się pobrać listy modeli: {diag_err}")
-            print("---------------------------------------")
-            
-            # Wczytanie schematu bazy danych
+            self.client = genai.Client(api_key=effective_api_key)
             schema_content = self._load_schema()
             
-            system_instruction = (
-                "Jesteś ekspertem ds. analizy JPK (Jednolity Plik Kontrolny) i audytu finansowego. "
-                "Twoim zadaniem jest odpowiadanie na pytania użytkownika dotyczące danych w bazie SQLite. "
-                "Zawsze odpowiadaj po polsku w sposób profesjonalny i pomocny. "
-                "\n\nMASZ DOSTĘP DO NARZĘDZIA 'execute_sql'. STOSUJ SIĘ DO PONIŻSZYCH ZASAD:\n"
-                "1. Możesz wykonywać WYŁĄCZNIE zapytania typu SELECT. Instrukcje modyfikujące (INSERT, UPDATE, DELETE, DROP itp.) są ZAKAZANE.\n"
-                "2. Jeśli użytkownik prosi o analizę, spróbuj sformułować odpowiednie zapytanie SQL, aby pobrać dane.\n"
-                "3. Wyniki prezentuj w czytelny sposób, najlepiej używając tabel Markdown.\n"
-                "4. Jeśli zapytanie SQL zwróci błąd, poinformuj o tym i spróbuj je poprawić.\n"
-                "5. Użytkownik najczęściej będzie podawał numer konta sytnetyccznego, ale interesują go wszystkie podrzędne konta analityczne. Uwzględnij przeszukiwanie kont podrzędnych, czyli np. dla konta 400 użyj warunku S_1 LIKE '400%' oraz is_analytical = 1.\n"
-                "6. Schemat bazy danych SQL:\n"
-                f"{schema_content}"
-            )
+            system_instruction = self.config.get("system_instruction") or self.DEFAULT_SYSTEM_INSTRUCTION
+            # Append schema info to instruction
+            full_instruction = f"{system_instruction}\n6. Schemat bazy danych SQL:\n{schema_content}"
 
-            # Poprawna inicjalizacja czatu z użyciem wybranego modelu
             self.chat = self.client.chats.create(
                 model=model_name,
                 config=types.GenerateContentConfig(
@@ -66,12 +58,32 @@ class JpkAgent:
                     automatic_function_calling=types.AutomaticFunctionCallingConfig(
                         disable=False
                     ),
-                    system_instruction=system_instruction
+                    system_instruction=full_instruction
                 )
             )
         except Exception as e:
             print(f"Błąd inicjalizacji klienta Gemini: {e}")
             self.client = None
+
+    def _load_persistent_config(self) -> Dict[str, str]:
+        if os.path.exists(self.CONFIG_FILE):
+            try:
+                with open(self.CONFIG_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except:
+                pass
+        return {}
+
+    def update_config(self, api_key: str, system_instruction: str):
+        config_data = {
+            "api_key": api_key,
+            "system_instruction": system_instruction
+        }
+        with open(self.CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(config_data, f, indent=4, ensure_ascii=False)
+        
+        # Reinitialize
+        self.__init__(self.db_path, self.model_name)
 
     def _load_schema(self) -> str:
         """Wczytuje treść pliku schema.sql."""

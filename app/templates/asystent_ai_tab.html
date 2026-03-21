@@ -1,0 +1,54 @@
+<div class="card bg-base-200 border border-base-300 shadow-sm">
+    <div class="card-body p-6">
+        <h3 class="text-sm font-bold uppercase opacity-60 tracking-widest flex items-center gap-2 mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Konfiguracja Asystenta AI (Gemini)
+        </h3>
+
+        <form hx-post="/api/settings/ai-assistant" hx-swap="none" class="space-y-6"
+              hx-on::after-request="if(event.detail.successful) { showNotification('Konfiguracja zapisana!', 'success'); } else { showNotification('Błąd zapisu!', 'error'); }">
+              
+            <!-- API Key -->
+            <div class="form-control w-full">
+                <label class="label">
+                    <span class="label-text font-bold text-xs uppercase opacity-70">Klucz API Google Gemini</span>
+                </label>
+                <div class="relative">
+                    <input type="text" 
+                           name="api_key" 
+                           value="{{ ai_assistant.api_key }}"
+                           class="input input-bordered w-full font-mono text-sm" 
+                           placeholder="Wklej swój klucz API..." />
+                </div>
+                <label class="label">
+                    <span class="label-text-alt opacity-50 text-[10px]">Klucz jest wyświetlany jawnym tekstem. Można go zmienić i zapisać lokalnie.</span>
+                </label>
+            </div>
+
+            <!-- System Instruction -->
+            <div class="form-control w-full">
+                <label class="label">
+                    <span class="label-text font-bold text-xs uppercase opacity-70">Instrukcja Systemowa (Prompt)</span>
+                </label>
+                <textarea name="system_instruction" 
+                          class="textarea textarea-bordered w-full h-80 text-xs font-mono leading-relaxed bg-base-100" 
+                          placeholder="Jesteś ekspertem ds. analizy JPK...">{{ ai_assistant.system_instruction }}</textarea>
+                <label class="label">
+                    <span class="label-text-alt opacity-50 text-[10px]">To tutaj definiujesz rolę i zasady działania asystenta w oknie czatu.</span>
+                </label>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end pt-4">
+                <button type="submit" class="btn btn-primary btn-sm px-8 gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    Zapisz konfigurację
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

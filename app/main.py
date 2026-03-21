@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 from app.core.config import config_manager, config_ai_manager
 from app.services.database import db_service
 from app.services.router import jpk_router, ai_router
+from app.services.gemini_agent import JpkAgent
 
 # Define lifespan event handler to manage startup/shutdown
 @asynccontextmanager
@@ -139,7 +140,65 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # Fetch parameters for badanie_tab.html
+    params = {}
+    try:
+        conn = db_service.get_connection()
+        keys = ["Biegly", "Istotnosc_Ogolna", "Istotnosc_Wykonawcza", "Istotnosc_Trywialna", "Uwagi"]
+        for key in keys:
+            row = conn.execute("SELECT Tekst, Kwota FROM ParametryBadania WHERE Klucz = ?", (key,)).fetchone()
+            if row:
+                kwota = int(round(row["Kwota"])) if row["Kwota"] is not None else 0
+                params[key] = {"Tekst": row["Tekst"], "Kwota": kwota}
+            else:
+                params[key] = {"Tekst": "", "Kwota": 0}
+    except:
+        # Fallback if no DB or table doesn't exist yet
+        params = {k: {"Tekst": "", "Kwota": 0} for k in ["Biegly", "Istotnosc_Ogolna", "Istotnosc_Wykonawcza", "Istotnosc_Trywialna", "Uwagi"]}
+
+    # Fetch config for ai_tab.html
+    config = config_ai_manager.get_config()
+    
+    # Fetch AI Assistant setting for asystent_ai_tab.html
+    # We use db_path="" as it is only for config reading
+    dummy_agent = JpkAgent(db_path="")
+    ai_assistant = {
+        "api_key": dummy_agent.config.get("api_key", ""),
+        "system_instruction": dummy_agent.config.get("system_instruction", dummy_agent.DEFAULT_SYSTEM_INSTRUCTION)
+    }
+    
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "params": params, 
+        "config": config,
+        "ai_assistant": ai_assistant
+    })
+
+@app.get("/api/settings/ai-assistant")
+async def get_ai_assistant_settings():
+    dummy_agent = JpkAgent(db_path="")
+    return {
+        "api_key": dummy_agent.config.get("api_key", ""),
+        "system_instruction": dummy_agent.config.get("system_instruction", dummy_agent.DEFAULT_SYSTEM_INSTRUCTION)
+    }
+
+@app.post("/api/settings/ai-assistant")
+async def save_ai_assistant_settings(
+    request: Request,
+    api_key: str = Form(""),
+    system_instruction: str = Form("")
+):
+    try:
+        dummy_agent = JpkAgent(db_path="")
+        dummy_agent.update_config(api_key, system_instruction)
+        
+        # Clear active AI sessions in state so they re-init on next use
+        if hasattr(request.app.state, "ai_sessions"):
+            request.app.state.ai_sessions.clear()
+            
+        return HTMLResponse(content="Ustawienia Asystenta AI zapisane")
+    except Exception as e:
+        return HTMLResponse(content=f"Błąd zapisu: {e}", status_code=500)
 
 @app.post("/upload", response_class=HTMLResponse)
 @app.post("/import", response_class=HTMLResponse)
@@ -1276,10 +1335,10 @@ async def get_ai_prompt(type: str = ""):
     prompt = config_ai_manager.get_prompt_for_type(type if type else None)
     return HTMLResponse(content=prompt)
 
-@app.get("/api/ai-tab", response_class=HTMLResponse)
-async def get_ai_tab(request: Request):
+@app.get("/api/export-llm-tab", response_class=HTMLResponse)
+async def get_export_llm_tab(request: Request):
     config = config_ai_manager.get_config()
-    return templates.TemplateResponse("ai_tab.html", {"request": request, "config": config})
+    return templates.TemplateResponse("export_llm_tab.html", {"request": request, "config": config})
 
 @app.get("/api/badanie-tab", response_class=HTMLResponse)
 async def get_badanie_tab(request: Request):
