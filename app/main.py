@@ -39,9 +39,10 @@ async def lifespan(app: FastAPI):
         await asyncio.sleep(5)
         while True:
             await asyncio.sleep(5)
-            # Kill if no heartbeat for > 120 seconds
-            if time.time() - app.state.last_heartbeat > 120:
-                print("Brak aktywności (timeout 120s) - zamykanie serwera...")
+            # Kill if no heartbeat for > Configured delay
+            timeout = config_manager.config.server_timeout
+            if time.time() - app.state.last_heartbeat > timeout:
+                print(f"Brak aktywności (timeout {timeout}s) - zamykanie serwera...")
                 os._exit(0)
                 break
 
@@ -2025,6 +2026,32 @@ async def get_jpk_check_consistency():
             </div>
         </div>
         """
+
+
+@app.get("/api/config/system")
+async def get_system_config():
+    return {
+        "heartbeat_interval": config_manager.config.heartbeat_interval,
+        "server_timeout": config_manager.config.server_timeout
+    }
+
+@app.post("/api/config/system")
+async def update_system_config(heartbeat_interval: int = Form(...), server_timeout: int = Form(...)):
+    # Walidacja również po stronie backendu
+    if server_timeout < 3 * heartbeat_interval:
+        raise HTTPException(status_code=400, detail="Timeout musi być co najmniej 3 razy większy niż interwał.")
+    
+    config_manager.update_system_config(heartbeat_interval, server_timeout)
+    return HTMLResponse(content="""
+        <div class="alert alert-success shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>Ustawienia systemowe zapisane pomyślnie!</span>
+        </div>
+        <script>
+            // Refresh heartbeat on frontend immediately
+            if (window.initHeartbeat) window.initHeartbeat();
+        </script>
+    """)
 
 if __name__ == "__main__":
     import uvicorn

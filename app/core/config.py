@@ -28,6 +28,8 @@ class AppConfig(BaseModel):
     last_opened_db: Optional[str] = None
     recent_dbs: List[str] = []
     theme: str = "light"
+    heartbeat_interval: int = 5
+    server_timeout: int = 30
 
 class ConfigAIManager:
     config_file: Path
@@ -107,6 +109,11 @@ class ConfigManager:
                 return AppConfig(**data)
         except Exception:
             return AppConfig()
+
+    def update_system_config(self, heartbeat_interval: int, server_timeout: int):
+        self.config.heartbeat_interval = heartbeat_interval
+        self.config.server_timeout = server_timeout
+        self.save_config()
 
     def save_config(self):
         with open(self.config_file, 'w', encoding='utf-8') as f:

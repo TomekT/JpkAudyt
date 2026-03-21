@@ -407,11 +407,12 @@
                                 </div>
                                 <!-- Grupa Filtry -->
                                 <div class="dropdown dropdown-bottom dropdown-end">
-                                    <label tabindex="0" class="btn btn-sm btn-outline btn-ghost gap-2">
+                                    <label tabindex="0" id="zois-filters-btn" class="btn btn-sm btn-outline btn-ghost gap-2 relative">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                         </svg>
                                         <span>Filtry</span>
+                                        <span id="zois-filters-badge" class="badge badge-secondary badge-xs absolute -top-1 -right-1 hidden p-1 border-white border"></span>
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                         </svg>
@@ -620,11 +621,12 @@
 
                                 <!-- Grupa Filtry Zapisy -->
                                 <div class="dropdown dropdown-bottom dropdown-end">
-                                    <label tabindex="0" class="btn btn-sm btn-outline btn-ghost gap-2">
+                                    <label tabindex="0" id="zapisy-filters-btn" class="btn btn-sm btn-outline btn-ghost gap-2 relative">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                                         </svg>
                                         <span>Filtry</span>
+                                        <span id="zapisy-filters-badge" class="badge badge-secondary badge-xs absolute -top-1 -right-1 hidden p-1 border-white border"></span>
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                         </svg>
@@ -735,12 +737,14 @@
                         <input type="radio" name="sub_settings" id="sub-badanie" class="hidden peer/badanie" checked />
                         <input type="radio" name="sub_settings" id="sub-export-llm" class="hidden peer/export-llm" />
                         <input type="radio" name="sub_settings" id="sub-asystent" class="hidden peer/asystent" />
+                        <input type="radio" name="sub_settings" id="sub-system" class="hidden peer/system" />
 
                         <!-- Sidebar (Left) -->
                         <ul class="menu bg-base-100 w-64 rounded-box border border-base-300 h-fit shadow-sm p-0 overflow-hidden
                             peer-checked/badanie:[&_.l-badanie]:bg-primary peer-checked/badanie:[&_.l-badanie]:text-primary-content
                             peer-checked/export-llm:[&_.l-export-llm]:bg-primary peer-checked/export-llm:[&_.l-export-llm]:text-primary-content
-                            peer-checked/asystent:[&_.l-asystent]:bg-primary peer-checked/asystent:[&_.l-asystent]:text-primary-content">
+                            peer-checked/asystent:[&_.l-asystent]:bg-primary peer-checked/asystent:[&_.l-asystent]:text-primary-content
+                            peer-checked/system:[&_.l-system]:bg-primary peer-checked/system:[&_.l-system]:text-primary-content">
                             <li class="menu-title text-primary/50 text-[10px] uppercase font-bold p-4 pb-2">Konfiguracja</li>
                             <li>
                                 <label for="sub-badanie" 
@@ -770,6 +774,16 @@
                                     Asystent AI
                                 </label>
                             </li>
+                            <li>
+                                <label for="sub-system" 
+                                    class="l-system flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-base-200 font-bold text-xs uppercase rounded-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    System
+                                </label>
+                            </li>
                         </ul>
 
                         <!-- Content Area (Right) -->
@@ -781,6 +795,52 @@
                         </div>
                         <div class="hidden peer-checked/asystent:block flex-1 overflow-y-auto h-full pr-2 px-4 border-l border-base-300/30">
                             {% include 'asystent_ai_tab.html' %}
+                        </div>
+                        <div class="hidden peer-checked/system:block flex-1 overflow-y-auto h-full pr-2 px-4 border-l border-base-300/30">
+                            <div class="max-w-xl mx-auto py-6">
+                                <div class="card bg-base-100 border border-base-300 shadow-xl">
+                                    <div class="card-body">
+                                        <h3 class="text-xs font-bold uppercase opacity-60 tracking-widest flex items-center gap-2 mb-6">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            Parametry Systemowe
+                                        </h3>
+                                        <p class="text-[10px] bg-base-200 p-3 rounded-lg border-l-4 border-warning mb-6 leading-relaxed">
+                                            ⚠️ Zmiana tych ustawień wpływa na stabilność połączenia i automatyczne wyłączanie serwera w przypadku bezczynności. 
+                                            <strong>Timeout musi być przynajmniej 3-krotnie większy niż interwał.</strong>
+                                        </p>
+                                        <form id="system-config-form" hx-post="/api/config/system" hx-target="#system-config-status"
+                                              onsubmit="return validateSystemConfig()">
+                                            <div class="space-y-6">
+                                                <div class="form-control w-full">
+                                                    <label class="label">
+                                                        <span class="label-text text-xs uppercase font-bold opacity-60">Interwał sygnału (s.)</span>
+                                                    </label>
+                                                    <input type="number" id="cfg-heartbeat" name="heartbeat_interval" 
+                                                           class="input input-bordered input-md w-full focus:border-primary transition-all font-mono" 
+                                                           min="1" step="1" required />
+                                                </div>
+                                                <div class="form-control w-full">
+                                                    <label class="label">
+                                                        <span class="label-text text-xs uppercase font-bold opacity-60">Timeout wyłączenia (s.)</span>
+                                                    </label>
+                                                    <input type="number" id="cfg-timeout" name="server_timeout" 
+                                                           class="input input-bordered input-md w-full focus:border-primary transition-all font-mono" 
+                                                           min="3" step="1" required />
+                                                </div>
+                                                <div id="system-config-status" class="mt-4 transition-all duration-300"></div>
+                                                <div class="card-actions justify-end mt-6 pt-4 border-t border-base-300">
+                                                    <button type="submit" class="btn btn-primary px-8 shadow-lg hover:shadow-xl transition-all">
+                                                        Zapisz i zastosuj
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1191,14 +1251,46 @@
             }
         }
 
-        async function sendHeartbeat() {
+        let heartbeatTimer = null;
+        async function initHeartbeat() {
+            if (heartbeatTimer) clearInterval(heartbeatTimer);
             try {
-                await fetch('/api/heartbeat', { method: 'POST' });
+                const res = await fetch('/api/config/system');
+                const config = await res.json();
+                
+                // Update settings form if exists
+                const hInput = document.getElementById('cfg-heartbeat');
+                const tInput = document.getElementById('cfg-timeout');
+                if (hInput) hInput.value = config.heartbeat_interval;
+                if (tInput) tInput.value = config.server_timeout;
+                
+                heartbeatTimer = setInterval(async () => {
+                    try {
+                        const hRes = await fetch('/api/heartbeat', { method: 'POST' });
+                        if (!hRes.ok) throw new Error("Connection failed");
+                    } catch (e) {
+                        console.error("Heartbeat error", e);
+                        if (window.showNotification) showNotification("Połączenie z serwerem przerwane", "error");
+                        else alert("Połączenie z serwerem przerwane");
+                    }
+                }, config.heartbeat_interval * 1000);
             } catch (e) {
-                console.error("Heartbeat failed", e);
+                console.error("Config fetch error", e);
             }
         }
-        setInterval(sendHeartbeat, 2000); // Ping co 2 sekundy
+        
+        function validateSystemConfig() {
+            const h = parseInt(document.getElementById('cfg-heartbeat').value);
+            const t = parseInt(document.getElementById('cfg-timeout').value);
+            if (t < 3 * h) {
+                if (window.showNotification) showNotification("Timeout musi być co najmniej 3 razy większy niż interwał!", "error");
+                else alert("Timeout musi być co najmniej 3 razy większy niż interwał!");
+                return false;
+            }
+            return true;
+        }
+
+        initHeartbeat();
     </script>
 
     <!-- MUS Modal Dialog -->
@@ -1898,6 +1990,30 @@
     </dialog>
 
     <script>
+    function updateFilterState(tabName) {
+        if (tabName === 'ZOiS') {
+            const q = document.getElementById('global-zois-q')?.value || '';
+            const type = document.getElementById('filter-account-type')?.value || '';
+            const label = document.getElementById('filter-label-tag')?.value || '';
+            const badge = document.getElementById('zois-filters-badge');
+            if (q !== '' || type !== '' || label !== '') {
+                badge?.classList.remove('hidden');
+            } else {
+                badge?.classList.add('hidden');
+            }
+        } else if (tabName === 'Zapisy') {
+            const zq = document.getElementById('zapisy-local-q')?.value || '';
+            const month = document.getElementById('filter-month')?.value || '';
+            const label = document.getElementById('filter-zapisy-label')?.value || '';
+            const badge = document.getElementById('zapisy-filters-badge');
+            if (zq !== '' || month !== '' || label !== '') {
+                badge?.classList.remove('hidden');
+            } else {
+                badge?.classList.add('hidden');
+            }
+        }
+    }
+
     function getLabelFilters(area) {
         const q = document.getElementById('global-zois-q')?.value || '';
         const type = document.getElementById('filter-account-type')?.value || '';
@@ -1922,18 +2038,25 @@
         if (type) type.value = '';
         if (label) label.value = '';
         
+        updateFilterState('ZOiS');
+        
         // Trigger HTMX to reload the container with empty filters
         htmx.ajax('GET', '/zois', {
             target: '#zois-container',
             values: { q: '', type: '', label_id: '' }
         });
+        htmx.trigger('body', 'filter-updated');
     }
 
     function resetZapisyLocalFilters() {
+        const q = document.getElementById('zapisy-local-q');
         const month = document.getElementById('filter-month');
         const label = document.getElementById('filter-zapisy-label');
+        if (q) q.value = '';
         if (month) month.value = '';
         if (label) label.value = '';
+        
+        updateFilterState('Zapisy');
         htmx.trigger('body', 'filter-updated');
     }
 
@@ -2031,6 +2154,31 @@
             alert("Błąd komunikacji z serwerem");
         }
     }
+
+    // Initialize Filter Indicators and Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        const zoisInputs = ['global-zois-q', 'filter-account-type', 'filter-label-tag'];
+        zoisInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => updateFilterState('ZOiS'));
+                el.addEventListener('change', () => updateFilterState('ZOiS'));
+            }
+        });
+
+        const zapisyInputs = ['zapisy-local-q', 'filter-month', 'filter-zapisy-label'];
+        zapisyInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => updateFilterState('Zapisy'));
+                el.addEventListener('change', () => updateFilterState('Zapisy'));
+            }
+        });
+
+        // Initial check
+        updateFilterState('ZOiS');
+        updateFilterState('Zapisy');
+    });
     </script>
 </body>
 
