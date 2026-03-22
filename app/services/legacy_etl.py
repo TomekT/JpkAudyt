@@ -29,6 +29,10 @@ class LegacyETLService:
         # Init DB (reuse schema of new JPK)
         db_path = self._init_database(xml_file, metadata)
         
+        # Sprawdzenie czy baza już istnieje i zawiera dane przed procesowaniem
+        if os.path.exists(db_path) and db_service.is_database_populated(str(db_path)):
+            raise ValueError("Baza danych dla tego pliku JPK już istnieje i zawiera dane. Import został przerwany, aby uniknąć duplikatów.")
+
         # Connect to newly created local SQLite file for this JPK
         db_service.connect(str(db_path))
         

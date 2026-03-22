@@ -11,10 +11,10 @@
                     </svg>
                     Parametry Badania
                 </h3>
-                <div id="badanie-status"
-                    class="text-[10px] font-bold uppercase text-success opacity-0 transition-opacity duration-300">
-                    Zapisano pomyślnie
-                </div>
+                    <div id="badanie-status"
+                        class="text-[10px] font-bold uppercase text-success opacity-0 transition-opacity duration-300">
+                        Zapisano pomyślnie
+                    </div>
             </div>
 
             <form id="badanie-form" hx-post="/api/save-badanie" hx-trigger="submit" hx-swap="none" hx-on::after-request="if(event.detail.successful) { 
@@ -144,4 +144,11 @@
             if (trywialna) window.formatCurrencyInput(trywialna);
         }
     })();
+
+    // Manual data load helper for ZOiS
+    function loadZoisData() {
+        if (typeof window.refreshZoisTable === 'function') {
+            window.refreshZoisTable();
+        }
+    }
 </script>

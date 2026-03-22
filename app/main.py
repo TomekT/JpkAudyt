@@ -278,7 +278,22 @@ async def import_jpk(file: UploadFile = File(...)):
         logger.error(f"Import failed: {e}")
         # XSS protection
         error_msg = html.escape(str(e))
-        return HTMLResponse(content=f"Error: {error_msg}", status_code=500)
+        
+        # Consistent error reporting via OOB alert (swapped even on 200/500 if HTMX is used)
+        alert_html = f"""
+        <div id="alert-container" hx-swap-oob="true" class="fixed bottom-4 right-4 z-50">
+            <div class="alert alert-error shadow-lg border-2 border-base-100/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-xs font-bold leading-tight">{error_msg}</span>
+                <button class="btn btn-ghost btn-xs" onclick="document.getElementById('alert-container').innerHTML=''">✕</button>
+            </div>
+        </div>
+        """
+        # Return status 200 so HTMX swaps the OOB alert even on error.
+        # Target label remains unchanged.
+        return HTMLResponse(content=alert_html, status_code=200)
 
 @app.post("/connect-db")
 async def connect_db(file: UploadFile = File(...)):
@@ -503,7 +518,7 @@ def build_zois_tree(rows):
             nodes[s_3]['children'].append(node)
     return tree
 
-def render_zois_tree(nodes, depth=0):
+def render_zois_tree(nodes, depth=0, expand_all=False):
     html = ""
     padding_base = 0.5 # rem
     padding = depth * padding_base
@@ -556,9 +571,11 @@ def render_zois_tree(nodes, depth=0):
         grid_class = f"grid grid-cols-[10rem_minmax(0,1fr)_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-1 border-b border-base-content/5 items-center hover:bg-base-200 w-full overflow-hidden {weight_class}"
 
         if has_children:
-            children_html = render_zois_tree(node['children'], depth + 1)
+            children_html = render_zois_tree(node['children'], depth + 1, expand_all)
+            open_attr = ' open' if expand_all else ''
+            child_class = ' child-row' if depth > 0 else ''
             html += f"""
-            <details class="group zoistree">
+            <details class="group zoistree{child_class}"{open_attr}>
                 <summary class="list-none [&::-webkit-details-marker]:hidden outline-none cursor-pointer">
                     <div class="{grid_class}">
                         <div class="flex items-center gap-1 relative h-full min-w-0" style="padding-left: {padding}rem;">
@@ -582,8 +599,9 @@ def render_zois_tree(nodes, depth=0):
             """
         else:
             empty_expander = '<span class="inline-block w-4 h-4 shrink-0 mx-0.5"></span>'
+            child_class = ' child-row' if depth > 0 else ''
             html += f"""
-            <div class="{grid_class} cursor-pointer" onclick="drillDown('{konto_full}')">
+            <div class="{grid_class} cursor-pointer{child_class}" onclick="drillDown('{konto_full}')">
                 <div class="flex items-center gap-1 relative h-full min-w-0" style="padding-left: {padding}rem;">
                     {tree_lines}
                     <div class="z-10 flex items-center gap-1 min-w-0">
@@ -604,7 +622,11 @@ def render_zois_tree(nodes, depth=0):
     return html
 
 @app.get("/zois", response_class=HTMLResponse)
-async def get_zois(request: Request, q: str = "", type: str = "", label_id: str = "", forced_ids: str = ""):
+async def get_zois(request: Request, q: str = "", type: str = "", label_id: str = "", forced_ids: str = "", 
+                   synthetic: str = "true", expand: str = "false", empty: str = "true"):
+    is_synthetic = synthetic.lower() == "true"
+    is_expand = expand.lower() == "true"
+    is_empty = empty.lower() == "true"
     # Skeleton of table
     try:
         conn = db_service.get_connection()
@@ -618,7 +640,9 @@ async def get_zois(request: Request, q: str = "", type: str = "", label_id: str 
             q=q if q else None,
             type=type if type else None,
             label_id=label_id if label_id else None,
-            forced_ids=forced_ids_list
+            forced_ids=forced_ids_list,
+            synthetic=is_synthetic,
+            empty=is_empty
         )
 
         try:
@@ -656,7 +680,7 @@ async def get_zois(request: Request, q: str = "", type: str = "", label_id: str 
             
         # Build and render the tree structure
         tree_nodes = build_zois_tree(rows)
-        html_rows = render_zois_tree(tree_nodes)
+        html_rows = render_zois_tree(tree_nodes, expand_all=is_expand)
         
         if not html_rows:
             html_rows = "<div class='text-center p-4 border-b border-base-content/10'>Brak danych</div>"
@@ -688,8 +712,8 @@ async def get_zois(request: Request, q: str = "", type: str = "", label_id: str 
                         <div class="min-w-0">Nazwa</div>
                         <div class="text-right min-w-0">BO Wn</div>
                         <div class="text-right min-w-0">BO Ma</div>
-                        <div class="text-right min-w-0">Obroty Wn</div>
-                        <div class="text-right min-w-0">Obroty Ma</div>
+                        <div class="text-right min-w-0">Obroty N Wn</div>
+                        <div class="text-right min-w-0">Obroty N Ma</div>
                         <div class="text-right min-w-0">Saldo Wn</div>
                         <div class="text-right min-w-0">Saldo Ma</div>
                     </div>

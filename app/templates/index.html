@@ -98,6 +98,12 @@
             color: var(--fallback-b1, oklch(var(--b1)/1)) !important;
         }
 
+        #zois-container.expand-all details { display: block !important; }
+        #zois-container.expand-all details[open] > summary span.group-open\:rotate-90,
+        #zois-container.expand-all details > summary span.group-open\:rotate-90 {
+            transform: rotate(90deg) !important;
+        }
+
         /* Fix DaisyUI tooltip position when multiline */
         .tooltip-multiline.tooltip-right:before {
             top: 50% !important;
@@ -405,6 +411,30 @@
                                         </ul>
                                     </div>
                                 </div>
+                                
+                                <!-- Grupa Widok -->
+                                <div class="dropdown dropdown-bottom dropdown-end relative">
+                                    <label tabindex="0" class="btn btn-sm btn-outline btn-ghost gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        <span>Widok</span>
+                                    </label>
+                                    <div tabindex="0" class="dropdown-content z-[250] card card-compact w-64 p-4 shadow bg-base-100 border border-base-300 mt-1">
+                                        <div class="space-y-4">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-bold opacity-70">Rozwiń wszystko</span>
+                                                <input type="checkbox" id="v_expand" name="expand" value="true" class="toggle toggle-secondary toggle-sm zois-filter" onchange="refreshZoisTable(this.id)">
+                                            </div>
+                                            <div class="flex items-center justify-between border-t border-base-content/10 pt-4">
+                                                <span class="text-xs font-bold opacity-70">Pokaż puste konta</span>
+                                                <input type="checkbox" id="v_empty" name="empty" value="true" class="toggle toggle-primary toggle-sm zois-filter" checked onchange="refreshZoisTable(this.id)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Grupa Filtry -->
                                 <div class="dropdown dropdown-bottom dropdown-end">
                                     <label tabindex="0" id="zois-filters-btn" class="btn btn-sm btn-outline btn-ghost gap-2 relative">
@@ -2314,7 +2344,59 @@
         // Initial check
         updateFilterState('ZOiS');
         updateFilterState('Zapisy');
+
+        // Logic for ZOiS View section (Dropdown in badanie_tab.html)
+        const initZoisViewLogic = () => {
+            const vExpand = document.getElementById('v_expand');
+            const vEmpty = document.getElementById('v_empty');
+
+            if (vExpand && vEmpty) {
+                // Prevent dropdown close on checkbox click
+                [vExpand, vEmpty].forEach(el => {
+                    if (el) el.addEventListener('click', (e) => e.stopPropagation());
+                });
+            }
+        };
+
+        initZoisViewLogic();
+        // Re-init on HTMX load in case elements were swapped
+        document.body.addEventListener('htmx:afterOnLoad', initZoisViewLogic);
     });
+
+    function refreshZoisTable(triggeredById) {
+        if (triggeredById === 'v_expand') {
+            const container = document.getElementById('zois-container');
+            const checked = document.getElementById('v_expand')?.checked ?? false;
+            if (checked) {
+                container.classList.add('expand-all');
+                container.querySelectorAll('details').forEach(d => d.open = true);
+            } else {
+                container.classList.remove('expand-all');
+                container.querySelectorAll('details').forEach(d => d.open = false);
+            }
+            return;
+        }
+
+        const container = document.getElementById('zois-container');
+        const showEmpty = document.getElementById('v_empty')?.checked ?? true;
+        const expandAll = document.getElementById('v_expand')?.checked ?? false;
+
+        // Apply expand-all class initially if needed
+        if (expandAll) container.classList.add('expand-all');
+        else container.classList.remove('expand-all');
+
+        // Explicitly refresh the view via HTMX
+        htmx.ajax('GET', '/zois', {
+            target: '#zois-container',
+            values: { 
+                ...htmx.values(htmx.find('.tabs')),
+                empty: showEmpty,
+                expand: expandAll
+            }
+        });
+        htmx.trigger('body', 'filter-updated');
+    }
+
     </script>
     <!-- Account Mapping Modal -->
     <dialog id="modal_mapping" class="modal">

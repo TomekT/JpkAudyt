@@ -18,9 +18,18 @@ class DatabaseService:
         parts = re.split(r'\s+LUB\s+|[,|]', q, flags=re.IGNORECASE)
         return [p.strip() for p in parts if p.strip()]
 
-    def build_zois_where(self, q: str = "", type: str = "", label_id: str = "", forced_ids: Optional[List[str]] = None):
+    def build_zois_where(self, q: str = "", type: str = "", label_id: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True):
         where_clauses = []
         params = {}
+        
+        # Filtr kont analitycznych (jeśli nie syntetyka)
+        if not synthetic:
+            where_clauses.append("IsAnalytical = 1")
+            
+        # Filtr kont niepustych
+        if not empty:
+            where_clauses.append("(ABS(COALESCE(S_4,0)) + ABS(COALESCE(S_5,0)) + ABS(COALESCE(S_6,0)) + ABS(COALESCE(S_7,0)) + ABS(COALESCE(S_8,0)) + ABS(COALESCE(S_9,0)) + ABS(COALESCE(S_10,0)) + ABS(COALESCE(S_11,0))) > 0")
+
         if forced_ids:
             placeholders = ", ".join(f":fid_{i}" for i in range(len(forced_ids)))
             where_clauses.append(f"S_1 IN ({placeholders})")
@@ -54,6 +63,11 @@ class DatabaseService:
             
         where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         return where_sql, params
+
+    def get_zois_data(self, q: str = "", type: str = "", label_id: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True):
+        where_sql, params = self.build_zois_where(q, type, label_id, forced_ids, synthetic, empty)
+        sql = f"SELECT * FROM ZOiS {where_sql} ORDER BY S_1"
+        return self.get_connection().execute(sql, params).fetchall()
 
     def build_zapisy_where(self, q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = ""):
         where_clauses = []

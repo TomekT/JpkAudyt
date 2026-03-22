@@ -24,6 +24,10 @@ class ETLService:
         metadata = self._extract_metadata(xml_path)
         db_path = self._init_database(xml_file, metadata)
         
+        # Sprawdzenie czy baza już istnieje i zawiera dane przed procesowaniem
+        if os.path.exists(db_path) and self.db.is_database_populated(str(db_path)):
+            raise ValueError("Baza danych dla tego pliku JPK już istnieje i zawiera dane. Import został przerwany, aby uniknąć duplikatów.")
+
         # Connect is handled by db_service globally but we ensure it's connected to new DB
         self.db.connect(str(db_path))
         
