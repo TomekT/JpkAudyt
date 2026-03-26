@@ -1095,12 +1095,12 @@ async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: 
                 {where_sql}
             )
             SELECT 
-                substr(Z_3, 1, 3) as Syntetyka,
+                Z_Syntetyka as Syntetyka,
                 SUM(CASE WHEN Z_4 > 0 THEN 1 ELSE 0 END) as Liczba_Wn,
                 SUM(CASE WHEN Z_7 > 0 THEN 1 ELSE 0 END) as Liczba_Ma
             FROM Zapisy
             WHERE Dziennik_Id IN (SELECT Dziennik_Id FROM WybraneDzienniki)
-            GROUP BY substr(Z_3, 1, 3)
+            GROUP BY Z_Syntetyka
             ORDER BY Syntetyka
         """
         rows = conn.execute(query, params).fetchall()
