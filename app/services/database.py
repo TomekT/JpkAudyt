@@ -301,6 +301,30 @@ class DatabaseService:
         cursor.execute(query, params)
         conn.commit()
 
+    def is_database_populated(self, db_path: str) -> bool:
+        """Sprawdza czy baza pod ścieżką db_path zawiera już jakiekolwiek rekordy w kluczowych tabelach."""
+        path = Path(db_path)
+        if not path.exists():
+            return False
+            
+        conn = sqlite3.connect(path)
+        try:
+            cursor = conn.cursor()
+            # Sprawdzamy kluczowe tabele
+            for table in ['ZOiS', 'Dziennik', 'Zapisy']:
+                try:
+                    cursor.execute(f"SELECT 1 FROM {table} LIMIT 1")
+                    if cursor.fetchone():
+                        return True
+                except sqlite3.OperationalError:
+                    # Tabela może nie istnieć
+                    continue
+            return False
+        except Exception:
+            return False
+        finally:
+            conn.close()
+
     def verify_db(self, db_path: str) -> bool:
         """
         Verifies if the database at db_path is a compatible JPK_KR_PD Audytor database.

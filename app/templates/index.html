@@ -745,10 +745,15 @@
                     <!-- Dziennik View -->
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold">Dziennik Zapisów</h3>
-                        <button class="btn btn-sm btn-outline btn-accent"
-                            onclick="copyTableToClipboard('dziennik-container', this)">
-                            <span>Kopiuj</span>
-                        </button>
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-outline btn-accent"
+                                onclick="copyTableToClipboard('dziennik-container', this)">
+                                <span>Kopiuj</span>
+                            </button>
+                            <button id="btnRaportKsiegowan" class="btn btn-secondary btn-sm" onclick="window.location.href='/api/download_raport_ksiegowan';">
+                                Raport księgowań
+                            </button>
+                        </div>
                     </div>
 
                     <div id="dziennik-container" hx-get="/dziennik" hx-trigger="load, db-changed from:body"

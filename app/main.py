@@ -10,7 +10,7 @@ import logging
 import re
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -166,6 +166,90 @@ async def test_z_score_anomalies(request_data: AnomalyRequest):
     """Legacy endpoint (aliased to new logic with 0 threshold)."""
     anomaly_ids = db_service.detect_zscore_anomalies(request_data.record_ids)
     return {"anomaly_ids": anomaly_ids}
+
+from collections import defaultdict
+
+@app.get("/api/download_raport_ksiegowan")
+async def download_raport_ksiegowan():
+    try:
+        conn = db_service.get_connection()
+        query = """
+            SELECT Z_Syntetyka, Z_4, Z_7, Dziennik_Id 
+            FROM Zapisy 
+            WHERE Z_Syntetyka IS NOT NULL AND Z_Syntetyka NOT LIKE '9%'
+            ORDER BY Dziennik_Id
+        """
+        rows = conn.execute(query).fetchall()
+        
+        groups = defaultdict(lambda: {"wn": [], "ma": []})
+        for row in rows:
+            gid = row["Dziennik_Id"]
+            syn = row["Z_Syntetyka"]
+            wn = float(row["Z_4"] or 0)
+            ma = float(row["Z_7"] or 0)
+            if wn > 0:
+                groups[gid]["wn"].append({"syn": syn, "val": wn})
+            if ma > 0:
+                groups[gid]["ma"].append({"syn": syn, "val": ma})
+                
+        account_wn_sources = defaultdict(lambda: defaultdict(float))
+        account_ma_targets = defaultdict(lambda: defaultdict(float))
+        
+        for gid, data in groups.items():
+            tot_wn = sum(x["val"] for x in data["wn"])
+            tot_ma = sum(x["val"] for x in data["ma"])
+            if tot_wn == 0 or tot_ma == 0:
+                continue
+                
+            for w in data["wn"]:
+                for m in data["ma"]:
+                    flow_wn = w["val"] * (m["val"] / tot_ma)
+                    flow_ma = m["val"] * (w["val"] / tot_wn)
+                    account_wn_sources[w["syn"]][m["syn"]] += flow_wn
+                    account_ma_targets[m["syn"]][w["syn"]] += flow_ma
+                    
+        all_accounts = set(account_wn_sources.keys()).union(account_ma_targets.keys())
+        sorted_accounts = sorted(list(all_accounts))
+        
+        md_lines = []
+        for acc in sorted_accounts:
+            md_lines.append(f"Konto {acc}")
+            
+            w_sources = account_wn_sources.get(acc, {})
+            if w_sources:
+                suma_wn_exact = sum(w_sources.values())
+                suma_wn_round = round(suma_wn_exact)
+                if suma_wn_round > 0:
+                    md_lines.append(f"    Obroty Wn {suma_wn_round}")
+                    for src_acc in sorted(w_sources.keys()):
+                        amt = w_sources[src_acc]
+                        amt_round = round(amt)
+                        if amt_round > 0:
+                            pct = round((amt / suma_wn_exact) * 100) if suma_wn_exact > 0 else 0
+                            md_lines.append(f"        Konto {src_acc} o kwocie {amt_round} ({pct}%)")
+                            
+            m_targets = account_ma_targets.get(acc, {})
+            if m_targets:
+                suma_ma_exact = sum(m_targets.values())
+                suma_ma_round = round(suma_ma_exact)
+                if suma_ma_round > 0:
+                    md_lines.append(f"    Obroty Ma {suma_ma_round}")
+                    for tgt_acc in sorted(m_targets.keys()):
+                        amt = m_targets[tgt_acc]
+                        amt_round = round(amt)
+                        if amt_round > 0:
+                            pct = round((amt / suma_ma_exact) * 100) if suma_ma_exact > 0 else 0
+                            md_lines.append(f"        Konto {tgt_acc} o kwocie {amt_round} ({pct}%)")
+                            
+        md_content = "\r\n".join(md_lines)
+        return Response(
+            content=md_content,
+            media_type="text/markdown; charset=utf-8",
+            headers={"Content-Disposition": "attachment; filename=Raport_Ksiegowan.md"}
+        )
+    except Exception as e:
+        logger.error(f"Raport error: {e}")
+        return HTMLResponse(f"Błąd generowania raportu: {str(e)}", status_code=500)
 
 # Setup Templates & Static Files
 BASE_DIR = Path(__file__).resolve().parent

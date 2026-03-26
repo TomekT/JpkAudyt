@@ -112,8 +112,8 @@ class ETLService:
                         sql = """INSERT INTO Dziennik (D_1, D_2, D_3, D_4, D_5, D_6, D_7, D_8, D_9, D_10, D_11)
                                  VALUES (:D_1, :D_2, :D_3, :D_4, :D_5, :D_6, :D_7, :D_8, :D_9, :D_10, :D_11)"""
                     elif table == 'Zapisy':
-                        sql = """INSERT INTO Zapisy (Z_1, Z_2, Z_3, Z_4, Z_5, Z_6, Z_7, Z_8, Z_9, Z_Data, Z_DataMiesiac, Z_NrZapisu)
-                                 VALUES (:Z_1, :Z_2, :Z_3, :Z_4, :Z_5, :Z_6, :Z_7, :Z_8, :Z_9, :Z_Data, :Z_DataMiesiac, :Z_NrZapisu)"""
+                        sql = """INSERT INTO Zapisy (Z_1, Z_2, Z_3, Z_4, Z_5, Z_6, Z_7, Z_8, Z_9, Z_Data, Z_DataMiesiac, Z_NrZapisu, Z_Syntetyka)
+                                 VALUES (:Z_1, :Z_2, :Z_3, :Z_4, :Z_5, :Z_6, :Z_7, :Z_8, :Z_9, :Z_Data, :Z_DataMiesiac, :Z_NrZapisu, :Z_Syntetyka)"""
                     elif table == 'RPD':
                         sql = "INSERT INTO RPD (K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8) VALUES (:K_1, :K_2, :K_3, :K_4, :K_5, :K_6, :K_7, :K_8)"
                     elif table == 'Ctrl':
@@ -173,11 +173,13 @@ class ETLService:
 
                     for kz in zapisy_in_block:
                         z = get_data(kz)
+                        z3 = z.get('Z_3')
                         buffers['Zapisy'].append({
-                            'Z_1': z.get('Z_1'), 'Z_2': z.get('Z_2'), 'Z_3': z.get('Z_3'),
+                            'Z_1': z.get('Z_1'), 'Z_2': z.get('Z_2'), 'Z_3': z3,
                             'Z_4': z.get('Z_4'), 'Z_5': z.get('Z_5'), 'Z_6': z.get('Z_6'),
                             'Z_7': z.get('Z_7'), 'Z_8': z.get('Z_8'), 'Z_9': z.get('Z_9'),
-                            'Z_Data': d8, 'Z_DataMiesiac': month, 'Z_NrZapisu': d_1
+                            'Z_Data': d8, 'Z_DataMiesiac': month, 'Z_NrZapisu': d_1,
+                            'Z_Syntetyka': z3[:3] if z3 else None
                         })
                     is_target_record = True
 

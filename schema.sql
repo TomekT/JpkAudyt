@@ -126,7 +126,7 @@ CREATE TABLE Zapisy (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Dziennik_Id INTEGER,           
     
-    Z_1 TEXT,                      -- Numer konta (kopia)
+    Z_1 TEXT,                      -- Lp zapisu
     Z_2 TEXT,                      -- Opis
     Z_3 TEXT,                      -- Identyfikator konta (FK do ZOiS)
     
@@ -141,10 +141,14 @@ CREATE TABLE Zapisy (
     Z_Data DATE,                   -- Data księgowania (zdenormalizowana z Dziennik.D_8)
     Z_DataMiesiac INTEGER,         -- Miesiąc księgowania
     Z_NrZapisu TEXT,               -- Numer zapisu dla powiązania (Legacy JPK)
+    Z_Syntetyka TEXT,              -- Pierwsze 3 znaki konta (syntetyka)
     
     FOREIGN KEY (Dziennik_Id) REFERENCES Dziennik(Id) ON DELETE CASCADE,
     FOREIGN KEY (Z_3) REFERENCES ZOiS(S_1)
 );
+
+-- Wydajny indeks na syntetykę konta
+CREATE INDEX idx_zapisy_syntetyka ON Zapisy(Z_Syntetyka);
 
 -- Wydajny indeks złożony dla filtrowania po koncie i sortowania po dacie
 CREATE INDEX idx_zapisy_analiza ON Zapisy(Z_3, Z_Data);
