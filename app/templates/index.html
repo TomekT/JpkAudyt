@@ -750,7 +750,7 @@
                                 onclick="copyTableToClipboard('dziennik-container', this)">
                                 <span>Kopiuj</span>
                             </button>
-                            <button id="btnRaportKsiegowan" class="btn btn-secondary btn-sm" onclick="window.location.href='/api/download_raport_ksiegowan';">
+                            <button id="btnRaportKsiegowan" class="btn btn-secondary btn-sm" onclick="downloadAllReports()">
                                 Raport księgowań
                             </button>
                         </div>
@@ -1033,6 +1033,8 @@
         </form>
     </dialog>
 
+
+
     <script>
         // Set initial state of the toggle
         document.addEventListener('DOMContentLoaded', () => {
@@ -1097,6 +1099,26 @@
                 });
             }
         });
+
+        function downloadAllReports() {
+            // Download Markdown report
+            const linkMd = document.createElement('a');
+            linkMd.href = '/api/download_raport_ksiegowan';
+            linkMd.download = 'Raport_Ksiegowan.md';
+            document.body.appendChild(linkMd);
+            linkMd.click();
+            document.body.removeChild(linkMd);
+            
+            // Download Graph image (PNG)
+            setTimeout(() => {
+                const linkPng = document.createElement('a');
+                linkPng.href = '/api/download_raport_graf_img';
+                linkPng.download = 'Raport_Graf.png';
+                document.body.appendChild(linkPng);
+                linkPng.click();
+                document.body.removeChild(linkPng);
+            }, 500);
+        }
 
 
         function triggerAiSave() {

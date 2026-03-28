@@ -16,6 +16,8 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel
+import requests
+import base64
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -250,6 +252,106 @@ async def download_raport_ksiegowan():
     except Exception as e:
         logger.error(f"Raport error: {e}")
         return HTMLResponse(f"Błąd generowania raportu: {str(e)}", status_code=500)
+
+@app.get("/api/download_raport_graf_img")
+async def download_raport_graf_img():
+    try:
+        conn = db_service.get_connection()
+        query = """
+            SELECT Z_Syntetyka, Z_4, Z_7, Dziennik_Id 
+            FROM Zapisy 
+            WHERE Z_Syntetyka IS NOT NULL AND Z_Syntetyka NOT LIKE '9%'
+            ORDER BY Dziennik_Id
+        """
+        rows = conn.execute(query).fetchall()
+        
+        groups = defaultdict(lambda: {"wn": [], "ma": []})
+        for row in rows:
+            gid = row["Dziennik_Id"]
+            syn = row["Z_Syntetyka"]
+            wn = float(row["Z_4"] or 0)
+            ma = float(row["Z_7"] or 0)
+            if wn > 0:
+                groups[gid]["wn"].append({"syn": syn, "val": wn})
+            if ma > 0:
+                groups[gid]["ma"].append({"syn": syn, "val": ma})
+                
+        account_wn_sources = defaultdict(lambda: defaultdict(float))
+        account_ma_targets = defaultdict(lambda: defaultdict(float))
+        
+        for gid, data in groups.items():
+            tot_wn = sum(x["val"] for x in data["wn"])
+            tot_ma = sum(x["val"] for x in data["ma"])
+            if tot_wn == 0 or tot_ma == 0:
+                continue
+                
+            for w in data["wn"]:
+                for m in data["ma"]:
+                    flow = w["val"] * (m["val"] / tot_ma)
+                    account_wn_sources[w["syn"]][m["syn"]] += flow
+                    account_ma_targets[m["syn"]][w["syn"]] += flow
+                    
+        mermaid_lines = ["graph LR"]
+        edges_added = set()
+        
+        def get_acc_id(acc_name):
+            return "acc_" + str(acc_name).replace("-", "_").replace(".", "_")
+
+        for acc in set(account_wn_sources.keys()).union(account_ma_targets.keys()):
+            acc_id = get_acc_id(acc)
+            
+            # Wypływy (Obroty Ma) - strzałka OD nas DO kogoś (Konto -> Tgt)
+            m_targets = account_ma_targets.get(acc, {})
+            suma_ma_exact = sum(m_targets.values())
+            if suma_ma_exact > 0:
+                for tgt_acc, amt in m_targets.items():
+                    pct = (amt / suma_ma_exact) * 100
+                    if pct > 20:
+                        tgt_acc_id = get_acc_id(tgt_acc)
+                        edge_key = f"{acc_id}->{tgt_acc_id}"
+                        if edge_key not in edges_added:
+                            pct_round = round(pct)
+                            mermaid_lines.append(f'    {acc_id}["{acc}"] -->|{pct_round}%| {tgt_acc_id}["{tgt_acc}"]')
+                            edges_added.add(edge_key)
+            
+            # Wpływy (Obroty Wn) - strzałka OD kogoś DO nas (Src -> Konto)
+            w_sources = account_wn_sources.get(acc, {})
+            suma_wn_exact = sum(w_sources.values())
+            if suma_wn_exact > 0:
+                for src_acc, amt in w_sources.items():
+                    pct = (amt / suma_wn_exact) * 100
+                    if pct > 20:
+                        src_acc_id = get_acc_id(src_acc)
+                        edge_key = f"{src_acc_id}->{acc_id}"
+                        if edge_key not in edges_added:
+                            pct_round = round(pct)
+                            mermaid_lines.append(f'    {src_acc_id}["{src_acc}"] -->|{pct_round}%| {acc_id}["{acc}"]')
+                            edges_added.add(edge_key)
+
+        if len(mermaid_lines) == 1:
+            mermaid_lines.append('    Empty["Brak powiązań > 20%"]')
+
+        mmd_text = "\n".join(mermaid_lines)
+        
+        # Call Mermaid.ink API to generate PNG
+        # Encode syntax in base64 as required by Mermaid Ink
+        # We use standard Mermaid Ink endpoint: https://mermaid.ink/img/<base64>
+        mmd_b64 = base64.b64encode(mmd_text.encode('utf-8')).decode('utf-8')
+        img_url = f"https://mermaid.ink/img/{mmd_b64}"
+        
+        img_response = requests.get(img_url, timeout=15)
+        if img_response.status_code == 200:
+            return Response(
+                content=img_response.content,
+                media_type="image/png",
+                headers={"Content-Disposition": "attachment; filename=Raport_Graf.png"}
+            )
+        else:
+            return HTMLResponse(content=f"Błąd API Mermaid: {img_response.status_code}", status_code=500)
+            
+    except Exception as e:
+        logger.error(f"Graf IMG error: {e}")
+        return HTMLResponse(content=str(e), status_code=500)
 
 # Setup Templates & Static Files
 BASE_DIR = Path(__file__).resolve().parent

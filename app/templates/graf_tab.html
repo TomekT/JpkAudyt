@@ -1,0 +1,59 @@
+<div class="h-full flex flex-col bg-base-100 p-6 overflow-hidden">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-bold">Graf Powiązań Kont</h2>
+            <p class="text-base-content/70">Wizualizacja przesyłu środków między kontami (udział pow. 20%).</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="loadGraph()">Odśwież Graf</button>
+        </div>
+    </div>
+    
+    <div class="flex-grow bg-base-200 rounded-xl overflow-auto border border-base-300 flex items-start justify-center p-4 relative" id="graph-container">
+        <div id="mermaid-output" class="w-full h-full flex items-center justify-center">
+            <span class="loading loading-spinner text-primary loading-lg"></span>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    
+    mermaid.initialize({ 
+        startOnLoad: false, 
+        theme: 'default',
+        securityLevel: 'loose'
+    });
+
+    window.loadGraph = async function() {
+        const container = document.getElementById('mermaid-output');
+        container.innerHTML = '<span class="loading loading-spinner text-primary loading-lg"></span>';
+        
+        try {
+            const response = await fetch('/api/raport_graf');
+            const data = await response.json();
+            
+            if (data.error) {
+                container.innerHTML = `<div class="text-error font-bold">Błąd: ${data.error}</div>`;
+                return;
+            }
+            
+            container.innerHTML = '';
+            const id = 'mermaid-' + Date.now();
+            
+            const { svg } = await mermaid.render(id, data.mermaid);
+            container.innerHTML = svg;
+            
+            const svgElement = container.querySelector('svg');
+            if (svgElement) {
+                svgElement.style.minWidth = '800px'; 
+                svgElement.style.height = 'auto';
+            }
+        } catch (error) {
+            container.innerHTML = `<div class="text-error font-bold">Wystąpił błąd: ${error.message}</div>`;
+            console.error('Mermaid render error: ', error);
+        }
+    };
+    
+    // Usunięcie setTimeout(loadGraph, 100); - graf będzie ładowany tylko przyciskiem lub otwarciem modala
+</script>
