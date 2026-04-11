@@ -89,6 +89,7 @@ CREATE TABLE ZOiS (
     
     TypKonta TEXT,                 
     IsAnalytical INTEGER DEFAULT 0,  -- 1 = Analityczne, 0 = Syntetyczne
+    GrupaKont TEXT GENERATED ALWAYS AS (SUBSTR(S_1, 1, 3)) STORED,  -- Grupa kont syntetycznych
     
     FOREIGN KEY (S_12_1) REFERENCES Slownik_Kategorii(Kod),
     FOREIGN KEY (S_12_2) REFERENCES Slownik_Kategorii(Kod),
@@ -96,6 +97,7 @@ CREATE TABLE ZOiS (
 );
 
 CREATE INDEX idx_zois_znacznik_glowny ON ZOiS(S_12_1);
+CREATE INDEX IF NOT EXISTS idx_zois_grupakont ON ZOiS(GrupaKont);
 
 
 -- 3. Dziennik i Zapisy
@@ -141,14 +143,14 @@ CREATE TABLE Zapisy (
     Z_Data DATE,                   -- Data księgowania (zdenormalizowana z Dziennik.D_8)
     Z_DataMiesiac INTEGER,         -- Miesiąc księgowania
     Z_NrZapisu TEXT,               -- Numer zapisu dla powiązania (Legacy JPK)
-    Z_Syntetyka TEXT,              -- Pierwsze 3 znaki konta (syntetyka)
+    Z_GrupaKont TEXT,              -- Pierwsze 3 znaki konta (grupa kont - dawniej syntetyka)
     
     FOREIGN KEY (Dziennik_Id) REFERENCES Dziennik(Id) ON DELETE CASCADE,
     FOREIGN KEY (Z_3) REFERENCES ZOiS(S_1)
 );
 
--- Wydajny indeks na syntetykę konta
-CREATE INDEX idx_zapisy_syntetyka ON Zapisy(Z_Syntetyka);
+-- Wydajny indeks na grupę kont
+CREATE INDEX idx_zapisy_grupakont ON Zapisy(Z_GrupaKont);
 
 -- Wydajny indeks złożony dla filtrowania po koncie i sortowania po dacie
 CREATE INDEX idx_zapisy_analiza ON Zapisy(Z_3, Z_Data);

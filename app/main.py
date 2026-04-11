@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 from app.core.config import config_manager, config_ai_manager
 from app.services.database import db_service
 from app.services.router import jpk_router, ai_router, label_router
-from app.services.gemini_agent import JpkAgent
+from app.services.agent_chat import AgentChat
 
 # Define lifespan event handler to manage startup/shutdown
 @asynccontextmanager
@@ -176,9 +176,9 @@ async def download_raport_ksiegowan():
     try:
         conn = db_service.get_connection()
         query = """
-            SELECT Z_Syntetyka, Z_4, Z_7, Dziennik_Id 
+            SELECT Z_GrupaKont, Z_4, Z_7, Dziennik_Id 
             FROM Zapisy 
-            WHERE Z_Syntetyka IS NOT NULL AND Z_Syntetyka NOT LIKE '9%'
+            WHERE Z_GrupaKont IS NOT NULL AND Z_GrupaKont NOT LIKE '9%'
             ORDER BY Dziennik_Id
         """
         rows = conn.execute(query).fetchall()
@@ -186,7 +186,7 @@ async def download_raport_ksiegowan():
         groups = defaultdict(lambda: {"wn": [], "ma": []})
         for row in rows:
             gid = row["Dziennik_Id"]
-            syn = row["Z_Syntetyka"]
+            syn = row["Z_GrupaKont"]
             wn = float(row["Z_4"] or 0)
             ma = float(row["Z_7"] or 0)
             if wn > 0:
@@ -258,9 +258,9 @@ async def download_raport_graf_img():
     try:
         conn = db_service.get_connection()
         query = """
-            SELECT Z_Syntetyka, Z_4, Z_7, Dziennik_Id 
+            SELECT Z_GrupaKont, Z_4, Z_7, Dziennik_Id 
             FROM Zapisy 
-            WHERE Z_Syntetyka IS NOT NULL AND Z_Syntetyka NOT LIKE '9%'
+            WHERE Z_GrupaKont IS NOT NULL AND Z_GrupaKont NOT LIKE '9%'
             ORDER BY Dziennik_Id
         """
         rows = conn.execute(query).fetchall()
@@ -268,7 +268,7 @@ async def download_raport_graf_img():
         groups = defaultdict(lambda: {"wn": [], "ma": []})
         for row in rows:
             gid = row["Dziennik_Id"]
-            syn = row["Z_Syntetyka"]
+            syn = row["Z_GrupaKont"]
             wn = float(row["Z_4"] or 0)
             ma = float(row["Z_7"] or 0)
             if wn > 0:
@@ -382,7 +382,7 @@ async def dashboard(request: Request):
     
     # Fetch AI Assistant setting for asystent_ai_tab.html
     # We use db_path="" as it is only for config reading
-    dummy_agent = JpkAgent(db_path="")
+    dummy_agent = AgentChat(db_path="")
     ai_assistant = {
         "api_key": dummy_agent.config.get("api_key", ""),
         "system_instruction": dummy_agent.config.get("system_instruction", dummy_agent.DEFAULT_SYSTEM_INSTRUCTION)
@@ -397,7 +397,7 @@ async def dashboard(request: Request):
 
 @app.get("/api/settings/ai-assistant")
 async def get_ai_assistant_settings():
-    dummy_agent = JpkAgent(db_path="")
+    dummy_agent = AgentChat(db_path="")
     return {
         "api_key": dummy_agent.config.get("api_key", ""),
         "system_instruction": dummy_agent.config.get("system_instruction", dummy_agent.DEFAULT_SYSTEM_INSTRUCTION)
@@ -410,7 +410,7 @@ async def save_ai_assistant_settings(
     system_instruction: str = Form("")
 ):
     try:
-        dummy_agent = JpkAgent(db_path="")
+        dummy_agent = AgentChat(db_path="")
         dummy_agent.update_config(api_key, system_instruction)
         
         # Clear active AI sessions in state so they re-init on next use
@@ -1197,12 +1197,12 @@ async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: 
                 {where_sql}
             )
             SELECT 
-                Z_Syntetyka as Syntetyka,
+                Z_GrupaKont as Syntetyka,
                 SUM(CASE WHEN Z_4 > 0 THEN 1 ELSE 0 END) as Liczba_Wn,
                 SUM(CASE WHEN Z_7 > 0 THEN 1 ELSE 0 END) as Liczba_Ma
             FROM Zapisy
             WHERE Dziennik_Id IN (SELECT Dziennik_Id FROM WybraneDzienniki)
-            GROUP BY Z_Syntetyka
+            GROUP BY Z_GrupaKont
             ORDER BY Syntetyka
         """
         rows = conn.execute(query, params).fetchall()

@@ -104,7 +104,7 @@ class DatabaseService:
                     if term.startswith("assoc:"):
                         val = term[6:]
                         # Filtrujemy do zapisów z dzienników, które zawierają dane konto syntetyczne
-                        term_clauses.append(f"z.Dziennik_Id IN (SELECT DISTINCT sub_z.Dziennik_Id FROM Zapisy sub_z WHERE sub_z.Z_Syntetyka = :{key})")
+                        term_clauses.append(f"z.Dziennik_Id IN (SELECT DISTINCT sub_z.Dziennik_Id FROM Zapisy sub_z WHERE sub_z.Z_GrupaKont = :{key})")
                         params[key] = val
                     else:
                         term_clauses.append(f"(z.Z_3 LIKE :{key} OR z.Z_2 LIKE :{key})")

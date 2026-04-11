@@ -151,8 +151,8 @@ class LegacyETLService:
         """
 
         insert_zapisy_sql = """
-            INSERT INTO Zapisy (Z_NrZapisu, Z_1, Z_2, Z_3, Z_4, Z_5, Z_6, Z_7, Z_8, Z_9, Z_Data, Z_Syntetyka)
-            VALUES (:Z_NrZapisu, :Z_1, :Z_2, :Z_3, :Z_4, :Z_5, :Z_6, :Z_7, :Z_8, :Z_9, :Z_Data, :Z_Syntetyka)
+            INSERT INTO Zapisy (Z_NrZapisu, Z_1, Z_2, Z_3, Z_4, Z_5, Z_6, Z_7, Z_8, Z_9, Z_Data, Z_GrupaKont)
+            VALUES (:Z_NrZapisu, :Z_1, :Z_2, :Z_3, :Z_4, :Z_5, :Z_6, :Z_7, :Z_8, :Z_9, :Z_Data, :Z_GrupaKont)
         """
 
         insert_zois_sql = """
@@ -220,7 +220,7 @@ class LegacyETLService:
                         'Z_8': None,
                         'Z_9': None,
                         'Z_Data': None,
-                        'Z_Syntetyka': kod_konta_wn[:3] if kod_konta_wn else None
+                        'Z_GrupaKont': kod_konta_wn[:3] if kod_konta_wn else None
                     })
 
                 # MA side (Z_7)
@@ -243,7 +243,7 @@ class LegacyETLService:
                         'Z_8': elem.findtext(f"{ns_prefix}KwotaMaWaluta", default=None),
                         'Z_9': elem.findtext(f"{ns_prefix}KodWalutyMa", default=None),
                         'Z_Data': None,
-                        'Z_Syntetyka': kod_konta_ma[:3] if kod_konta_ma else None
+                        'Z_GrupaKont': kod_konta_ma[:3] if kod_konta_ma else None
                     })
 
                 if len(zapisy_buffer) >= self.BATCH_SIZE:

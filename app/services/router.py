@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from app.services.database import db_service
 from app.services.etl import etl_service
 from app.services.legacy_etl import legacy_etl_service
-from app.services.gemini_agent import JpkAgent
+from app.services.agent_chat import AgentChat
 from app.core.config import config_manager
 
 logger = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ class ChatRequest(BaseModel):
 async def chat_with_ai(request_data: ChatRequest, request: Request):
     """
     Endpoint obsługujący interakcję z agentem AI.
-    Inicjalizuje JpkAgent na aktualnie otwartej bazie i przesyła pytanie.
+    Inicjalizuje AgentChat na aktualnie otwartej bazie i przesyła pytanie.
     Potrzymuje heartbeat serwera.
     """
     # Reset licznika bezczynności (heartbeat)
@@ -117,7 +117,7 @@ async def chat_with_ai(request_data: ChatRequest, request: Request):
         # Reset condition: No agent OR model changed
         if not existing_agent or existing_agent.model_name != request_data.model:
             logger.info(f"Inicjalizacja nowego agenta dla sesji {current_session} (Model: {request_data.model})")
-            new_agent = JpkAgent(db_path, model_name=request_data.model)
+            new_agent = AgentChat(db_path, model_name=request_data.model)
             request.app.state.ai_sessions[current_session] = new_agent
             agent = new_agent
         else:

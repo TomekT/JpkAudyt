@@ -7,7 +7,7 @@ from google.genai import types
 from app.core.config import GOOGLE_API_KEY
 from pathlib import Path
 
-class JpkAgent:
+class AgentChat:
     """
     Agent AI oparty na modelu Gemini 2.5 Flash z mechanizmem Function Calling.
     Używa nowoczesnego SDK google-genai i poprawnej konfiguracji typów.
