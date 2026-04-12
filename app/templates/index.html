@@ -408,6 +408,14 @@
                                                     Eksport do LLM
                                                 </a>
                                             </li>
+                                            <li class="dropdown-item border-t border-base-300 mt-1 pt-1">
+                                                <a hx-post="/api/zois/group-ai" hx-indicator="#global-loader" class="flex gap-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                                                    </svg>
+                                                    <span>Grupuj konta (AI)</span>
+                                                </a>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>
@@ -2489,6 +2497,14 @@
             <button>close</button>
         </form>
     </dialog>
+    <!-- Global Fullscreen Loader -->
+    <div id="global-loader" class="htmx-indicator fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-base-300/60 backdrop-blur-sm">
+        <div class="flex flex-col items-center bg-base-100 p-8 rounded-2xl shadow-2xl border border-primary/20">
+            <span class="loading loading-spinner loading-lg text-primary scale-150 mb-6"></span>
+            <h3 class="text-xl font-bold text-primary animate-pulse">Przetwarzanie danych AI...</h3>
+            <p class="text-xs opacity-60 mt-2">To może zająć kilka sekund, proszę czekać.</p>
+        </div>
+    </div>
 </body>
 
 </html>

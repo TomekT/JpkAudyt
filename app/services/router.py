@@ -227,3 +227,39 @@ async def get_dziennik_filtered_ids(zq: str = "", month: str = "", q: str = "", 
         return {"ids": [row['Dziennik_Id'] for row in rows]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+from app.services.agent_group_zois import ZoisNamingAgent, AIConnectionError
+import json
+
+@label_router.post("/api/zois/group-ai")
+async def group_zois_accounts():
+    """Tworzy grupy syntetyczne kont 3-znakowych, agreguje salda, i opcjonalnie nazywa z AI."""
+    try:
+        # A) Podstawowa logika grupowania SQL
+        db_service.group_zois_accounts()
+        
+        from fastapi import Response
+        # B) Wywołanie agenta AI
+        try:
+            groups_data = db_service.get_unnamed_groups()
+            if groups_data:
+                agent = ZoisNamingAgent()
+                new_names = agent.generate_names(groups_data)
+                db_service.update_group_names(new_names)
+            return Response(status_code=204, headers={"HX-Trigger": "db-changed"})
+            
+        # C) Obsługa błędów AI
+        except AIConnectionError as e:
+            logger.warning(f"ZoisNamingAgent failed (AI fallback invoked): {e}")
+            headers = {
+                "HX-Trigger": json.dumps({
+                    "db-changed": "", 
+                    "show-toast-warning": "Pogrupowano bez AI: Brak klucza lub błąd połączenia"
+                })
+            }
+            return Response(status_code=204, headers=headers)
+
+    except Exception as e:
+        logger.error(f"Error grouping zois accounts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

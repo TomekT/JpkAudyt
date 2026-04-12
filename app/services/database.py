@@ -625,6 +625,98 @@ class DatabaseService:
         rows = conn.execute(query, params).fetchall()
         return [row['Nazwa'] for row in rows]
 
+    def group_zois_accounts(self):
+        """Tworzy strukturę analityczną 3-znakową dla kont ZOiS, agregując salda."""
+        with self.transaction() as conn:
+            cursor = conn.cursor()
+            
+            # A) Utworzenie brakujących kont syntetycznych
+            cursor.execute("""
+                INSERT INTO ZOiS (S_1, S_2, S_3, IsAnalytical, TypKonta)
+                SELECT DISTINCT 
+                    substr(S_1, 1, 3), 
+                    substr(S_1, 1, 3), 
+                    substr(S_1, 1, 3), 
+                    0,                 
+                    'GrupaKont'        
+                FROM ZOiS
+                WHERE substr(S_1, 1, 3) NOT IN (SELECT S_1 FROM ZOiS)
+            """)
+            
+            # B) Naprawa hierarchii
+            cursor.execute("""
+                UPDATE ZOiS
+                SET S_3 = substr(S_1, 1, 3)
+                WHERE length(S_1) > 3
+            """)
+            
+            # C) Agregacja wartości finansowych - idempotentna modyfikacja ograniczająca do dzieci
+            cursor.execute("""
+                UPDATE ZOiS AS parent
+                SET 
+                    S_4 = (SELECT SUM(COALESCE(child.S_4, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3),
+                    S_5 = (SELECT SUM(COALESCE(child.S_5, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3),
+                    S_6 = (SELECT SUM(COALESCE(child.S_6, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3),
+                    S_7 = (SELECT SUM(COALESCE(child.S_7, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3),
+                    S_8 = (SELECT SUM(COALESCE(child.S_8, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3),
+                    S_9 = (SELECT SUM(COALESCE(child.S_9, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3),
+                    S_10 = (SELECT SUM(COALESCE(child.S_10, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3),
+                    S_11 = (SELECT SUM(COALESCE(child.S_11, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3)
+                WHERE length(S_1) = 3
+            """)
+
+    def get_unnamed_groups(self) -> list:
+        conn = self.get_connection()
+        groups = conn.execute("SELECT S_1, S_10, S_11 FROM ZOiS WHERE S_1 = S_2 AND length(S_1) = 3").fetchall()
+        
+        result = []
+        for g in groups:
+            s1 = g['S_1']
+            wn = float(g['S_10'] or 0)
+            ma = float(g['S_11'] or 0)
+            saldo = "both"
+            if wn > 0 and ma == 0: saldo = "debit"
+            elif ma > 0 and wn == 0: saldo = "credit"
+            elif wn == 0 and ma == 0: saldo = "none"
+            
+            children = conn.execute("SELECT S_2 FROM ZOiS WHERE S_3 = ? AND length(S_1) > 3", (s1,)).fetchall()
+            children_names = [c['S_2'] for c in children]
+            
+            result.append({
+                "numer_grupy": s1,
+                "saldo": saldo,
+                "analityka": children_names
+            })
+        return result
+
+    def update_group_names(self, names_data: Any):
+        if not names_data: return
+        
+        # Przekształć listę słowników w jeden słownik, jeśli przyszła lista
+        final_dict = {}
+        if isinstance(names_data, list):
+            for item in names_data:
+                if isinstance(item, dict):
+                    # Obsługa formatu {"100": "Nazwa"}
+                    if len(item) == 1 and "numer_grupy" not in item:
+                        final_dict.update(item)
+                    # Obsługa formatu {"numer_grupy": "100", "proponowana_nazwa": "Nazwa"} lub podobnych
+                    elif "numer_grupy" in item:
+                        k = item.get("numer_grupy")
+                        v = item.get("proponowana_nazwa") or item.get("nazwa") or item.get("value")
+                        if k and v:
+                            final_dict[k] = v
+        elif isinstance(names_data, dict):
+            final_dict = names_data
+
+        if not final_dict:
+            return
+
+        with self.transaction() as conn:
+            cursor = conn.cursor()
+            for s1, new_name in final_dict.items():
+                cursor.execute("UPDATE ZOiS SET S_2 = ? WHERE S_1 = ? AND length(S_1) = 3", (new_name, s1))
+
     def bulk_add_labels(self, area: str, ids: List[Any], label_name: str):
         """Masowe dodawanie etykiety do listy ID w jednej transakcji."""
         if not ids or not label_name: return
