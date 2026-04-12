@@ -213,9 +213,13 @@ async def download_raport_ksiegowan():
         all_accounts = set(account_wn_sources.keys()).union(account_ma_targets.keys())
         sorted_accounts = sorted(list(all_accounts))
         
+        zois_names = {row['S_1']: row['S_2'] for row in conn.execute("SELECT S_1, S_2 FROM ZOiS").fetchall()}
+
         md_lines = []
         for acc in sorted_accounts:
-            md_lines.append(f"Konto {acc}")
+            name = zois_names.get(acc, "")
+            header = f"Konto {acc} - {name}" if name else f"Konto {acc}"
+            md_lines.append(header)
             
             w_sources = account_wn_sources.get(acc, {})
             if w_sources:
