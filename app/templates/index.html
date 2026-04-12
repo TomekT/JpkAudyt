@@ -718,8 +718,14 @@
                                             <div hx-get="/api/labels/Zapisy" hx-trigger="load, db-changed from:body, label-changed from:body"
                                                 hx-target="#filter-zapisy-label" class="hidden"></div>
                                         </div>
-                                        <div class="card-actions justify-end mt-4">
-                                            <button class="btn btn-xs btn-ghost" onclick="resetZapisyLocalFilters()">Resetuj</button>
+                                        <div class="card-actions flex flex-col items-stretch mt-4 border-t border-base-content/10 pt-4">
+                                            <button class="btn btn-xs btn-ghost text-info hover:bg-info/10 w-full justify-start gap-2" onclick="document.getElementById('modal_adv_filter').showModal()">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                                                Zaawansowane...
+                                            </button>
+                                            <div class="flex justify-end w-full mt-2">
+                                                <button class="btn btn-xs btn-ghost text-error gap-1 hover:bg-error/10" onclick="resetZapisyLocalFilters()">Resetuj</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1369,7 +1375,168 @@
         }
 
         initHeartbeat();
-    </script>
+</script>
+
+<!-- Modal Filtr Zaawansowany -->
+<dialog id="modal_adv_filter" class="modal">
+    <div class="modal-box w-11/12 max-w-2xl bg-base-100 shadow-2xl relative">
+        <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+        </form>
+        <h3 class="font-bold text-lg mb-4 text-primary flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filtr Zaawansowany (Zapisy)
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-control w-full">
+                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Numer konta (Z_3) lub prefiks</span></label>
+                <input type="text" id="adv_z3" name="adv_z3" class="input input-bordered w-full zapisy-filter" placeholder="np. 100 lub 200" />
+            </div>
+            <div class="form-control w-full">
+                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Opis (Z_2) fragment</span></label>
+                <input type="text" id="adv_z2" name="adv_z2" class="input input-bordered w-full zapisy-filter" placeholder="np. faktura lub przelew" />
+            </div>
+            <div class="form-control w-full">
+                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Numer dziennika (D_1)</span></label>
+                <input type="text" id="adv_d1" name="adv_d1" class="input input-bordered w-full zapisy-filter" placeholder="np. D/ lub PK/" />
+            </div>
+            <div class="form-control w-full">
+                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Kwota minimalna</span></label>
+                <div class="relative">
+                    <input type="number" id="adv_min_kwota" name="adv_min_kwota" step="0.01" class="input input-bordered w-full zapisy-filter pr-12" placeholder="0.00" />
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold opacity-40">PLN</span>
+                </div>
+            </div>
+            <div class="form-control w-full">
+                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Sortowanie</span></label>
+                <div class="flex gap-4 mt-2">
+                    <label class="label cursor-pointer gap-2">
+                        <input type="radio" name="adv_sort" value="data" class="radio radio-primary radio-sm zapisy-filter" checked /> 
+                        <span class="label-text font-bold">Data (rosnąco)</span>
+                    </label>
+                    <label class="label cursor-pointer gap-2">
+                        <input type="radio" name="adv_sort" value="kwota" class="radio radio-primary radio-sm zapisy-filter" /> 
+                        <span class="label-text font-bold">Kwota (malejąco)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-action mt-8 pt-4 border-t border-base-300">
+            <button class="btn btn-ghost" onclick="document.getElementById('modal_adv_filter').close()">Anuluj</button>
+            <button class="btn btn-primary px-10 shadow-lg" onclick="applyAdvancedFilters()">
+                Zastosuj filtry
+            </button>
+        </div>
+    </div>
+</dialog>
+
+<!-- Spinner Overlay -->
+<div id="adv_spinner_overlay" style="display: none;" class="fixed inset-0 bg-base-300/80 z-[9999] flex flex-col justify-center items-center backdrop-blur-sm transition-opacity">
+    <span class="loading loading-spinner loading-lg text-primary"></span>
+    <p class="mt-4 font-bold text-lg uppercase tracking-widest opacity-80">Aktualizowanie danych...</p>
+</div>
+
+<script>
+    // Pobrane z URL dla wyświetlania z poprzedniego wyszukiwania - teraz dla WSZYSTKICH filtrów
+    (function initAllFiltersFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Advanced filters
+        if(urlParams.has('adv_z3')) {
+            const el = document.getElementById('adv_z3');
+            if(el) el.value = urlParams.get('adv_z3');
+        }
+        if(urlParams.has('adv_z2')) {
+            const el = document.getElementById('adv_z2');
+            if(el) el.value = urlParams.get('adv_z2');
+        }
+        if(urlParams.has('adv_d1')) {
+            const el = document.getElementById('adv_d1');
+            if(el) el.value = urlParams.get('adv_d1');
+        }
+        if(urlParams.has('adv_min_kwota')) {
+            const el = document.getElementById('adv_min_kwota');
+            if(el) el.value = urlParams.get('adv_min_kwota');
+        }
+        if(urlParams.has('adv_sort')) {
+            const s = urlParams.get('adv_sort');
+            const rb = document.querySelector(`input[name="adv_sort"][value="${s}"]`);
+            if(rb) rb.checked = true;
+        }
+
+        // Standard filters (to restore context after full page reload)
+        if(urlParams.has('q')) {
+            const el = document.getElementById('global-zois-q');
+            if(el) el.value = urlParams.get('q');
+        }
+        if(urlParams.has('type')) {
+            const el = document.getElementById('filter-account-type');
+            if(el) el.value = urlParams.get('type');
+        }
+        if(urlParams.has('label_id')) {
+            const el = document.getElementById('filter-label-tag');
+            if(el) el.value = urlParams.get('label_id');
+        }
+        if(urlParams.has('zq')) {
+            const el = document.getElementById('zapisy-local-q');
+            if(el) el.value = urlParams.get('zq');
+        }
+        if(urlParams.has('month')) {
+            const el = document.getElementById('filter-month');
+            if(el) el.value = urlParams.get('month');
+        }
+        if(urlParams.has('label_zapisy_id')) {
+            const el = document.getElementById('filter-zapisy-label');
+            if(el) el.value = urlParams.get('label_zapisy_id');
+        }
+    })();
+
+    function applyAdvancedFilters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // 1. Capture CURRENT UI state of major filters to prevent context loss
+        const qVal = document.getElementById('global-zois-q')?.value;
+        const typeVal = document.getElementById('filter-account-type')?.value;
+        const labelVal = document.getElementById('filter-label-tag')?.value;
+        const localQVal = document.getElementById('zapisy-local-q')?.value;
+        const monthVal = document.getElementById('filter-month')?.value;
+        const labelZapisyVal = document.getElementById('filter-zapisy-label')?.value;
+
+        if (qVal) urlParams.set('q', qVal); else urlParams.delete('q');
+        if (typeVal) urlParams.set('type', typeVal); else urlParams.delete('type');
+        if (labelVal) urlParams.set('label_id', labelVal); else urlParams.delete('label_id');
+        if (localQVal) urlParams.set('zq', localQVal); else urlParams.delete('zq');
+        if (monthVal) urlParams.set('month', monthVal); else urlParams.delete('month');
+        if (labelZapisyVal) urlParams.set('label_zapisy_id', labelZapisyVal); else urlParams.delete('label_zapisy_id');
+
+        // 2. Capture ADVANCED filter modal state
+        const z3 = document.getElementById('adv_z3')?.value || '';
+        const z2 = document.getElementById('adv_z2')?.value || '';
+        const d1 = document.getElementById('adv_d1')?.value || '';
+        const minKwota = document.getElementById('adv_min_kwota')?.value || '';
+        const sortEl = document.querySelector('input[name="adv_sort"]:checked');
+        const sort = sortEl ? sortEl.value : 'data';
+        
+        if (z3) urlParams.set('adv_z3', z3); else urlParams.delete('adv_z3');
+        if (z2) urlParams.set('adv_z2', z2); else urlParams.delete('adv_z2');
+        if (d1) urlParams.set('adv_d1', d1); else urlParams.delete('adv_d1');
+        if (minKwota) urlParams.set('adv_min_kwota', minKwota); else urlParams.delete('adv_min_kwota');
+        if (sort) urlParams.set('adv_sort', sort); else urlParams.delete('adv_sort');
+        
+        // Reset page to 1 when changing filters
+        urlParams.delete('page');
+        
+        document.getElementById('adv_spinner_overlay').style.display = 'flex';
+        document.getElementById('modal_adv_filter').close();
+        
+        // Full page reload to apply all filters across all components reliably
+        window.location.search = urlParams.toString();
+    }
+</script>
 
     <!-- MUS Modal Dialog -->
     <dialog id="mus_modal" class="modal">
@@ -2132,9 +2299,18 @@
         const q = document.getElementById('zapisy-local-q');
         const month = document.getElementById('filter-month');
         const label = document.getElementById('filter-zapisy-label');
+        const adv_z3 = document.getElementById('adv_z3');
+        const adv_z2 = document.getElementById('adv_z2');
+        const adv_d1 = document.getElementById('adv_d1');
+        const adv_min_kwota = document.getElementById('adv_min_kwota');
+        
         if (q) q.value = '';
         if (month) month.value = '';
         if (label) label.value = '';
+        if (adv_z3) adv_z3.value = '';
+        if (adv_z2) adv_z2.value = '';
+        if (adv_d1) adv_d1.value = '';
+        if (adv_min_kwota) adv_min_kwota.value = '';
         
         updateFilterState('Zapisy');
         htmx.trigger('body', 'filter-updated');
@@ -2379,6 +2555,22 @@
         // Initial check
         updateFilterState('ZOiS');
         updateFilterState('Zapisy');
+
+        // AUTO-SWITCH to Zapisy tab if advanced params or zq/month are present in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const qParam = urlParams.get('q') || '';
+        const shouldBeInZapisy = urlParams.has('adv_z3') || urlParams.has('adv_z2') || 
+                               urlParams.has('adv_d1') || urlParams.has('adv_min_kwota') || 
+                               urlParams.has('zq') || urlParams.has('month') || 
+                               urlParams.has('label_zapisy_id') ||
+                               qParam.includes('konto:') || qParam.includes('assoc:');
+        
+        if (shouldBeInZapisy) {
+            const tabZapisy = document.getElementById('tab-zapisy');
+            if (tabZapisy) {
+                tabZapisy.checked = true;
+            }
+        }
 
         // Logic for ZOiS View section (Dropdown in badanie_tab.html)
         const initZoisViewLogic = () => {

@@ -1025,15 +1025,18 @@ async def get_dziennik():
 @app.get("/data/table", response_class=HTMLResponse)
 @app.get("/data/zapisy", response_class=HTMLResponse)
 @app.get("/zapisy", response_class=HTMLResponse)
-async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", details: str = "", page: int = 1):
+async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", details: str = "", page: int = 1, adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_sort: str = "", adv_d1: str = ""):
     pageSize = 1000
     offset = (page - 1) * pageSize
     try:
         conn = db_service.get_connection()
-        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
+        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
 
-        # Performance optimization: Recommended Index
-        # CREATE INDEX IF NOT EXISTS idx_zapisy_filter ON Zapisy (Z_3, Z_Data);
+        order_by = "ORDER BY z.Z_Data ASC, z.Id ASC"
+        if adv_sort == "kwota":
+            order_by = "ORDER BY MAX(ABS(COALESCE(z.Z_4, 0)), ABS(COALESCE(z.Z_7, 0))) DESC, z.Id ASC"
+        elif adv_sort == "data":
+            order_by = "ORDER BY z.Z_Data ASC, z.Id ASC"
 
         query = f"""
             SELECT z.Id, z.Dziennik_Id, z.Z_3, z.Z_2, z.Z_Data, d.D_1, z.Z_4, z.Z_5, z.Z_6, z.Z_7, z.Z_8, z.Z_9, s.S_2,
@@ -1042,9 +1045,10 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
             LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
             LEFT JOIN ZOiS s ON z.Z_3 = s.S_1
             {where_sql}
-            ORDER BY z.Z_Data, z.Id
+            {order_by}
             LIMIT :pageSize OFFSET :offset
         """
+        logger.info(f"Generated SQL: {query} with params {params}")
         params["pageSize"] = pageSize
         params["offset"] = offset
         rows = conn.execute(query, params).fetchall()
@@ -1186,10 +1190,10 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
 
 
 @app.get("/api/zapisy/przeglad", response_class=HTMLResponse)
-async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = ""):
+async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
     try:
         conn = db_service.get_connection()
-        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
+        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
 
         # Using CTE to find matching Dziennik_Id, then grouping ALL Zapisy from those Dziennik_Id
         query = f"""
@@ -1286,10 +1290,10 @@ async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: 
 
 @app.get("/data/chart", response_class=HTMLResponse)
 @app.get("/api/chart-fragment", response_class=HTMLResponse)
-async def get_data_chart(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = ""):
+async def get_data_chart(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
     try:
         conn = db_service.get_connection()
-        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
+        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
 
         # 1. PRIMARY AGGREGATE SUMMARY
         agg_sql = f"""

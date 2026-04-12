@@ -47,7 +47,7 @@ class ZoisNamingAgent:
             raise AIConnectionError("Klient AI nie jest zainicjalizowany")
 
         system_prompt = (
-            "Jesteś ekspertem polskiej rachunkowości. Otrzymasz JSON z listą grup kont. Twoim zadaniem jest zaproponowanie profesjonalnej "
+            "Jesteś ekspertem od planów kont w polskiej rachunkowości dla spółek handlowych i produkcyjnych. Otrzymasz JSON z listą grup kont. Twoim zadaniem jest zaproponowanie profesjonalnej "
             "nazwy dla każdej grupy (syntetyki). Sugeruj się wzorcowymi planami kont i nazwami kont analitycznych. "
             "Zwróć wyłącznie płaski obiekt JSON, gdzie kluczem jest numer grupy (string), a wartością nowa nazwa (string). "
             "Przykład: {'100': 'Kasa', '130': 'Rachunek bieżący'}."

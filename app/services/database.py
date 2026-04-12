@@ -69,7 +69,7 @@ class DatabaseService:
         sql = f"SELECT * FROM ZOiS {where_sql} ORDER BY S_1"
         return self.get_connection().execute(sql, params).fetchall()
 
-    def build_zapisy_where(self, q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = ""):
+    def build_zapisy_where(self, q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
         where_clauses = []
         params = {}
         if q:
@@ -113,6 +113,45 @@ class DatabaseService:
         if month and month.isdigit():
             where_clauses.append("z.Z_DataMiesiac = :month")
             params["month"] = int(month)
+            
+        if adv_z3:
+            terms = self.parse_smart_query(adv_z3)
+            if terms:
+                term_clauses = []
+                for i, term in enumerate(terms):
+                    key = f"advz3_{i}"
+                    term_clauses.append(f"z.Z_3 LIKE :{key}")
+                    params[key] = f"%{term}%"
+                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
+                
+        if adv_z2:
+            terms = self.parse_smart_query(adv_z2)
+            if terms:
+                term_clauses = []
+                for i, term in enumerate(terms):
+                    key = f"advz2_{i}"
+                    term_clauses.append(f"z.Z_2 LIKE :{key}")
+                    params[key] = f"%{term}%"
+                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
+                
+        if adv_d1:
+            terms = self.parse_smart_query(adv_d1)
+            if terms:
+                term_clauses = []
+                for i, term in enumerate(terms):
+                    key = f"advd1_{i}"
+                    term_clauses.append(f"d.D_1 LIKE :{key}")
+                    params[key] = f"%{term}%"
+                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
+                
+        if adv_min_kwota:
+            try:
+                min_val = float(adv_min_kwota)
+                where_clauses.append("(ABS(COALESCE(z.Z_4, 0)) >= :min_val OR ABS(COALESCE(z.Z_7, 0)) >= :min_val)")
+                params["min_val"] = min_val
+            except ValueError:
+                pass
+                
         where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         return where_sql, params
 
@@ -601,11 +640,16 @@ class DatabaseService:
         label_id = filters.get("label_id", "")
         label_zapisy_id = filters.get("label_zapisy_id", "")
         
+        adv_z3 = filters.get("adv_z3", "")
+        adv_z2 = filters.get("adv_z2", "")
+        adv_d1 = filters.get("adv_d1", "")
+        adv_min_kwota = filters.get("adv_min_kwota", "")
+        
         if area == 'ZOiS':
             where_sql, params = self.build_zois_where(q, type_, label_id)
             join_sql = ""
         else:
-            where_sql, params = self.build_zapisy_where(q, type_, zq, month, label_id, label_zapisy_id)
+            where_sql, params = self.build_zapisy_where(q, type_, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
             join_sql = "LEFT JOIN ZOiS s ON z.Z_3 = s.S_1"
             base_tbl = "Zapisy z"
 
@@ -746,11 +790,16 @@ class DatabaseService:
         label_id = filters.get("label_id", "")
         label_zapisy_id = filters.get("label_zapisy_id", "")
         
+        adv_z3 = filters.get("adv_z3", "")
+        adv_z2 = filters.get("adv_z2", "")
+        adv_d1 = filters.get("adv_d1", "")
+        adv_min_kwota = filters.get("adv_min_kwota", "")
+        
         if area == 'ZOiS':
             where_sql, params = self.build_zois_where(q, type_, label_id)
             join_sql = ""
         else:
-            where_sql, params = self.build_zapisy_where(q, type_, zq, month, label_id, label_zapisy_id)
+            where_sql, params = self.build_zapisy_where(q, type_, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
             join_sql = "LEFT JOIN ZOiS s ON z.Z_3 = s.S_1"
             base_tbl = "Zapisy z"
 
@@ -796,11 +845,16 @@ class DatabaseService:
         label_id = filters.get("label_id", "")
         label_zapisy_id = filters.get("label_zapisy_id", "")
         
+        adv_z3 = filters.get("adv_z3", "")
+        adv_z2 = filters.get("adv_z2", "")
+        adv_d1 = filters.get("adv_d1", "")
+        adv_min_kwota = filters.get("adv_min_kwota", "")
+        
         if area == 'ZOiS':
             where_sql, params = self.build_zois_where(q, type_, label_id)
             join_sql = ""
         else:
-            where_sql, params = self.build_zapisy_where(q, type_, zq, month, label_id, label_zapisy_id)
+            where_sql, params = self.build_zapisy_where(q, type_, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
             join_sql = "LEFT JOIN ZOiS s ON z.Z_3 = s.S_1"
             base_tbl = "Zapisy z"
 
