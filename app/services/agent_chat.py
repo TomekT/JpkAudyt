@@ -6,6 +6,7 @@ from google import genai
 from google.genai import types
 from app.core.config import GOOGLE_API_KEY
 from pathlib import Path
+from app.services.chat_service import ChatService
 
 class AgentChat:
     """
@@ -18,12 +19,11 @@ class AgentChat:
         "Jesteś ekspertem ds. analizy JPK (Jednolity Plik Kontrolny) i audytu finansowego. "
         "Twoim zadaniem jest odpowiadanie na pytania użytkownika dotyczące danych w bazie SQLite. "
         "Zawsze odpowiadaj po polsku w sposób profesjonalny i pomocny. "
-        "\n\nMASZ DOSTĘP DO NARZĘDZIA 'execute_sql'. STOSUJ SIĘ DO PONIŻSZYCH ZASAD:\n"
-        "1. Możesz wykonywać WYŁĄCZNIE zapytania typu SELECT. Instrukcje modyfikujące (INSERT, UPDATE, DELETE, DROP itp.) są ZAKAZANE.\n"
-        "2. Jeśli użytkownik prosi o analizę, spróbuj sformułować odpowiednie zapytanie SQL, aby pobrać dane.\n"
-        "3. Wyniki prezentuj w czytelny sposób, najlepiej używając tabel Markdown.\n"
-        "4. Jeśli zapytanie SQL zwróci błąd, poinformuj o tym i spróbuj je poprawić.\n"
-        "5. Użytkownik najczęściej będzie podawał numer konta sytnetyccznego, ale interesują go wszystkie podrzędne konta analityczne. Uwzględnij przeszukiwanie kont podrzędnych, czyli np. dla konta 400 użyj warunku S_1 LIKE '400%' oraz is_analytical = 1.\n"
+        "\n\nMASZ DOSTĘP DO NARZĘDZI (Function Calling). STOSUJ SIĘ DO PONIŻSZYCH ZASAD:\n"
+        "1. Używaj narzędzia 'get_account_balance' jako pierwszego wyboru do szybkiego pobierania danych o kontach (S_1, S_2) oraz wartości księgowych z bazy ZOiS.\n"
+        "2. W tabeli ZOiS m.in. znajdują się kolumny: S_4 (BO Wn), S_5 (BO Ma), S_8 (Obroty Wn), S_9 (Obroty Ma), S_10 (Saldo końcowe Wn), S_11 (Saldo końcowe Ma).\n"
+        "3. Narzędzia 'execute_sql' używaj TYLKO W OSTATECZNOŚCI, gdy 'get_account_balance' i inne narzędzia nie wystarczą. Możesz w nim wykonywać WYŁĄCZNIE zapytania typu SELECT.\n"
+        "4. Wyniki prezentuj w czytelny sposób, najlepiej używając tabel Markdown.\n"
     )
     
     def __init__(self, db_path: str, model_name: str = "gemini-2.5-flash-lite"):
@@ -34,11 +34,14 @@ class AgentChat:
         self.model_name = model_name
         self.client = None
         self.chat = None
+        self.chat_service = ChatService(self.db_path)
         
         # Load config from file or environment
         self.config = self._load_persistent_config()
         effective_api_key = self.config.get("api_key") or GOOGLE_API_KEY
-        self.config["api_key"] = effective_api_key or "" # Ensure it is exposed to UI
+        
+        # Zapisujemy tylko api_key w self.config dla spójności z UI
+        self.config["api_key"] = effective_api_key or ""
         
         if not effective_api_key:
             return
@@ -47,14 +50,18 @@ class AgentChat:
             self.client = genai.Client(api_key=effective_api_key)
             schema_content = self._load_schema()
             
-            system_instruction = self.config.get("system_instruction") or self.DEFAULT_SYSTEM_INSTRUCTION
-            # Append schema info to instruction
+            # Instrukcja systemowa jest teraz stała i pobierana wyłącznie z klasy constant
+            system_instruction = self.DEFAULT_SYSTEM_INSTRUCTION
+            
+            # Dołączanie schematu bazy danych (zgodnie z wymogiem 4 poprzedniego zadania i zachowując logikę)
             full_instruction = f"{system_instruction}\n6. Schemat bazy danych SQL:\n{schema_content}"
 
             self.chat = self.client.chats.create(
                 model=model_name,
                 config=types.GenerateContentConfig(
-                    tools=[self.execute_sql],
+                    tools=[
+                        self.chat_service.get_account_balance, 
+                        self.execute_sql],
                     automatic_function_calling=types.AutomaticFunctionCallingConfig(
                         disable=False
                     ),
@@ -74,15 +81,17 @@ class AgentChat:
                 pass
         return {}
 
-    def update_config(self, api_key: str, system_instruction: str):
+    def update_config(self, api_key: str):
+        """
+        Aktualizuje tylko klucz API. Instrukcja systemowa pozostaje niezmienna.
+        """
         config_data = {
-            "api_key": api_key,
-            "system_instruction": system_instruction
+            "api_key": api_key
         }
         with open(self.CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config_data, f, indent=4, ensure_ascii=False)
         
-        # Reinitialize
+        # Reinicjalizacja z nowym kluczem
         self.__init__(self.db_path, self.model_name)
 
     def _load_schema(self) -> str:
@@ -106,6 +115,8 @@ class AgentChat:
         Returns:
             Lista słowników z wynikami zapytania lub błędem.
         """
+        print(f"[AI-TOOL] Wywołano funkcję execute_sql z zapytaniem: {sql_query}")
+        
         # Dodatkowe zabezpieczenie przed zapytaniami innymi niż SELECT
         query_strip = sql_query.strip().lower()
         if not query_strip.startswith("select"):
@@ -138,9 +149,6 @@ class AgentChat:
         Returns:
             Odpowiedź tekstowa od modelu AI.
         """
-        if not GOOGLE_API_KEY:
-            return "Błąd: Brak klucza API (GOOGLE_API_KEY) w pliku .env."
-        
         if not self.client or not self.chat:
             return "Błąd: Nie udało się zainicjalizować sesji AI. Sprawdź klucz API i połączenie internetowe."
 

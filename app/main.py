@@ -388,8 +388,7 @@ async def dashboard(request: Request):
     # We use db_path="" as it is only for config reading
     dummy_agent = AgentChat(db_path="")
     ai_assistant = {
-        "api_key": dummy_agent.config.get("api_key", ""),
-        "system_instruction": dummy_agent.config.get("system_instruction", dummy_agent.DEFAULT_SYSTEM_INSTRUCTION)
+        "api_key": dummy_agent.config.get("api_key", "")
     }
     
     return templates.TemplateResponse("index.html", {
@@ -403,19 +402,17 @@ async def dashboard(request: Request):
 async def get_ai_assistant_settings():
     dummy_agent = AgentChat(db_path="")
     return {
-        "api_key": dummy_agent.config.get("api_key", ""),
-        "system_instruction": dummy_agent.config.get("system_instruction", dummy_agent.DEFAULT_SYSTEM_INSTRUCTION)
+        "api_key": dummy_agent.config.get("api_key", "")
     }
 
 @app.post("/api/settings/ai-assistant")
 async def save_ai_assistant_settings(
     request: Request,
-    api_key: str = Form(""),
-    system_instruction: str = Form("")
+    api_key: str = Form("")
 ):
     try:
         dummy_agent = AgentChat(db_path="")
-        dummy_agent.update_config(api_key, system_instruction)
+        dummy_agent.update_config(api_key)
         
         # Clear active AI sessions in state so they re-init on next use
         if hasattr(request.app.state, "ai_sessions"):
