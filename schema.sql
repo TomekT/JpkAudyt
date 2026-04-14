@@ -247,3 +247,24 @@ CREATE TABLE IF NOT EXISTS Etykiety_Zapisy (
 CREATE INDEX IF NOT EXISTS idx_etykiety_zois_fk ON Etykiety_ZOiS(ZOiS_S1);
 CREATE INDEX IF NOT EXISTS idx_etykiety_dziennik_fk ON Etykiety_Dziennik(DziennikId);
 CREATE INDEX IF NOT EXISTS idx_etykiety_zapisy_fk ON Etykiety_Zapisy(ZapisyId);
+
+
+-- 8. Widoki analityczne (Analytical Views)
+-- ---------------------------------------------------------
+
+-- Widok v_zapisy_pelne: Pełny kontekst zapisów księgowych
+-- Łączy tabelę Zapisy (z) z tabelą Dziennik (d) dla łatwiejszego filtrowania przez LLM i system raportowy.
+CREATE VIEW IF NOT EXISTS v_zapisy_pelne AS
+SELECT 
+    z.Id AS id_zapisu,            -- Identyfikator zapisu w systemie
+    z.Z_3 AS Numer_Konta,         -- Pełny numer konta księgowego
+    z.Z_2 AS Opis_Zapisu,         -- Opis szczegółowy zapisu
+    z.Z_4 AS Kwota_Wn,            -- Kwota po stronie Winien
+    z.Z_7 AS Kwota_Ma,            -- Kwota po stronie Ma
+    (z.Z_4 + z.Z_7) AS Kwota,     -- wartość operacji
+    d.D_1 AS Numer_Dziennika,     -- Numer dziennika
+    d.D_8 AS Data_ksiegowania,    -- Data księgowania
+    d.D_10 AS Rodzaj_Dowodu      -- Rodzaj dowodu księgowego
+FROM Zapisy z
+LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
+WHERE d.D_1 NOT LIKE 'BO%';

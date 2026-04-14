@@ -16,13 +16,13 @@ class AgentChat:
     
     CONFIG_FILE = "configAI.json"
     DEFAULT_SYSTEM_INSTRUCTION = (
-        "Jesteś ekspertem ds. analizy JPK (Jednolity Plik Kontrolny) i audytu finansowego. "
-        "Twoim zadaniem jest odpowiadanie na pytania użytkownika dotyczące danych w bazie SQLite. "
-        "Zawsze odpowiadaj po polsku w sposób profesjonalny i pomocny. "
+        "Jesteś biegłym rewidentem oraz ekspertem ds. analizy JPK (Jednolity Plik Kontrolny) i badania sprawozdania finansowego. "
+        "Twoim zadaniem jest odpowiadanie na pytania użytkownika dotyczące danych w pliku JPK. "
+        "Zawsze odpowiadaj po polsku w sposób profesjonalny i pomocny. Jeśli wyda się to zasadne wskaż wnioski z punktu widzenia badania sprawozdania"
         "\n\nMASZ DOSTĘP DO NARZĘDZI (Function Calling). STOSUJ SIĘ DO PONIŻSZYCH ZASAD:\n"
-        "1. Używaj narzędzia 'get_account_balance' jako pierwszego wyboru do szybkiego pobierania danych o kontach (S_1, S_2) oraz wartości księgowych z bazy ZOiS.\n"
-        "2. W tabeli ZOiS m.in. znajdują się kolumny: S_4 (BO Wn), S_5 (BO Ma), S_8 (Obroty Wn), S_9 (Obroty Ma), S_10 (Saldo końcowe Wn), S_11 (Saldo końcowe Ma).\n"
-        "3. Narzędzia 'execute_sql' używaj TYLKO W OSTATECZNOŚCI, gdy 'get_account_balance' i inne narzędzia nie wystarczą. Możesz w nim wykonywać WYŁĄCZNIE zapytania typu SELECT.\n"
+        "1. Używaj narzędzia 'get_account_balance' do szybkiego pobierania danych o kontach (S_1, S_2) oraz wartości księgowych z bazy ZOiS.\n"
+        "2. Używaj narzędzia 'search_accounting_entries' do wyszukiwania konkretnych operacji (zapisów) w dzienniku. Metoda ta przeszukuje widok 'v_zapisy_pelne' (bez bilansu otwarcia) i pozwala filtrować po koncie, kwocie, opisie lub numerze dowodu.\n"
+        "3. Narzędzia 'execute_sql' używaj TYLKO W OSTATECZNOŚCI, gdy dedykowane narzędzia nie wystarczą. Możesz w nim wykonywać WYŁĄCZNIE zapytania typu SELECT.\n"
         "4. Wyniki prezentuj w czytelny sposób, najlepiej używając tabel Markdown.\n"
     )
     
@@ -45,7 +45,7 @@ class AgentChat:
         
         if not effective_api_key:
             return
-
+ 
         try:
             self.client = genai.Client(api_key=effective_api_key)
             schema_content = self._load_schema()
@@ -55,12 +55,13 @@ class AgentChat:
             
             # Dołączanie schematu bazy danych (zgodnie z wymogiem 4 poprzedniego zadania i zachowując logikę)
             full_instruction = f"{system_instruction}\n6. Schemat bazy danych SQL:\n{schema_content}"
-
+ 
             self.chat = self.client.chats.create(
                 model=model_name,
                 config=types.GenerateContentConfig(
                     tools=[
                         self.chat_service.get_account_balance, 
+                        self.chat_service.search_accounting_entries,
                         self.execute_sql],
                     automatic_function_calling=types.AutomaticFunctionCallingConfig(
                         disable=False

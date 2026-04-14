@@ -1,5 +1,5 @@
-import sqlite3
 from typing import List, Dict, Any
+from app.services.database import db_service
 
 class ChatService:
     """
@@ -9,35 +9,21 @@ class ChatService:
 
     def __init__(self, db_path: str):
         self.db_path = db_path
+        self.db = db_service
+        # Upewniamy się, że połączenie jest nawiązane, jeśli ścieżka została podana
+        if self.db_path and (not self.db.current_db_path or str(self.db.current_db_path) != self.db_path):
+            try:
+                self.db.connect(self.db_path)
+            except:
+                pass
 
     def get_account_balance(self, account_code: str) -> List[Dict[str, Any]]:
         """
         Pobiera dane finansowe (bilans otwarcia, obroty, salda) dla konkretnego konta 
         z tabeli ZOiS.
-        
-        Logika działania:
-        1. Szuka dokładnego dopasowania numeru konta.
-
-        Args:
-            account_code: Numer konta (np. '101', '201-1'). 
-
-        Returns:
-            Lista słowników z ustrukturyzowanymi danymi finansowymi:
-            - numer_konta: Kolumna S_1 (Konto)
-            - nazwa_konta: Kolumna S_2 (Nazwa)
-            - bo_wn: Bilans Otwarcia Winien (S_4)
-            - bo_ma: Bilans Otwarcia Ma (S_5)
-            - obroty_wn: Obroty Winien (S_8)
-            - obroty_ma: Obroty Ma (S_9)
-            - saldo_koncowe_wn: Saldo Końcowe Winien (S_10)
-            - saldo_koncowe_ma: Saldo Końcowe Ma (S_11)
         """
         print(f"[AI-TOOL] Wywołano funkcję get_account_balance z parametrem {account_code}")
         
-        if not self.db_path:
-            return [{"error": "Baza danych nie jest podłączona."}]
-
-        # Bazowe zapytanie z aliasami semantycznymi
         query = """
             SELECT 
                 S_1 AS numer_konta, 
@@ -53,20 +39,70 @@ class ChatService:
         """
 
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(query, (account_code,))
-            rows = cursor.fetchall()
-            results = [dict(row) for row in rows]
-            conn.close()
-
+            results = self.db.execute_query(query, (account_code,))
             if not results:
                 return [{"info": f"Nie znaleziono danych dla konta: {account_code}"}]
-
             return results
-
-        except sqlite3.Error as e:
-            return [{"error": f"Błąd bazy danych (SQLite): {str(e)}"}]
         except Exception as e:
-            return [{"error": f"Błąd krytyczny serwisu: {str(e)}"}]
+            return [{"error": f"Błąd serwisu: {str(e)}"}]
+
+    def search_accounting_entries(self, 
+                                  numer_konta: str = None, 
+                                  numer_dziennika: str = None, 
+                                  kwota_min: float = None, 
+                                  dokument: str = None,  
+                                  opis: str = None, 
+                                  limit: int = 100) -> List[Dict[str, Any]]:
+        """
+        Wyszukuje zapisy księgowe w widoku v_zapisy_pelne na podstawie podanych kryteriów.
+        Pomija operacje Bilansu Otwarcia (BO).
+
+        Args:
+            numer_konta: Numer konta (dopasowanie od początku, np. '101%').
+            numer_dziennika: Numer dziennika/dowodu (dopasowanie dokładne).
+            dokument: Numer dowodu księgowego (dopasowanie po frazie).
+            opis: Fragment opisu zapisu (szukanie po frazie).
+            limit: Maksymalna liczba rekordów (domyślnie 100).
+
+        Returns:
+            Lista słowników z danymi o zapisach płatności i księgowaniach.
+        """
+        print(f"[AI-TOOL] Wywołano search_accounting_entries: konto={numer_konta}, dziennik={numer_dziennika}, kwota_min={kwota_min}, dokument={dokument}, opis={opis}")
+        
+        query = "SELECT * FROM v_zapisy_pelne"
+        where_clauses = []
+        params = []
+
+        if numer_konta:
+            where_clauses.append("Numer_Konta LIKE ?")
+            params.append(f"{numer_konta}%")
+        
+        if numer_dziennika:
+            where_clauses.append("Numer_Dziennika = ?")
+            params.append(numer_dziennika)
+            
+        if kwota_min is not None:
+            where_clauses.append("Kwota >= ?")
+            params.append(float(kwota_min))
+
+        if dokument:
+            where_clauses.append("Rodzaj_Dowodu LIKE ?")
+            params.append(f"%{dokument}%")
+            
+        if opis:
+            where_clauses.append("Opis_Zapisu LIKE ?")
+            params.append(f"%{opis}%")
+
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
+
+        query += " ORDER BY Kwota DESC LIMIT ?"
+        params.append(limit)
+
+        try:
+            results = self.db.execute_query(query, tuple(params))
+            if not results:
+                return [{"info": "Nie znaleziono zapisów spełniających podane kryteria."}]
+            return results
+        except Exception as e:
+            return [{"error": f"Błąd podczas wyszukiwania zapisów: {str(e)}"}]

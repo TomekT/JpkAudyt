@@ -27,6 +27,7 @@ app/data/uploads/
 *.xml
 
 # Temporary / Logs
+scratch/
 logs/
 *.log
 tmp/
