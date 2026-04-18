@@ -223,7 +223,7 @@
 
                 <!-- Theme Toggle -->
                 <div class="tooltip tooltip-right w-full" data-tip="Zmień motyw">
-                    <div class="flex items-center w-full h-8 cursor-pointer group/theme" onclick="document.getElementById('theme-toggle').click()">
+                    <label class="flex items-center w-full h-8 cursor-pointer group/theme">
                         <div class="w-16 h-8 flex-shrink-0 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -231,9 +231,9 @@
                         </div>
                         <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pl-4">
                             <span class="text-[9px] font-bold uppercase opacity-50">Tryb ciemny</span>
-                            <input type="checkbox" id="theme-toggle" class="toggle toggle-primary toggle-xs" onchange="toggleTheme(); event.stopPropagation()" />
+                            <input type="checkbox" id="theme-toggle" class="toggle toggle-primary toggle-xs" onchange="toggleTheme()" />
                         </div>
-                    </div>
+                    </label>
                 </div>
 
                 <!-- Status Info -->
@@ -312,16 +312,23 @@
     <div class="w-16 flex-shrink-0 hidden md:block"></div>
 
     <!-- Main Content -->
-    <main class="flex-1 h-screen overflow-hidden bg-base-200 flex flex-col p-4 pt-0">
+    <main id="main-layout" class="flex-1 h-screen overflow-hidden bg-base-200 flex flex-col p-4 transition-all duration-300">
 
         <!-- Main Content Area -->
-        <div id="main-content" class="flex-1 bg-base-100 rounded-lg shadow-sm overflow-hidden flex flex-col">
-            <div class="flex-1 overflow-auto p-4 md:p-6">
-
-            <div role="tablist" class="tabs tabs-lifted mb-6">
+        <div id="main-content" class="flex-1 bg-base-100 rounded-lg shadow-sm flex flex-col relative overflow-hidden">
+            <!-- Nagłówek obszaru roboczego -->
+            <div class="relative flex items-center border-b border-base-200 bg-base-200/30 px-2 pt-2 shrink-0">
+                <div role="tablist" class="tabs tabs-lifted w-full">
+                    <!-- AI Button -->
+                    <button onclick="toggleAiSidebar()" class="absolute right-2 top-2 btn btn-ghost btn-xs sm:btn-sm gap-2 opacity-60 hover:opacity-100 transition-opacity z-[50]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span class="hidden lg:inline">Asystent AI</span>
+                    </button>
                 <input id="tab-zois" type="radio" name="main_tabs" role="tab" class="tab" aria-label="ZOiS" checked
                     onclick="triggerAiSave(); resetAllZoisFilters();" />
-                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+                <div role="tabpanel" class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
 
                     <!-- ZOiS View -->
                     <div class="flex justify-between items-center mb-4">
@@ -519,7 +526,7 @@
 
                 <input id="tab-zapisy" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Zapisy"
                     onclick="triggerAiSave(); htmx.trigger('body', 'filter-updated');" />
-                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+                <div role="tabpanel" class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold">Zapisy Księgowe</h3>
                         <div class="flex items-center gap-4">
@@ -746,7 +753,7 @@
 
                 <input id="tab-dziennik" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Dziennik"
                     onclick="triggerAiSave()" />
-                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+                <div role="tabpanel" class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                     <!-- Dziennik View -->
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold">Dziennik Zapisów</h3>
@@ -769,7 +776,7 @@
 
                 <input id="tab-podmiot" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Podmiot"
                     onclick="triggerAiSave()" />
-                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-auto">
+                <div role="tabpanel" class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                     <!-- Podmiot View -->
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold">Informacje o Podmiocie</h3>
@@ -784,7 +791,7 @@
                 <!-- Settings Tab (Ustawienia) -->
                 <input id="tab-settings" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Ustawienia"
                     onclick="triggerAiSave()" />
-                <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6 overflow-hidden">
+                <div role="tabpanel" class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                     <div class="flex h-full gap-6">
                         <!-- Sub-nav radio inputs -->
                         <input type="radio" name="sub_settings" id="sub-badanie" class="hidden peer/badanie" checked />
@@ -899,6 +906,7 @@
                 </div>
             </div>
         </div>
+    </main>
     </main>
 
     <!-- Plotly Chart Modal -->
@@ -1966,63 +1974,6 @@
             location.reload();
         });
     </script>
-    <!-- AI Assistant Modal -->
-    <dialog id="ai_assistant_modal" class="modal">
-        <div class="modal-box w-11/12 max-w-2xl h-[600px] flex flex-col p-0 overflow-hidden relative border border-base-300">
-            <!-- Header -->
-            <div class="bg-base-200 p-4 border-b flex justify-between items-center bg-gradient-to-r from-primary/10 to-secondary/10">
-                <h3 class="font-bold text-sm uppercase opacity-70 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                    </svg>
-                    Asystent AI - Analiza ZOiS
-                </h3>
-                <form method="dialog">
-                    <button class="btn btn-sm btn-circle btn-ghost">✕</button>
-                </form>
-            </div>
-
-            <!-- Chat Content -->
-            <div id="ai-assistant-history" class="flex-grow overflow-y-auto p-4 space-y-4 bg-base-100/50 scroll-smooth">
-                <div class="chat chat-start">
-                    <div class="chat-image avatar">
-                        <div class="w-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">AI</div>
-                    </div>
-                    <div class="chat-bubble chat-bubble-primary text-xs shadow-sm shadow-primary/20">
-                        Witaj! Jestem Twoim asystentem AI dedykowanym do analizy Zestawienia Obrotów i Sald (ZOiS). Mogę pomóc Ci sprawdzić konta, przeanalizować salda lub wykryć nieprawidłowości. W czym mogę pomóc?
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="p-4 bg-base-content/5 border-t border-base-300">
-                <div class="flex gap-2">
-                    <input type="text" id="ai-assistant-input" 
-                        class="input input-bordered flex-grow text-sm shadow-inner focus:border-primary transition-all" 
-                        placeholder="Zadaj pytanie o dane..."
-                        onkeypress="if(event.key === 'Enter') sendMessageToAi()">
-                    <button id="ai-assistant-send-btn" class="btn btn-primary px-6 gap-2 shadow-lg hover:shadow-xl transition-all" onclick="sendMessageToAi()">
-                        <span>Wyślij</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-2-9-18-9 18 9 2zm0 0v-8" />
-                        </svg>
-                    </button>
-                </div>
-                <!-- Model Selection Row -->
-                <div class="flex justify-between items-center mt-2 px-1">
-                    <select id="ai-model-select" class="select select-ghost select-xs text-[10px] opacity-70 hover:opacity-100 transition-opacity">
-                        <option value="gemini-2.5-flash-lite" selected>Gemini 2.5 Flash Lite - Szybki/Domyślny</option>
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash - Precyzyjny</option>
-                        <option value="gemini-flash-latest">Gemini Flash Latest</option>
-                    </select>
-                    <div class="text-[9px] opacity-40 text-right">Automatytczne wywoływanie narzędzi SQL</div>
-                </div>
-            </div>
-        </div>
-        <form method="dialog" class="modal-backdrop">
-            <button>close</button>
-        </form>
-    </dialog>
 
     <script>
         // Unique session ID for AI Chat, cleared on refresh
@@ -2051,17 +2002,55 @@
             }
         });
 
-        function openAiAssistantModal() {
-            // Check if API key exists in the context passed from backend
+        function toggleAiSidebar() {
             const apiKey = `{{ ai_assistant.api_key }}`;
             if (!apiKey || apiKey.trim() === "") {
                 showNotification("Nie podano klucza API. Funkcjonalność jest niedostępna.", "warning");
                 return;
             }
             
-            const modal = document.getElementById('ai_assistant_modal');
-            if (modal) {
-                modal.showModal();
+            const sidebar = document.getElementById('ai-sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('translate-x-full');
+            }
+        }
+
+        function resetAiChat() {
+            const history = document.getElementById('ai-assistant-history');
+            const input = document.getElementById('ai-assistant-input');
+            
+            if (history) {
+                history.innerHTML = '';
+            }
+            if (input) {
+                input.value = '';
+            }
+            
+            // New session ID to clear context on server side if necessary
+            aiSessionId = Math.random().toString(36).substring(7);
+            
+            addAssistantMessage('ai', 'Czat został zresetowany. W czym mogę Ci pomóc?');
+        }
+
+        // Backward compatibility
+        function openAiAssistantModal() {
+            const sidebar = document.getElementById('ai-sidebar');
+            if (sidebar && sidebar.classList.contains('translate-x-full')) {
+                toggleAiSidebar();
+            }
+        }
+
+        function toggleAiPin() {
+            const main = document.getElementById('main-layout');
+            const pinIcon = document.getElementById('ai-pin-icon');
+            const isPinned = main.classList.contains('mr-96');
+            
+            if (isPinned) {
+                main.classList.remove('mr-96');
+                pinIcon.classList.remove('text-primary');
+            } else {
+                main.classList.add('mr-96');
+                pinIcon.classList.add('text-primary');
             }
         }
 
@@ -2679,6 +2668,72 @@
             <button>close</button>
         </form>
     </dialog>
+
+    <!-- AI Sidebar (Drawer) -->
+    <aside id="ai-sidebar" class="fixed right-0 top-0 h-full w-96 bg-base-100 shadow-2xl z-[1000] transform translate-x-full transition-transform duration-300 flex flex-col border-l border-base-300">
+        <!-- Header -->
+        <div class="bg-base-200/50 p-2 border-b border-base-300 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-2">
+                <button id="ai-pin-btn" onclick="toggleAiPin()" class="btn btn-ghost btn-xs" title="Przypnij panel">
+                    <svg id="ai-pin-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v8m-3 0h6m-3 0l-4 4h8l-4-4m0 0v2" />
+                    </svg>
+                </button>
+                <span class="text-[10px] font-bold uppercase opacity-60 tracking-wider">Asystent AI</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <div class="tooltip tooltip-left" data-tip="Nowy czat / Wyczyść historię">
+                    <button id="ai-new-chat-btn" onclick="resetAiChat()" class="btn btn-ghost btn-xs">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                </div>
+                <button id="ai-close-btn" onclick="toggleAiSidebar()" class="btn btn-ghost btn-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Content -->
+        <div id="ai-assistant-history" class="flex-grow overflow-y-auto p-4 space-y-4 bg-base-100/50 scroll-smooth">
+            <div class="chat chat-start">
+                <div class="chat-image avatar">
+                    <div class="w-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-[10px]">AI</div>
+                </div>
+                <div class="chat-bubble chat-bubble-primary text-xs shadow-sm shadow-primary/20">
+                    Witaj! Jestem Twoim asystentem AI. Mogę pomóc Ci sprawdzić konta, przeanalizować salda lub wykryć nieprawidłowości. W czym mogę pomóc?
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 bg-base-content/5 border-t border-base-300">
+            <div class="flex gap-2">
+                <input type="text" id="ai-assistant-input" 
+                    class="input input-bordered flex-grow text-sm shadow-inner focus:border-primary transition-all" 
+                    placeholder="Wpisz wiadomość..."
+                    onkeypress="if(event.key === 'Enter') sendMessageToAi()">
+                <button id="ai-assistant-send-btn" class="btn btn-primary px-4 gap-2 shadow-lg hover:shadow-xl transition-all" onclick="sendMessageToAi()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-2-9-18-9 18 9 2zm0 0v-8" />
+                    </svg>
+                </button>
+            </div>
+            <!-- Model Selection Row -->
+            <div class="flex justify-between items-center mt-2 px-1">
+                <select id="ai-model-select" class="select select-ghost select-xs text-[10px] opacity-70 hover:opacity-100 transition-opacity w-full">
+                    <option value="gemini-2.5-flash-lite" selected>Gemini 2.5 Flash Lite</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="gemini-flash-latest">Gemini Flash Latest</option>
+                </select>
+            </div>
+        </div>
+    </aside>
+
+
     <!-- Global Fullscreen Loader -->
     <div id="global-loader" class="htmx-indicator fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-base-300/60 backdrop-blur-sm">
         <div class="flex flex-col items-center bg-base-100 p-8 rounded-2xl shadow-2xl border border-primary/20">
