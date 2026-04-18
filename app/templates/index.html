@@ -29,7 +29,7 @@
 
     <style>
         :root {
-            --tab-height: calc(100vh - 12rem);
+            --tab-height: calc(100vh - 8rem);
         }
 
         .tab-content {
@@ -139,30 +139,30 @@
 
     <!-- Sidebar -->
     <aside id="sidebar"
-        class="w-64 bg-base-100 shadow-xl flex flex-col transition-all duration-300 relative border-r overflow-hidden">
+        class="fixed left-0 top-0 h-full z-[100] w-16 hover:w-64 transition-all duration-300 group overflow-hidden bg-base-100 shadow-2xl border-r flex flex-col">
         <div id="sidebar-content" class="flex flex-col h-full transition-opacity duration-200">
             <div class="p-4 border-b">
-                <h1 class="text-xl font-bold text-primary truncate">JPK Audytor</h1>
+                <h1 class="text-xl font-bold text-primary truncate opacity-0 whitespace-nowrap group-hover:opacity-100 transition-opacity duration-200">JPK Audytor</h1>
             </div>
 
             <div class="px-4 pb-4 flex flex-col gap-2">
                 <button onclick="document.getElementById('import_modal').showModal()"
                     class="btn btn-primary w-full btn-sm gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
-                    <span class="truncate">Importuj JPK</span>
+                    <span class="truncate opacity-0 whitespace-nowrap group-hover:opacity-100 transition-opacity duration-200">Importuj JPK</span>
                 </button>
 
                 <button onclick="document.getElementById('connect-db-input').click()"
                     class="btn btn-outline btn-sm w-full gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
-                    <span class="truncate">Podłącz bazę</span>
+                    <span class="truncate opacity-0 whitespace-nowrap group-hover:opacity-100 transition-opacity duration-200">Podłącz bazę</span>
                 </button>
 
                 <!-- Hidden file input for DB connection -->
@@ -173,69 +173,68 @@
             </div>
 
             <div class="flex-1 overflow-y-auto p-4">
-                <h2 class="font-semibold text-gray-500 text-[10px] uppercase mb-2 truncate">Ostatnio otwarte</h2>
+                <h2 class="font-semibold text-gray-500 text-[10px] uppercase mb-2 truncate opacity-0 whitespace-nowrap group-hover:opacity-100 transition-opacity duration-200">Ostatnio otwarte</h2>
                 <ul class="menu menu-xs bg-base-100 w-full rounded-box gap-1" id="recent-dbs" hx-get="/recent"
                     hx-trigger="load, db-changed from:body">
                     <li><span class="loading loading-spinner loading-xs"></span></li>
                 </ul>
             </div>
 
-            <div class="px-4 py-2 flex justify-center items-center">
+            <div class="px-4 py-2 flex justify-center items-center mt-auto">
                 <img src="/static/logo.png" alt="Logo" id="cat-logo"
                     class="logo-cat max-h-24 w-auto object-contain opacity-60 hover:opacity-100 transition-opacity duration-300">
             </div>
 
-            <div class="p-4 border-t text-[10px] text-center text-gray-500 truncate">
+            <div class="px-4 py-4 border-t flex flex-col gap-4">
+                <!-- Odśwież -->
+                <button class="btn btn-ghost btn-sm w-full gap-2 justify-start flex-nowrap group/btn px-0" onclick="handleHardReset()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 mx-1 opacity-60 group-hover/btn:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span class="truncate opacity-0 whitespace-nowrap group-hover:opacity-100 transition-opacity duration-200 uppercase text-[10px] tracking-wider text-base-content">Odśwież</span>
+                </button>
+
+                <!-- Tryb Ciemny -->
+                <div class="flex items-center w-full gap-2 px-1 cursor-pointer group/btn" onclick="document.getElementById('theme-toggle').click()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 opacity-60 group-hover/btn:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                    <div class="flex items-center gap-2 opacity-0 whitespace-nowrap group-hover:opacity-100 transition-opacity duration-200">
+                        <span class="text-[10px] font-bold uppercase opacity-50">Tryb ciemny</span>
+                        <input type="checkbox" id="theme-toggle" class="toggle toggle-primary toggle-sm scale-75 origin-left" onchange="toggleTheme(); event.stopPropagation()" />
+                    </div>
+                </div>
+
+                <!-- Baza -->
+                <div class="flex items-center w-full gap-2 px-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 opacity-60 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                    <div class="flex flex-col opacity-0 whitespace-nowrap group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
+                        <span class="text-[9px] font-bold uppercase opacity-50 leading-tight">Baza</span>
+                        <span class="text-[11px] font-bold text-secondary truncate" id="active-db-label" hx-get="/active-db-name" hx-trigger="load, db-changed from:body">Brak</span>
+                    </div>
+                </div>
+
+                <!-- Podmiot -->
+                <div class="flex items-center w-full gap-2 px-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 opacity-60 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <div class="flex flex-col opacity-0 whitespace-nowrap group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
+                        <span class="text-[9px] font-bold uppercase opacity-50 leading-tight">Podmiot</span>
+                        <span class="text-[11px] font-bold text-primary truncate" id="active-podmiot-label" hx-get="/active-podmiot-name" hx-trigger="load, db-changed from:body">---</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pb-2 text-[9px] text-center text-gray-500 truncate opacity-0 whitespace-nowrap group-hover:opacity-100 transition-opacity duration-200">
                 v. 1.0.0
             </div>
         </div>
-
-        <!-- Toggle Button -->
-        <button id="toggle-sidebar"
-            class="btn btn-ghost btn-xs w-full rounded-none border-t border-base-300 py-4 h-auto hover:bg-base-200 group">
-            <span id="toggle-text"
-                class="text-[10px] uppercase font-bold tracking-widest opacity-60 group-hover:opacity-100 transition-all">Zwiń</span>
-        </button>
     </aside>
 
-    <script>
-        const sidebar = document.getElementById('sidebar');
-        const sidebarContent = document.getElementById('sidebar-content');
-        const toggleBtn = document.getElementById('toggle-sidebar');
-        const toggleText = document.getElementById('toggle-text');
-        let isCollapsed = false;
-
-        toggleBtn.addEventListener('click', () => {
-            isCollapsed = !isCollapsed;
-            const topbar = document.getElementById('topbar');
-            const root = document.documentElement;
-
-            if (isCollapsed) {
-                sidebar.classList.remove('w-64');
-                sidebar.classList.add('w-[5%]');
-                sidebarContent.classList.add('opacity-0', 'pointer-events-none');
-
-                topbar.classList.add('h-0', 'min-h-0', 'opacity-0', 'border-none');
-                topbar.classList.remove('h-16', 'min-h-[4rem]', 'px-6', 'py-2');
-
-                root.style.setProperty('--tab-height', 'calc(100vh - 8rem)');
-
-                toggleText.innerText = 'Rozwiń';
-            } else {
-                sidebar.classList.remove('w-[5%]');
-                sidebar.classList.add('w-64');
-                sidebarContent.classList.remove('opacity-0', 'pointer-events-none');
-
-                topbar.classList.remove('h-0', 'min-h-0', 'opacity-0', 'border-none');
-                topbar.classList.add('h-16', 'min-h-[4rem]', 'px-6', 'py-2');
-
-                root.style.setProperty('--tab-height', 'calc(100vh - 12rem)');
-
-                toggleText.innerText = 'Zwiń';
-            }
-        });
-
-        // Chart Modal Cleanup
+    <script>        // Chart Modal Cleanup
         document.addEventListener('DOMContentLoaded', () => {
             const chartModal = document.getElementById('chart_modal');
             if (chartModal) {
@@ -284,45 +283,10 @@
         </script>
     </div>
 
+    <div class="w-16 flex-shrink-0 hidden md:block"></div>
+
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col overflow-hidden">
-
-        <!-- Top Bar -->
-        <header id="topbar"
-            class="navbar bg-base-100 border-b px-6 transition-all duration-300 overflow-hidden h-16 min-h-[4rem]">
-            <div class="flex-1">
-                <h2 class="text-xl font-semibold">Baza:
-                    <span class="text-secondary" id="active-db-label" hx-get="/active-db-name"
-                        hx-trigger="load, db-changed from:body">
-                        Brak
-                    </span>
-                </h2>
-            </div>
-            <div class="flex items-center gap-6">
-                <button class="btn btn-ghost btn-xs gap-2 opacity-60 hover:opacity-100 transition-opacity"
-                    onclick="handleHardReset()">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    ODŚWIEŻ
-                </button>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold uppercase opacity-50">Tryb ciemny:</span>
-                    <input type="checkbox" id="theme-toggle" class="toggle toggle-primary toggle-sm"
-                        onchange="toggleTheme()" />
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold uppercase opacity-50">Podmiot:</span>
-                    <span class="text-sm font-bold text-primary" id="active-podmiot-label" hx-get="/active-podmiot-name"
-                        hx-trigger="load, db-changed from:body">
-                        ---
-                    </span>
-                </div>
-            </div>
-        </header>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
 
         <!-- Tabs & Content -->
         <div class="flex-1 overflow-auto p-6">
