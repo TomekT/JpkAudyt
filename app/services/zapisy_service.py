@@ -109,20 +109,58 @@ class ZapisyService:
         where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         return where_sql, params
 
-    def get_zapisy_pelne(self, q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = "", limit: int = 100):
+    def get_zapisy_pelne(self, q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = "", limit: int = 1000, offset: int = 0, adv_sort: str = "", with_details: bool = False):
         """
         Retrieves accounting entries from the v_zapisy_pelne view applying all filters.
+        Returns a dict: {'rows': list, 'sum_wn': float, 'sum_ma': float}
         """
         where_sql, params = self.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id, konto, opis, min_kwota, dziennik_id)
-        sql = f"SELECT * FROM v_zapisy_pelne z LEFT JOIN ZOiS s ON z.Numer_Konta = s.S_1 {where_sql} LIMIT :limit"
+        
+        # Order by logic
+        order_by = "ORDER BY z.Z_Data ASC, z.id_zapisu ASC"
+        if adv_sort == "kwota":
+            order_by = "ORDER BY MAX(ABS(COALESCE(z.Kwota_Wn, 0)), ABS(COALESCE(z.Kwota_Ma, 0))) DESC, z.id_zapisu ASC"
+        elif adv_sort == "data":
+            order_by = "ORDER BY z.Z_Data ASC, z.id_zapisu ASC"
+
+        select_fields = "z.*, s.S_2 AS Nazwa_Konta"
+        if with_details:
+            subquery = """
+            (
+                SELECT GROUP_CONCAT(DISTINCT SUBSTR(zp.Z_3, 1, 3)) 
+                FROM Zapisy zp 
+                WHERE zp.Dziennik_Id = z.Dziennik_Id 
+                  AND zp.Z_3 != z.Z_3
+            ) AS Konta_Przeciwstawne
+            """
+            select_fields = f"{select_fields}, {subquery}"
+
+        query = f"SELECT {select_fields} FROM v_zapisy_pelne z LEFT JOIN ZOiS s ON z.Z_3 = s.S_1 {where_sql} {order_by} LIMIT :limit OFFSET :offset"
+        
+        total_query = f"SELECT SUM(z.Kwota_Wn) as sum_wn, SUM(z.Kwota_Ma) as sum_ma FROM v_zapisy_pelne z {where_sql}"
+        
         params["limit"] = limit
+        params["offset"] = offset
 
         try:
             conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
-            rows = conn.execute(sql, params).fetchall()
+            
+            # Get totals
+            totals = conn.execute(total_query, params).fetchone()
+            sum_wn = totals['sum_wn'] or 0
+            sum_ma = totals['sum_ma'] or 0
+            
+            # Get rows
+            rows = conn.execute(query, params).fetchall()
             conn.close()
-            return [dict(row) for row in rows]
+            
+            return {
+                'rows': [dict(row) for row in rows],
+                'sum_wn': sum_wn,
+                'sum_ma': sum_ma
+            }
         except Exception as e:
             logger.error(f"Error getting records from v_zapisy_pelne: {e}")
+            return {'rows': [], 'sum_wn': 0, 'sum_ma': 0}
             return []

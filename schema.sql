@@ -249,22 +249,41 @@ CREATE INDEX IF NOT EXISTS idx_etykiety_dziennik_fk ON Etykiety_Dziennik(Dzienni
 CREATE INDEX IF NOT EXISTS idx_etykiety_zapisy_fk ON Etykiety_Zapisy(ZapisyId);
 
 
--- 8. Widoki analityczne (Analytical Views)
--- ---------------------------------------------------------
-
--- Widok v_zapisy_pelne: Pełny kontekst zapisów księgowych
--- Łączy tabelę Zapisy (z) z tabelą Dziennik (d) dla łatwiejszego filtrowania przez LLM i system raportowy.
-CREATE VIEW IF NOT EXISTS v_zapisy_pelne AS
+-- Reset i aktualizacja widoku (usuwamy stary, aby wymusić nową strukturę)
+DROP VIEW IF EXISTS v_zapisy_pelne;
+CREATE VIEW v_zapisy_pelne AS
 SELECT 
     z.Id AS id_zapisu,            -- Identyfikator zapisu w systemie
+    z.Id,                         -- Alias dla kompatybilności
+    z.Dziennik_Id,                -- Identyfikator dziennika (FK)
+    z.Z_3,                        -- Kolumna techniczna konta
     z.Z_3 AS Numer_Konta,         -- Pełny numer konta księgowego
+    z.Z_2,                        -- Alias dla kompatybilnosci
     z.Z_2 AS Opis_Zapisu,         -- Opis szczegółowy zapisu
+    z.Z_Data,                     -- Data zapisu
+    z.Z_DataMiesiac,              -- Miesiąc zapisu
+    z.Z_GrupaKont,                -- Grupa kont (3 znaki)
+    z.Z_4,                        -- Alias dla kompatybilności
     z.Z_4 AS Kwota_Wn,            -- Kwota po stronie Winien
+    z.Z_5,                        -- Alias dla kompatybilności
+    z.Z_5 AS Kwota_Waluta_Wn,     -- Kwota waluta Wn
+    z.Z_6,                        -- Alias dla kompatybilności
+    z.Z_6 AS Kod_Waluty_Wn,       -- Kod waluty Wn
+    z.Z_7,                        -- Alias dla kompatybilności
     z.Z_7 AS Kwota_Ma,            -- Kwota po stronie Ma
+    z.Z_8,                        -- Alias dla kompatybilności
+    z.Z_8 AS Kwota_Waluta_Ma,     -- Kwota waluta Ma
+    z.Z_9,                        -- Alias dla kompatybilności
+    z.Z_9 AS Kod_Waluty_Ma,       -- Kod waluty Ma
     (z.Z_4 + z.Z_7) AS Kwota,     -- wartość operacji
     d.D_1 AS Numer_Dziennika,     -- Numer dziennika
+    d.D_1,                        -- Alias dla kompatybilności
     d.D_8 AS Data_ksiegowania,    -- Data księgowania
-    d.D_10 AS Rodzaj_Dowodu      -- Rodzaj dowodu księgowego
+    d.D_4 AS Dowod,               -- Numer dowodu
+    d.D_10 AS Operacja,           -- Rodzaj operacji
+    d.D_3 AS Kontrahent,          -- Nazwa kontrahenta
+    d.D_12 AS KSeF                -- Numer KSeF
 FROM Zapisy z
 LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
 WHERE d.D_1 NOT LIKE 'BO%';
+

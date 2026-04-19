@@ -1023,7 +1023,7 @@ async def get_dziennik():
 @app.get("/data/table", response_class=HTMLResponse)
 @app.get("/data/zapisy", response_class=HTMLResponse)
 @app.get("/zapisy", response_class=HTMLResponse)
-async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", details: str = "", page: int = 1, konto: str = "", opis: str = "", min_kwota: str = "", adv_sort: str = "", dziennik_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
+async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", details: str = "", with_details: bool = False, page: int = 1, konto: str = "", opis: str = "", min_kwota: str = "", adv_sort: str = "", dziennik_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
     pageSize = 1000
     offset = (page - 1) * pageSize
     try:
@@ -1033,62 +1033,48 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
         final_min_kwota = min_kwota or adv_min_kwota
         final_dziennik_id = dziennik_id or adv_d1
 
-        conn = db_service.get_connection()
         db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
         z_service = ZapisyService(db_path)
-        where_sql, params = z_service.build_zapisy_where(
+        
+        # Merge with_details and legacy details parameter
+        show_details = with_details or details == "1"
+        
+        # Use the service to get full records and totals
+        data = z_service.get_zapisy_pelne(
             q=q, type=type, zq=zq, month=month, 
             label_id=label_id, label_zapisy_id=label_zapisy_id, 
             konto=final_konto, opis=final_opis, 
-            min_kwota=final_min_kwota, dziennik_id=final_dziennik_id
+            min_kwota=final_min_kwota, dziennik_id=final_dziennik_id,
+            limit=pageSize, offset=offset, adv_sort=adv_sort,
+            with_details=show_details
         )
-
-        order_by = "ORDER BY z.Z_Data ASC, z.Id ASC"
-        if adv_sort == "kwota":
-            order_by = "ORDER BY MAX(ABS(COALESCE(z.Z_4, 0)), ABS(COALESCE(z.Z_7, 0))) DESC, z.Id ASC"
-        elif adv_sort == "data":
-            order_by = "ORDER BY z.Z_Data ASC, z.Id ASC"
-
-        query = f"""
-            SELECT z.Id, z.Dziennik_Id, z.Z_3, z.Z_2, z.Z_Data, d.D_1, z.Z_4, z.Z_5, z.Z_6, z.Z_7, z.Z_8, z.Z_9, s.S_2,
-                   d.D_4 as Dowod, d.D_10 as Operacja, d.D_3 as Kontrahent, d.D_12 as KSeF
-            FROM Zapisy z
-            LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
-            LEFT JOIN ZOiS s ON z.Z_3 = s.S_1
-            {where_sql}
-            {order_by}
-            LIMIT :pageSize OFFSET :offset
-        """
-        logger.info(f"Generated SQL: {query} with params {params}")
-        params["pageSize"] = pageSize
-        params["offset"] = offset
-        rows = conn.execute(query, params).fetchall()
         
-        # Total calculation for the filtered results
-        total_query = f"""
-            SELECT SUM(z.Z_4) as sum_wn, SUM(z.Z_7) as sum_ma
-            FROM Zapisy z
-            LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
-            LEFT JOIN ZOiS s ON z.Z_3 = s.S_1
-            {where_sql}
-        """
-        totals = conn.execute(total_query, params).fetchone()
-        sum_wn = totals['sum_wn'] or 0
-        sum_ma = totals['sum_ma'] or 0
+        rows = data['rows']
+        sum_wn = data['sum_wn']
+        sum_ma = data['sum_ma']
 
         html_rows = ""
         is_details = details == "1"
+        # Since we want "Konta Przeciwstawne" to be visible when details or with_details is active
+        # let's use show_details for the internal checks as well
+        use_with_details = show_details 
         for row in rows:
             dziennik_id = row['Dziennik_Id']
             konto_full = sanitize_text(row['Z_3'])
-            opis_full = sanitize_text(row['Z_2'])
+            opis_full = sanitize_text(row['Opis_Zapisu'])
             data_val = row['Z_Data'] or "---"
-            nazwa_full = sanitize_text(row['S_2'])
+            nazwa_full = sanitize_text(row.get('Nazwa_Konta', '---'))
             
             # Escape strings for attributes
-            tip_content = f"{html.escape(konto_full)}\\n{html.escape(nazwa_full or '---')}"
+            tip_content = f"{html.escape(konto_full)}\\n{html.escape(nazwa_full)}"
             konto_html = f'<div class="tooltip tooltip-right text-left" data-tip="{tip_content}"><div class="max-w-[150px] truncate">{html.escape(konto_full)}</div></div>'
             opis_html = f'<div class="tooltip tooltip-right text-left" data-tip="{html.escape(opis_full)}"><div class="max-w-xs truncate">{html.escape(opis_full)}</div></div>'
+
+            # Opposite accounts styling
+            przeciwstawne_html = ""
+            if show_details:
+                kont_prz = row.get('Konta_Przeciwstawne') or '---'
+                przeciwstawne_html = f'<td><kbd class="kbd kbd-xs bg-base-300/50 text-[10px] font-normal">{html.escape(kont_prz)}</kbd></td>'
 
             if is_details:
                 dowod = sanitize_text(row['Dowod'])
@@ -1103,13 +1089,14 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
                     operacja_html = f'<div class="max-w-[200px] truncate">{html.escape(operacja_full)}</div>'
 
                 html_rows += f"""
-                <tr class="hover whitespace-nowrap text-xs" data-id="{row['Id']}">
+                <tr class="hover whitespace-nowrap text-xs" data-id="{row['id_zapisu']}">
                     <td data-type="text">{konto_html}</td>
+                    {przeciwstawne_html}
                     <td data-type="text">{opis_html}</td>
                     <td data-type="date" data-value="{row['Z_Data'] or ''}">{data_val}</td>
-                    <td data-type="text" class="text-primary cursor-pointer hover:underline" onclick="openDziennikModal({dziennik_id})">{row['D_1']}</td>
-                    <td data-type="number" data-value="{row['Z_4'] or 0}" class="text-right font-mono">{format_amount(row['Z_4'])}</td>
-                    <td data-type="number" data-value="{row['Z_7'] or 0}" class="text-right font-mono">{format_amount(row['Z_7'])}</td>
+                    <td data-type="text" class="text-primary cursor-pointer hover:underline" onclick="openDziennikModal({dziennik_id})">{row['Numer_Dziennika']}</td>
+                    <td data-type="number" data-value="{row['Kwota_Wn'] or 0}" class="text-right font-mono">{format_amount(row['Kwota_Wn'])}</td>
+                    <td data-type="number" data-value="{row['Kwota_Ma'] or 0}" class="text-right font-mono">{format_amount(row['Kwota_Ma'])}</td>
                     <td data-type="text">{dowod}</td>
                     <td data-type="text" data-value="{html.escape(operacja_full)}">{operacja_html}</td>
                     <td data-type="text">{kontrahent}</td>
@@ -1117,29 +1104,34 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
                 </tr>
                 """
             else:
-                wn_waluta_val = format_amount(row['Z_5'])
-                wn_waluta_code = row['Z_6'] or ""
+                wn_waluta_val = format_amount(row['Kwota_Waluta_Wn'])
+                wn_waluta_code = row['Kod_Waluty_Wn'] or ""
                 wn_waluta_str = f"{wn_waluta_val} {wn_waluta_code}".strip() if wn_waluta_val else ""
-                ma_waluta_val = format_amount(row['Z_8'])
-                ma_waluta_code = row['Z_9'] or ""
+                ma_waluta_val = format_amount(row['Kwota_Waluta_Ma'])
+                ma_waluta_code = row['Kod_Waluty_Ma'] or ""
                 ma_waluta_str = f"{ma_waluta_val} {ma_waluta_code}".strip() if ma_waluta_val else ""
 
                 html_rows += f"""
-                <tr class="hover whitespace-nowrap text-xs" data-id="{row['Id']}">
+                <tr class="hover whitespace-nowrap text-xs" data-id="{row['id_zapisu']}">
                     <td data-type="text">{konto_html}</td>
+                    {przeciwstawne_html}
                     <td data-type="text">{opis_html}</td>
                     <td data-type="date" data-value="{row['Z_Data'] or ''}">{data_val}</td>
-                    <td data-type="text" class="text-primary cursor-pointer hover:underline" onclick="openDziennikModal({dziennik_id})">{row['D_1']}</td>
-                    <td data-type="number" data-value="{row['Z_4'] or 0}" class="text-right font-mono">{format_amount(row['Z_4'])}</td>
+                    <td data-type="text" class="text-primary cursor-pointer hover:underline" onclick="openDziennikModal({dziennik_id})">{row['Numer_Dziennika']}</td>
+                    <td data-type="number" data-value="{row['Kwota_Wn'] or 0}" class="text-right font-mono">{format_amount(row['Kwota_Wn'])}</td>
                     <td data-type="text" class="text-right font-mono">{wn_waluta_str}</td>
-                    <td data-type="number" data-value="{row['Z_7'] or 0}" class="text-right font-mono">{format_amount(row['Z_7'])}</td>
+                    <td data-type="number" data-value="{row['Kwota_Ma'] or 0}" class="text-right font-mono">{format_amount(row['Kwota_Ma'])}</td>
                     <td data-type="text" class="text-right font-mono">{ma_waluta_str}</td>
                 </tr>
                 """
         
+        # Header additional column
+        prz_header = "<th>Konta Przec.</th>" if show_details else ""
+
         if is_details:
-            headers_html = """
+            headers_html = f"""
                 <th>Konto</th>
+                {prz_header}
                 <th>Opis</th>
                 <th>Data</th>
                 <th>Dziennik</th>
@@ -1150,10 +1142,11 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
                 <th>Kontrahent</th>
                 <th>KSeF</th>
             """
-            colspan = 10
+            colspan = 11 if show_details else 10
         else:
-            headers_html = """
+            headers_html = f"""
                 <th>Konto</th>
+                {prz_header}
                 <th>Opis</th>
                 <th>Data</th>
                 <th>Dziennik</th>
@@ -1162,7 +1155,7 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
                 <th class="text-right">Kwota Ma</th>
                 <th class="text-right">Waluta Ma</th>
             """
-            colspan = 8
+            colspan = 9 if show_details else 8
 
         if not html_rows:
             html_rows = f"<tr><td colspan='{colspan}' class='text-center'>Brak danych</td></tr>"
