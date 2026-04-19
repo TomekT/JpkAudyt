@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 # Moduły aplikacji
 from app.core.config import config_manager, config_ai_manager
 from app.services.database import db_service
+from app.services.zapisy_service import ZapisyService
 from app.services.router import jpk_router, ai_router, label_router
 from app.services.agent_chat import AgentChat
 
@@ -1022,12 +1023,25 @@ async def get_dziennik():
 @app.get("/data/table", response_class=HTMLResponse)
 @app.get("/data/zapisy", response_class=HTMLResponse)
 @app.get("/zapisy", response_class=HTMLResponse)
-async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", details: str = "", page: int = 1, adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_sort: str = "", adv_d1: str = ""):
+async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", details: str = "", page: int = 1, konto: str = "", opis: str = "", min_kwota: str = "", adv_sort: str = "", dziennik_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
     pageSize = 1000
     offset = (page - 1) * pageSize
     try:
+        # Compatibility mapping
+        final_konto = konto or adv_z3
+        final_opis = opis or adv_z2
+        final_min_kwota = min_kwota or adv_min_kwota
+        final_dziennik_id = dziennik_id or adv_d1
+
         conn = db_service.get_connection()
-        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
+        db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
+        z_service = ZapisyService(db_path)
+        where_sql, params = z_service.build_zapisy_where(
+            q=q, type=type, zq=zq, month=month, 
+            label_id=label_id, label_zapisy_id=label_zapisy_id, 
+            konto=final_konto, opis=final_opis, 
+            min_kwota=final_min_kwota, dziennik_id=final_dziennik_id
+        )
 
         order_by = "ORDER BY z.Z_Data ASC, z.Id ASC"
         if adv_sort == "kwota":
@@ -1186,232 +1200,9 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
         return f"<div class='alert alert-error font-mono text-xs'>Błąd: {str(e)}</div>"
 
 
-@app.get("/api/zapisy/przeglad", response_class=HTMLResponse)
-async def get_zapisy_przeglad(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
-    try:
-        conn = db_service.get_connection()
-        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
 
-        # Using CTE to find matching Dziennik_Id, then grouping ALL Zapisy from those Dziennik_Id
-        query = f"""
-            WITH WybraneDzienniki AS (
-                SELECT DISTINCT z.Dziennik_Id 
-                FROM Zapisy z
-                LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
-                LEFT JOIN ZOiS s ON z.Z_3 = s.S_1
-                {where_sql}
-            )
-            SELECT 
-                Z_GrupaKont as Syntetyka,
-                SUM(CASE WHEN Z_4 > 0 THEN 1 ELSE 0 END) as Liczba_Wn,
-                SUM(CASE WHEN Z_7 > 0 THEN 1 ELSE 0 END) as Liczba_Ma
-            FROM Zapisy
-            WHERE Dziennik_Id IN (SELECT Dziennik_Id FROM WybraneDzienniki)
-            GROUP BY Z_GrupaKont
-            ORDER BY Syntetyka
-        """
-        rows = conn.execute(query, params).fetchall()
 
-        html_rows = ""
-        for row in rows:
-            synt = row['Syntetyka']
-            if not synt:
-                continue
-            wn = row['Liczba_Wn'] or 0
-            ma = row['Liczba_Ma'] or 0
-            
-            # Use int(...) to ensure format_amount works gracefully
-            wn_str = format_amount(wn).replace(',00', '')
-            ma_str = format_amount(ma).replace(',00', '')
-            
-            # Clickable rows invoking frontend `aplikujFiltrSyntetyki`
-            html_rows += f'''
-            <tr class="hover cursor-pointer" onclick="aplikujFiltrSyntetyki('{html.escape(synt)}')">
-                <td class="font-mono text-primary font-bold">{html.escape(synt)}</td>
-                <td class="text-right font-mono">{wn_str}</td>
-                <td class="text-right font-mono">{ma_str}</td>
-            </tr>
-            '''
-        
-        if not html_rows:
-            html_rows = "<tr><td colspan='3' class='text-center opacity-50 italic'>Brak danych z kont przeciwstawnych</td></tr>"
 
-        modal_html = f"""
-        <dialog id="przeglad_modal" class="modal">
-            <div class="modal-box w-11/12 max-w-2xl relative shadow-2xl">
-                <form method="dialog">
-                    <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
-                </form>
-                <h3 class="font-bold text-lg mb-4 text-secondary flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Przegląd powiązań (konta przeciwstawne)
-                </h3>
-                <div class="overflow-x-auto max-h-[60vh]">
-                    <table class="table table-zebra table-sm w-full">
-                        <thead class="bg-base-200 sticky top-0 z-10">
-                            <tr>
-                                <th>Konto (Syntetyka)</th>
-                                <th class="text-right">Wystąpienia Wn</th>
-                                <th class="text-right">Wystąpienia Ma</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{HTML_ROWS}}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <form method="dialog" class="modal-backdrop">
-                <button>close</button>
-            </form>
-        </dialog>
-        """
-        return modal_html.replace("{HTML_ROWS}", html_rows)
-        
-    except Exception as e:
-        logger.error(f"Error in przeglad: {e}")
-        error_msg = html.escape(str(e))
-        return f"""
-        <dialog id="przeglad_modal" class="modal">
-            <div class="modal-box">
-                <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
-                <h3 class="font-bold text-lg text-error">Błąd przeglądu</h3>
-                <p class="py-4 font-mono text-xs">{error_msg}</p>
-            </div>
-            <form method="dialog" class="modal-backdrop"><button>close</button></form>
-        </dialog>
-        """
-
-@app.get("/data/chart", response_class=HTMLResponse)
-@app.get("/api/chart-fragment", response_class=HTMLResponse)
-async def get_data_chart(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
-    try:
-        conn = db_service.get_connection()
-        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
-
-        # 1. PRIMARY AGGREGATE SUMMARY
-        agg_sql = f"""
-            SELECT 
-                COUNT(*) as total_count,
-                SUM(z.Z_4) as sum_wn,
-                SUM(z.Z_7) as sum_ma,
-                AVG(z.Z_4) as avg_wn,
-                AVG(z.Z_7) as avg_ma
-            FROM Zapisy z
-            JOIN ZOiS s ON z.Z_3 = s.S_1
-            {where_sql}
-        """
-        agg = conn.execute(agg_sql, params).fetchone()
-        
-        # 2. MONTHLY DISTRIBUTION FOR CHART
-        sql_monthly = f"""
-            SELECT Z_DataMiesiac, SUM(Z_4) as suma_wn, SUM(Z_7) as suma_ma 
-            FROM Zapisy z
-            JOIN ZOiS s ON z.Z_3 = s.S_1
-            {where_sql} 
-            AND Z_DataMiesiac IS NOT NULL
-            GROUP BY Z_DataMiesiac 
-            ORDER BY Z_DataMiesiac
-        """
-        rows = conn.execute(sql_monthly, params).fetchall()
-
-        months_idx = list(range(1, 13))
-        month_names = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", 
-                       "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"]
-        wn_data = [0.0] * 12
-        ma_data = [0.0] * 12
-
-        for row in rows:
-            m = row['Z_DataMiesiac']
-            if m and 1 <= m <= 12:
-                wn_data[m-1] = float(row['suma_wn'] or 0)
-                ma_data[m-1] = float(row['suma_ma'] or 0)
-
-        import json
-        
-        return f"""
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="stats shadow bg-base-200 border border-base-content/5">
-                <div class="stat">
-                    <div class="stat-title text-[10px] uppercase font-bold opacity-60">Liczba zapisów</div>
-                    <div class="stat-value text-xl text-primary">{agg['total_count']}</div>
-                </div>
-            </div>
-            <div class="stats shadow bg-base-200 border border-base-content/5">
-                <div class="stat">
-                    <div class="stat-title text-[10px] uppercase font-bold opacity-60">Suma Wn</div>
-                    <div class="stat-value text-xl text-secondary font-mono">{format_amount(agg['sum_wn'])}</div>
-                </div>
-            </div>
-            <div class="stats shadow bg-base-200 border border-base-content/5">
-                <div class="stat">
-                    <div class="stat-title text-[10px] uppercase font-bold opacity-60">Suma Ma</div>
-                    <div class="stat-value text-xl text-accent font-mono">{format_amount(agg['sum_ma'])}</div>
-                </div>
-            </div>
-            <div class="stats shadow bg-base-200 border border-base-content/5">
-                <div class="stat">
-                    <div class="stat-title text-[10px] uppercase font-bold opacity-60">Balans (Wn-Ma)</div>
-                    <div class="stat-value text-xl font-mono">{(format_amount((agg['sum_wn'] or 0) - (agg['sum_ma'] or 0)))}</div>
-                </div>
-            </div>
-        </div>
-
-        <div id='plotly-chart' class='w-full h-[500px] pointer-events-none select-none border border-base-content/10 rounded-xl shadow-lg bg-base-100'></div>
-        
-        <script>
-            (function() {{
-                const months = {json.dumps(month_names)};
-                const wnData = {json.dumps(wn_data)};
-                const maData = {json.dumps(ma_data)};
-                
-                const data = [
-                    {{
-                        x: months,
-                        y: wnData,
-                        name: 'Winien (Wn)',
-                        type: 'scatter',
-                        mode: 'lines+markers',
-                        line: {{ shape: 'spline', color: '#d926aa', width: 4 }},
-                        marker: {{ size: 8 }}
-                    }},
-                    {{
-                        x: months,
-                        y: maData,
-                        name: 'Ma',
-                        type: 'scatter',
-                        mode: 'lines+markers',
-                        line: {{ shape: 'spline', color: '#00d7c0', width: 4 }},
-                        marker: {{ size: 8 }}
-                    }}
-                ];
-                
-                const layout = {{
-                    title: 'Rozkład miesięczny (Analiza Liniowa)',
-                    xaxis: {{ 
-                        title: 'Miesiąc',
-                        tickangle: -45
-                    }},
-                    yaxis: {{ title: 'Suma (PLN)' }},
-                    paper_bgcolor: 'rgba(0,0,0,0)',
-                    plot_bgcolor: 'rgba(0,0,0,0)',
-                    font: {{ color: '#9ca3af' }},
-                    margin: {{ t: 60, b: 80, l: 80, r: 40 }},
-                    dragmode: false,
-                    legend: {{ orientation: 'h', y: -0.2 }}
-                }};
-                
-                Plotly.newPlot('plotly-chart', data, layout, {{ responsive: true, staticPlot: true }});
-            }})();
-        </script>
-        """
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return f"<div class='alert alert-error'>Błąd analizy danych: {str(e)}</div>"
 
 @app.get("/dziennik-details/{dziennik_id}", response_class=HTMLResponse)
 async def get_dziennik_details(dziennik_id: int):
@@ -2042,7 +1833,9 @@ def calculate_mus(populacja_rows, interval, start_point):
 async def mus_prepare(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = ""):
     try:
         conn = db_service.get_connection()
-        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
+        db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
+        z_service = ZapisyService(db_path)
+        where_sql, params = z_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
 
         sum_query = f"""
             SELECT SUM(z.Z_4) as sum_wn, SUM(z.Z_7) as sum_ma
@@ -2084,7 +1877,9 @@ async def mus_execute(
         interval = float(istotnosc) / float(wspolczynnik)
         
         conn = db_service.get_connection()
-        where_sql, params = db_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
+        db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
+        z_service = ZapisyService(db_path)
+        where_sql, params = z_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
 
         # Pobieramy rzędy tylko do zbudowania próby MUS iterując
         pop_query = f"""

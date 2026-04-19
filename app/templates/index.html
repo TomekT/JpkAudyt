@@ -615,8 +615,8 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a hx-get="/api/zapisy/przeglad"
-                                                hx-include="#global-zois-q, #global-zois-type, #filter-label-tag, #zapisy-local-q, #filter-month, #filter-zapisy-label"
+                                            <a hx-get="/zapisy/powiazania"
+                                                hx-include=".zois-filter, .zapisy-filter"
                                                 hx-target="#modal-container" hx-swap="innerHTML"
                                                 hx-on::after-request="if(event.detail.successful) document.getElementById('przeglad_modal').showModal()"
                                                 class="flex gap-2">
@@ -918,9 +918,9 @@
             <h3 class="font-bold text-lg mb-4">Podsumowanie Graficzne</h3>
 
             <!-- This div automatically reloads when filters change, or when modal opens -->
-            <div id="chart-container" hx-get="/api/chart-fragment"
+            <div id="chart-container" hx-get="/zapisy/wykres"
                 hx-trigger="click from:#btn-show-chart, filter-updated from:body, db-changed from:body"
-                hx-include="#global-zois-q, #global-zois-type, #filter-label-tag, #zapisy-local-q, #filter-month, #filter-zapisy-label">
+                hx-include=".zois-filter, .zapisy-filter">
                 <div class="p-10 text-center">
                     <span class="loading loading-spinner loading-lg"></span> Generowanie wykresu...
                 </div>
@@ -1388,40 +1388,42 @@
             Filtr Zaawansowany (Zapisy)
         </h3>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="form-control w-full">
-                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Numer konta (Z_3) lub prefiks</span></label>
-                <input type="text" id="adv_z3" name="adv_z3" class="input input-bordered w-full zapisy-filter" placeholder="np. 100 lub 200" />
-            </div>
-            <div class="form-control w-full">
-                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Opis (Z_2) fragment</span></label>
-                <input type="text" id="adv_z2" name="adv_z2" class="input input-bordered w-full zapisy-filter" placeholder="np. faktura lub przelew" />
-            </div>
-            <div class="form-control w-full">
-                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Numer dziennika (D_1)</span></label>
-                <input type="text" id="adv_d1" name="adv_d1" class="input input-bordered w-full zapisy-filter" placeholder="np. D/ lub PK/" />
-            </div>
-            <div class="form-control w-full">
-                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Kwota minimalna</span></label>
-                <div class="relative">
-                    <input type="number" id="adv_min_kwota" name="adv_min_kwota" step="0.01" class="input input-bordered w-full zapisy-filter pr-12" placeholder="0.00" />
-                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold opacity-40">PLN</span>
+        <form id="filter-zapisy-form">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Numer konta (Z_3) lub prefiks</span></label>
+                    <input type="text" id="adv_z3" name="konto" class="input input-bordered w-full zapisy-filter" placeholder="np. 100 lub 200" />
+                </div>
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Opis (Z_2) fragment</span></label>
+                    <input type="text" id="adv_z2" name="opis" class="input input-bordered w-full zapisy-filter" placeholder="np. faktura lub przelew" />
+                </div>
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Numer dziennika (D_1)</span></label>
+                    <input type="text" id="adv_d1" name="dziennik_id" class="input input-bordered w-full zapisy-filter" placeholder="np. D/ lub PK/" />
+                </div>
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Kwota minimalna</span></label>
+                    <div class="relative">
+                        <input type="number" id="adv_min_kwota" name="min_kwota" step="0.01" class="input input-bordered w-full zapisy-filter pr-12" placeholder="0.00" />
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold opacity-40">PLN</span>
+                    </div>
+                </div>
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Sortowanie</span></label>
+                    <div class="flex gap-4 mt-2">
+                        <label class="label cursor-pointer gap-2">
+                            <input type="radio" name="adv_sort" value="data" class="radio radio-primary radio-sm zapisy-filter" checked /> 
+                            <span class="label-text font-bold">Data (rosnąco)</span>
+                        </label>
+                        <label class="label cursor-pointer gap-2">
+                            <input type="radio" name="adv_sort" value="kwota" class="radio radio-primary radio-sm zapisy-filter" /> 
+                            <span class="label-text font-bold">Kwota (malejąco)</span>
+                        </label>
+                    </div>
                 </div>
             </div>
-            <div class="form-control w-full">
-                <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Sortowanie</span></label>
-                <div class="flex gap-4 mt-2">
-                    <label class="label cursor-pointer gap-2">
-                        <input type="radio" name="adv_sort" value="data" class="radio radio-primary radio-sm zapisy-filter" checked /> 
-                        <span class="label-text font-bold">Data (rosnąco)</span>
-                    </label>
-                    <label class="label cursor-pointer gap-2">
-                        <input type="radio" name="adv_sort" value="kwota" class="radio radio-primary radio-sm zapisy-filter" /> 
-                        <span class="label-text font-bold">Kwota (malejąco)</span>
-                    </label>
-                </div>
-            </div>
-        </div>
+        </form>
         
         <div class="modal-action mt-8 pt-4 border-t border-base-300">
             <button class="btn btn-ghost" onclick="document.getElementById('modal_adv_filter').close()">Anuluj</button>
@@ -1443,22 +1445,22 @@
     (function initAllFiltersFromUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         
-        // Advanced filters
-        if(urlParams.has('adv_z3')) {
+        // Advanced filters - support both new and old (for backward compatibility during transition)
+        if(urlParams.has('konto') || urlParams.has('adv_z3')) {
             const el = document.getElementById('adv_z3');
-            if(el) el.value = urlParams.get('adv_z3');
+            if(el) el.value = urlParams.get('konto') || urlParams.get('adv_z3');
         }
-        if(urlParams.has('adv_z2')) {
+        if(urlParams.has('opis') || urlParams.has('adv_z2')) {
             const el = document.getElementById('adv_z2');
-            if(el) el.value = urlParams.get('adv_z2');
+            if(el) el.value = urlParams.get('opis') || urlParams.get('adv_z2');
         }
-        if(urlParams.has('adv_d1')) {
+        if(urlParams.has('dziennik_id') || urlParams.has('adv_d1')) {
             const el = document.getElementById('adv_d1');
-            if(el) el.value = urlParams.get('adv_d1');
+            if(el) el.value = urlParams.get('dziennik_id') || urlParams.get('adv_d1');
         }
-        if(urlParams.has('adv_min_kwota')) {
+        if(urlParams.has('min_kwota') || urlParams.has('adv_min_kwota')) {
             const el = document.getElementById('adv_min_kwota');
-            if(el) el.value = urlParams.get('adv_min_kwota');
+            if(el) el.value = urlParams.get('min_kwota') || urlParams.get('adv_min_kwota');
         }
         if(urlParams.has('adv_sort')) {
             const s = urlParams.get('adv_sort');
@@ -1519,11 +1521,17 @@
         const sortEl = document.querySelector('input[name="adv_sort"]:checked');
         const sort = sortEl ? sortEl.value : 'data';
         
-        if (z3) urlParams.set('adv_z3', z3); else urlParams.delete('adv_z3');
-        if (z2) urlParams.set('adv_z2', z2); else urlParams.delete('adv_z2');
-        if (d1) urlParams.set('adv_d1', d1); else urlParams.delete('adv_d1');
-        if (minKwota) urlParams.set('adv_min_kwota', minKwota); else urlParams.delete('adv_min_kwota');
+        if (z3) urlParams.set('konto', z3); else urlParams.delete('konto');
+        if (z2) urlParams.set('opis', z2); else urlParams.delete('opis');
+        if (d1) urlParams.set('dziennik_id', d1); else urlParams.delete('dziennik_id');
+        if (minKwota) urlParams.set('min_kwota', minKwota); else urlParams.delete('min_kwota');
         if (sort) urlParams.set('adv_sort', sort); else urlParams.delete('adv_sort');
+        
+        // Cleanup old params
+        urlParams.delete('adv_z3');
+        urlParams.delete('adv_z2');
+        urlParams.delete('adv_d1');
+        urlParams.delete('adv_min_kwota');
         
         // Reset page to 1 when changing filters
         urlParams.delete('page');

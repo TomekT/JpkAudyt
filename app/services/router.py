@@ -2,14 +2,18 @@ import logging
 import sqlite3
 import os
 import time
+import html
+import json
 from pathlib import Path
 from typing import List, Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from app.services.database import db_service
 from app.services.etl import etl_service
 from app.services.legacy_etl import legacy_etl_service
 from app.services.agent_chat import AgentChat
+from app.services.zapisy_service import ZapisyService
 from app.core.config import config_manager
 
 logger = logging.getLogger(__name__)
@@ -211,11 +215,13 @@ async def get_zois_filtered_ids(q: str = "", type: str = ""):
         raise HTTPException(status_code=500, detail=str(e))
 
 @label_router.get("/api/dziennik/filtered-ids")
-async def get_dziennik_filtered_ids(zq: str = "", month: str = "", q: str = "", type: str = ""):
+async def get_dziennik_filtered_ids(zq: str = "", month: str = "", q: str = "", type: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = ""):
     """Zwraca listę ID dziennika pasujących do filtrów zapisów."""
     try:
-        # Reusing the filter logic
-        where_sql, params = db_service.build_zapisy_where(q, type, zq, month)
+        # Reusing the filter logic from the new ZapisyService
+        db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
+        zapisy_service = ZapisyService(db_path)
+        where_sql, params = zapisy_service.build_zapisy_where(q, type, zq, month, konto=konto, opis=opis, min_kwota=min_kwota, dziennik_id=dziennik_id)
         sql = f"""
             SELECT DISTINCT z.Dziennik_Id 
             FROM Zapisy z 
@@ -226,6 +232,7 @@ async def get_dziennik_filtered_ids(zq: str = "", month: str = "", q: str = "", 
         rows = conn.execute(sql, params).fetchall()
         return {"ids": [row['Dziennik_Id'] for row in rows]}
     except Exception as e:
+        logger.error(f"Error in get_dziennik_filtered_ids: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 from app.services.agent_group_zois import ZoisNamingAgent, AIConnectionError
@@ -262,4 +269,191 @@ async def group_zois_accounts():
     except Exception as e:
         logger.error(f"Error grouping zois accounts: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- ZAPISY ANALYTICS SECTION ---
+
+def format_amount(value):
+    if value is None:
+        return ""
+    try:
+        val_float = float(value)
+        if val_float == 0:
+            return ""
+        # Format: thousands space, decimal comma
+        s = f"{val_float:,.2f}".replace(",", " ").replace(".", ",")
+        return s.replace(" ", "\u00A0") # non-breaking space
+    except:
+        return str(value)
+
+@label_router.get("/zapisy/powiazania", response_class=HTMLResponse)
+async def get_zapisy_powiazania(
+    q: str = "", type: str = "", zq: str = "", month: str = "", 
+    label_id: str = "", label_zapisy_id: str = "",
+    konto: str = "", opis: str = "", dziennik_id: str = "", min_kwota: str = ""
+):
+    try:
+        db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
+        if not db_path:
+            return HTMLResponse(content="<div class='alert alert-warning'>Brak aktywnej bazy danych.</div>")
+            
+        z_service = ZapisyService(db_path)
+        # Przekazujemy wszystkie parametry do budowania warunku WHERE
+        where_sql, params = z_service.build_zapisy_where(
+            q=q, type=type, zq=zq, month=month,
+            label_id=label_id, label_zapisy_id=label_zapisy_id,
+            konto=konto, 
+            opis=opis, 
+            dziennik_id=dziennik_id, 
+            min_kwota=min_kwota
+        )
+
+        conn = db_service.get_connection()
+        query = f"""
+            WITH WybraneDzienniki AS (
+                SELECT DISTINCT z.Dziennik_Id 
+                FROM Zapisy z
+                LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
+                LEFT JOIN ZOiS s ON z.Z_3 = s.S_1
+                {where_sql}
+            )
+            SELECT 
+                Z_GrupaKont as Syntetyka,
+                SUM(CASE WHEN Z_4 > 0 THEN 1 ELSE 0 END) as Liczba_Wn,
+                SUM(CASE WHEN Z_7 > 0 THEN 1 ELSE 0 END) as Liczba_Ma
+            FROM Zapisy
+            WHERE Dziennik_Id IN (SELECT Dziennik_Id FROM WybraneDzienniki)
+            GROUP BY Z_GrupaKont
+            ORDER BY Syntetyka
+        """
+        rows = conn.execute(query, params).fetchall()
+
+        html_rows = ""
+        for row in rows:
+            synt = row['Syntetyka']
+            if not synt: continue
+            wn = row['Liczba_Wn'] or 0
+            ma = row['Liczba_Ma'] or 0
+            wn_str = format_amount(wn).replace(',00', '')
+            ma_str = format_amount(ma).replace(',00', '')
+            
+            html_rows += f'''
+            <tr class="hover cursor-pointer" onclick="aplikujFiltrSyntetyki('{html.escape(synt)}')">
+                <td class="font-mono text-primary font-bold">{html.escape(synt)}</td>
+                <td class="text-right font-mono">{wn_str}</td>
+                <td class="text-right font-mono">{ma_str}</td>
+            </tr>
+            '''
+        
+        if not html_rows:
+            html_rows = "<tr><td colspan='3' class='text-center opacity-50 italic'>Brak danych z kont przeciwstawnych</td></tr>"
+
+        return f"""
+        <dialog id="przeglad_modal" class="modal">
+            <div class="modal-box w-11/12 max-w-2xl relative shadow-2xl">
+                <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+                <h3 class="font-bold text-lg mb-4 text-secondary flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Przegląd powiązań (konta przeciwstawne)
+                </h3>
+                <div class="overflow-x-auto max-h-[60vh]">
+                    <table class="table table-zebra table-sm w-full">
+                        <thead class="bg-base-200 sticky top-0 z-10">
+                            <tr><th>Konto (Syntetyka)</th><th class="text-right">Wystąpienia Wn</th><th class="text-right">Wystąpienia Ma</th></tr>
+                        </thead>
+                        <tbody>{html_rows}</tbody>
+                    </table>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+        """
+    except Exception as e:
+        logger.error(f"Error in zapisy/powiazania: {e}")
+        return HTMLResponse(content=f"<div class='alert alert-error'>Błąd: {html.escape(str(e))}</div>")
+
+@label_router.get("/zapisy/wykres", response_class=HTMLResponse)
+async def get_zapisy_wykres(
+    q: str = "", type: str = "", zq: str = "", month: str = "", 
+    label_id: str = "", label_zapisy_id: str = "",
+    konto: str = "", opis: str = "", dziennik_id: str = "", min_kwota: str = ""
+):
+    try:
+        db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
+        if not db_path:
+            return HTMLResponse(content="<div class='p-10 text-center opacity-50'>Brak bazy.</div>")
+            
+        z_service = ZapisyService(db_path)
+        where_sql, params = z_service.build_zapisy_where(
+            q=q, type=type, zq=zq, month=month,
+            label_id=label_id, label_zapisy_id=label_zapisy_id,
+            konto=konto, 
+            opis=opis, 
+            dziennik_id=dziennik_id, 
+            min_kwota=min_kwota
+        )
+
+        conn = db_service.get_connection()
+        agg_sql = f"""
+            SELECT COUNT(*) as total_count, SUM(z.Z_4) as sum_wn, SUM(z.Z_7) as sum_ma 
+            FROM Zapisy z 
+            LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
+            LEFT JOIN ZOiS s ON z.Z_3 = s.S_1 
+            {where_sql}
+        """
+        agg = conn.execute(agg_sql, params).fetchone()
+        
+        sql_monthly = f"""
+            SELECT Z_DataMiesiac, SUM(Z_4) as suma_wn, SUM(Z_7) as suma_ma 
+            FROM Zapisy z 
+            LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
+            LEFT JOIN ZOiS s ON z.Z_3 = s.S_1 
+            {where_sql} AND Z_DataMiesiac IS NOT NULL 
+            GROUP BY Z_DataMiesiac 
+            ORDER BY Z_DataMiesiac
+        """
+        rows = conn.execute(sql_monthly, params).fetchall()
+
+        month_names = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"]
+        wn_data = [0.0] * 12
+        ma_data = [0.0] * 12
+
+        for row in rows:
+            m = row['Z_DataMiesiac']
+            if m and 1 <= m <= 12:
+                wn_data[m-1] = float(row['suma_wn'] or 0)
+                ma_data[m-1] = float(row['suma_ma'] or 0)
+
+        return f"""
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="stats shadow bg-base-200 border border-base-content/5"><div class="stat"><div class="stat-title text-[10px] uppercase font-bold opacity-60">Liczba zapisów</div><div class="stat-value text-xl text-primary">{agg['total_count']}</div></div></div>
+            <div class="stats shadow bg-base-200 border border-base-content/5"><div class="stat"><div class="stat-title text-[10px] uppercase font-bold opacity-60">Suma Wn</div><div class="stat-value text-xl text-secondary font-mono">{format_amount(agg['sum_wn'])}</div></div></div>
+            <div class="stats shadow bg-base-200 border border-base-content/5"><div class="stat"><div class="stat-title text-[10px] uppercase font-bold opacity-60">Suma Ma</div><div class="stat-value text-xl text-accent font-mono">{format_amount(agg['sum_ma'])}</div></div></div>
+            <div class="stats shadow bg-base-200 border border-base-content/5"><div class="stat"><div class="stat-title text-[10px] uppercase font-bold opacity-60">Balans</div><div class="stat-value text-xl font-mono">{(format_amount((agg['sum_wn'] or 0) - (agg['sum_ma'] or 0)))}</div></div></div>
+        </div>
+        <div id='plotly-chart' class='w-full h-[500px] border border-base-content/10 rounded-xl shadow-lg bg-base-100'></div>
+        <script>
+            (function() {{
+                const data = [
+                    {{ x: {json.dumps(month_names)}, y: {json.dumps(wn_data)}, name: 'Wn', type: 'scatter', mode: 'lines+markers', line: {{ color: '#d926aa', width: 4 }} }},
+                    {{ x: {json.dumps(month_names)}, y: {json.dumps(ma_data)}, name: 'Ma', type: 'scatter', mode: 'lines+markers', line: {{ color: '#1fb2a6', width: 4 }} }}
+                ];
+                const layout = {{
+                    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {{ color: '#A6ADBB', family: 'Inter, sans-serif' }},
+                    margin: {{ t: 40, r: 40, b: 40, l: 80 }},
+                    xaxis: {{ gridcolor: 'rgba(255,255,255,0.05)', zeroline: false }},
+                    yaxis: {{ gridcolor: 'rgba(255,255,255,0.05)', zeroline: false }},
+                    legend: {{ orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center' }}
+                }};
+                Plotly.newPlot('plotly-chart', data, layout, {{ responsive: true }});
+            }})();
+        </script>
+        """
+    except Exception as e:
+        logger.error(f"Error in zapisy/wykres: {e}")
+        return HTMLResponse(content=f"<div class='p-10 text-error'>Błąd: {str(e)}</div>")
 

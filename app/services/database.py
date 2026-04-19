@@ -7,16 +7,19 @@ from pathlib import Path
 import logging
 
 logging.basicConfig(level=logging.INFO)
+from app.services.zapisy_service import ZapisyService
+
 logger = logging.getLogger(__name__)
 
+def parse_smart_query(q: str):
+    """Pomocnicza funkcja parsująca zapytania smart (LUB, przecinki, itp.)"""
+    if not q:
+        return []
+    # Split by common separators: LUB (case insensitive), comma, pipe
+    parts = re.split(r'\s+LUB\s+|[,|]', q, flags=re.IGNORECASE)
+    return [p.strip() for p in parts if p.strip()]
+
 class DatabaseService:
-    @staticmethod
-    def parse_smart_query(q: str):
-        if not q:
-            return []
-        # Split by common separators: LUB (case insensitive), comma, pipe
-        parts = re.split(r'\s+LUB\s+|[,|]', q, flags=re.IGNORECASE)
-        return [p.strip() for p in parts if p.strip()]
 
     def build_zois_where(self, q: str = "", type: str = "", label_id: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True):
         where_clauses = []
@@ -36,7 +39,7 @@ class DatabaseService:
             for i, fid in enumerate(forced_ids):
                 params[f"fid_{i}"] = fid
         if q:
-            terms = self.parse_smart_query(q)
+            terms = parse_smart_query(q)
             if terms:
                 term_clauses = []
                 for i, term in enumerate(terms):
@@ -69,91 +72,6 @@ class DatabaseService:
         sql = f"SELECT * FROM ZOiS {where_sql} ORDER BY S_1"
         return self.get_connection().execute(sql, params).fetchall()
 
-    def build_zapisy_where(self, q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
-        where_clauses = []
-        params = {}
-        if q:
-            terms = self.parse_smart_query(q)
-            if terms:
-                term_clauses = []
-                for i, term in enumerate(terms):
-                    key = f"q{i}"
-                    if term.startswith("konto:"):
-                        val = term[6:]
-                        term_clauses.append(f"(z.Z_3 = :{key} OR z.Z_3 LIKE :{key} || '-%')")
-                        params[key] = val
-                    else:
-                        term_clauses.append(f"(z.Z_3 LIKE :{key} OR s.S_2 LIKE :{key})")
-                        params[key] = f"%{term}%"
-                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
-        if type:
-            where_clauses.append("s.TypKonta = :type")
-            params["type"] = type
-        if label_id:
-            where_clauses.append("z.Z_3 IN (SELECT ZOiS_S1 FROM Etykiety_ZOiS WHERE EtykietaId = :label_id)")
-            params["label_id"] = label_id
-        if label_zapisy_id:
-            where_clauses.append("z.Id IN (SELECT ZapisyId FROM Etykiety_Zapisy WHERE EtykietaId = :label_zapisy_id)")
-            params["label_zapisy_id"] = label_zapisy_id
-        if zq:
-            terms = self.parse_smart_query(zq)
-            if terms:
-                term_clauses = []
-                for i, term in enumerate(terms):
-                    key = f"zq{i}"
-                    if term.startswith("assoc:"):
-                        val = term[6:]
-                        # Filtrujemy do zapisów z dzienników, które zawierają dane konto syntetyczne
-                        term_clauses.append(f"z.Dziennik_Id IN (SELECT DISTINCT sub_z.Dziennik_Id FROM Zapisy sub_z WHERE sub_z.Z_GrupaKont = :{key})")
-                        params[key] = val
-                    else:
-                        term_clauses.append(f"(z.Z_3 LIKE :{key} OR z.Z_2 LIKE :{key})")
-                        params[key] = f"%{term}%"
-                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
-        if month and month.isdigit():
-            where_clauses.append("z.Z_DataMiesiac = :month")
-            params["month"] = int(month)
-            
-        if adv_z3:
-            terms = self.parse_smart_query(adv_z3)
-            if terms:
-                term_clauses = []
-                for i, term in enumerate(terms):
-                    key = f"advz3_{i}"
-                    term_clauses.append(f"z.Z_3 LIKE :{key}")
-                    params[key] = f"%{term}%"
-                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
-                
-        if adv_z2:
-            terms = self.parse_smart_query(adv_z2)
-            if terms:
-                term_clauses = []
-                for i, term in enumerate(terms):
-                    key = f"advz2_{i}"
-                    term_clauses.append(f"z.Z_2 LIKE :{key}")
-                    params[key] = f"%{term}%"
-                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
-                
-        if adv_d1:
-            terms = self.parse_smart_query(adv_d1)
-            if terms:
-                term_clauses = []
-                for i, term in enumerate(terms):
-                    key = f"advd1_{i}"
-                    term_clauses.append(f"d.D_1 LIKE :{key}")
-                    params[key] = f"%{term}%"
-                where_clauses.append("(" + " OR ".join(term_clauses) + ")")
-                
-        if adv_min_kwota:
-            try:
-                min_val = float(adv_min_kwota)
-                where_clauses.append("(ABS(COALESCE(z.Z_4, 0)) >= :min_val OR ABS(COALESCE(z.Z_7, 0)) >= :min_val)")
-                params["min_val"] = min_val
-            except ValueError:
-                pass
-                
-        where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
-        return where_sql, params
 
     def __init__(self):
         self.current_db_path: Optional[Path] = None
@@ -649,7 +567,13 @@ class DatabaseService:
             where_sql, params = self.build_zois_where(q, type_, label_id)
             join_sql = ""
         else:
-            where_sql, params = self.build_zapisy_where(q, type_, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
+            z_service = ZapisyService(str(self.current_db_path))
+            where_sql, params = z_service.build_zapisy_where(
+                q=q, type=type_, zq=zq, month=month, 
+                label_id=label_id, label_zapisy_id=label_zapisy_id, 
+                konto=adv_z3, opis=adv_z2, 
+                min_kwota=adv_min_kwota, dziennik_id=adv_d1
+            )
             join_sql = "LEFT JOIN ZOiS s ON z.Z_3 = s.S_1"
             base_tbl = "Zapisy z"
 
@@ -799,7 +723,13 @@ class DatabaseService:
             where_sql, params = self.build_zois_where(q, type_, label_id)
             join_sql = ""
         else:
-            where_sql, params = self.build_zapisy_where(q, type_, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
+            z_service = ZapisyService(str(self.current_db_path))
+            where_sql, params = z_service.build_zapisy_where(
+                q=q, type=type_, zq=zq, month=month, 
+                label_id=label_id, label_zapisy_id=label_zapisy_id, 
+                konto=adv_z3, opis=adv_z2, 
+                min_kwota=adv_min_kwota, dziennik_id=adv_d1
+            )
             join_sql = "LEFT JOIN ZOiS s ON z.Z_3 = s.S_1"
             base_tbl = "Zapisy z"
 
@@ -854,7 +784,13 @@ class DatabaseService:
             where_sql, params = self.build_zois_where(q, type_, label_id)
             join_sql = ""
         else:
-            where_sql, params = self.build_zapisy_where(q, type_, zq, month, label_id, label_zapisy_id, adv_z3, adv_z2, adv_min_kwota, adv_d1)
+            z_service = ZapisyService(str(self.current_db_path))
+            where_sql, params = z_service.build_zapisy_where(
+                q=q, type=type_, zq=zq, month=month, 
+                label_id=label_id, label_zapisy_id=label_zapisy_id, 
+                konto=adv_z3, opis=adv_z2, 
+                min_kwota=adv_min_kwota, dziennik_id=adv_d1
+            )
             join_sql = "LEFT JOIN ZOiS s ON z.Z_3 = s.S_1"
             base_tbl = "Zapisy z"
 
@@ -879,7 +815,7 @@ class DatabaseService:
         prefix_clauses = []
         params = {}
         if prefixes:
-            prefix_list = self.parse_smart_query(prefixes)
+            prefix_list = parse_smart_query(prefixes)
             for i, p in enumerate(prefix_list):
                 key = f"p{i}"
                 prefix_clauses.append(f"S_1 LIKE :{key} || '%'")
