@@ -4,7 +4,7 @@ import json
 from typing import List, Dict, Any, Optional
 from google import genai
 from google.genai import types
-from app.core.config import GOOGLE_API_KEY
+from app.core.config import GOOGLE_API_KEY, config_ai_manager
 from pathlib import Path
 from app.services.chat_service import ChatService
 
@@ -14,7 +14,6 @@ class AgentChat:
     Używa nowoczesnego SDK google-genai i poprawnej konfiguracji typów.
     """
     
-    CONFIG_FILE = "configAI.json"
     DEFAULT_SYSTEM_INSTRUCTION = (
     "Jesteś 'Audit Intelligence' – wysokiej klasy ekspertem ds. audytu finansowego i analizy JPK-KR. "
     "Twoim celem jest wsparcie biegłego rewidenta w weryfikacji ksiąg rachunkowych poprzez precyzyjne operacje na bazie danych SQLite.\n\n"
@@ -47,12 +46,16 @@ class AgentChat:
         self.chat = None
         self.chat_service = ChatService(self.db_path)
         
-        # Load config from file or environment
-        self.config = self._load_persistent_config()
-        effective_api_key = self.config.get("api_key") or GOOGLE_API_KEY
+        # Load config from centralized manager
+        ai_config = config_ai_manager.get_config()
+        effective_api_key = ai_config.api_key or GOOGLE_API_KEY
         
-        # Zapisujemy tylko api_key w self.config dla spójności z UI
-        self.config["api_key"] = effective_api_key or ""
+        # Save key back to config for consistency if needed, but via manager
+        if effective_api_key and not ai_config.api_key:
+            config_ai_manager.update_config({"api_key": effective_api_key})
+        
+        # Compatibility with main.py which expects self.config
+        self.config = {"api_key": effective_api_key or ""}
         
         if not effective_api_key:
             return
@@ -85,24 +88,11 @@ class AgentChat:
             print(f"Błąd inicjalizacji klienta Gemini: {e}")
             self.client = None
 
-    def _load_persistent_config(self) -> Dict[str, str]:
-        if os.path.exists(self.CONFIG_FILE):
-            try:
-                with open(self.CONFIG_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except:
-                pass
-        return {}
-
     def update_config(self, api_key: str):
         """
-        Aktualizuje tylko klucz API. Instrukcja systemowa pozostaje niezmienna.
+        Aktualizuje tylko klucz API w centralnym pliku konfiguracyjnym.
         """
-        config_data = {
-            "api_key": api_key
-        }
-        with open(self.CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(config_data, f, indent=4, ensure_ascii=False)
+        config_ai_manager.update_config({"api_key": api_key})
         
         # Reinicjalizacja z nowym kluczem
         self.__init__(self.db_path, self.model_name)

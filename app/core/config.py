@@ -23,6 +23,7 @@ class AiConfig(BaseModel):
     threshold: float = 0.50
     normalization_100: bool = True
     prompts: dict = DEFAULT_PROMPTS
+    api_key: str = ""
 
 class AppConfig(BaseModel):
     last_opened_db: Optional[str] = None
@@ -45,7 +46,10 @@ class ConfigAIManager:
         try:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                return AiConfig(**data)
+                # Filter out unknown keys if any to avoid Pydantic errors
+                allowed_keys = AiConfig.model_fields.keys()
+                filtered_data = {k: v for k, v in data.items() if k in allowed_keys}
+                return AiConfig(**filtered_data)
         except Exception:
             return AiConfig()
 
@@ -74,6 +78,8 @@ class ConfigAIManager:
                 self.config.normalization_100 = bool(val)
         if "prompts" in ai_data:
             self.config.prompts.update(ai_data["prompts"])
+        if "api_key" in ai_data:
+            self.config.api_key = str(ai_data["api_key"])
         
         self.save_config()
 
