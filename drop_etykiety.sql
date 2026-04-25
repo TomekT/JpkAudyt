@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS Etykiety_Zapisy;
+DROP TABLE IF EXISTS Etykiety_Dziennik;
+DROP TABLE IF EXISTS Etykiety_ZOiS;
+DROP TABLE IF EXISTS Etykiety;

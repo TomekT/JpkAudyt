@@ -23,7 +23,7 @@ class ZapisyService:
         parts = re.split(r'\s+LUB\s+|[,|]', q, flags=re.IGNORECASE)
         return [p.strip() for p in parts if p.strip()]
 
-    def build_zapisy_where(self, q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = ""):
+    def build_zapisy_where(self, q: str = "", type: str = "", zq: str = "", month: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = ""):
         where_clauses = []
         params = {}
         if q:
@@ -43,12 +43,7 @@ class ZapisyService:
         if type:
             where_clauses.append("s.TypKonta = :type")
             params["type"] = type
-        if label_id:
-            where_clauses.append("z.Z_3 IN (SELECT ZOiS_S1 FROM Etykiety_ZOiS WHERE EtykietaId = :label_id)")
-            params["label_id"] = label_id
-        if label_zapisy_id:
-            where_clauses.append("z.Id IN (SELECT ZapisyId FROM Etykiety_Zapisy WHERE EtykietaId = :label_zapisy_id)")
-            params["label_zapisy_id"] = label_zapisy_id
+
         if zq:
             terms = self.parse_smart_query(zq)
             if terms:
@@ -109,12 +104,12 @@ class ZapisyService:
         where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         return where_sql, params
 
-    def get_zapisy_pelne(self, q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = "", limit: int = 1000, offset: int = 0, adv_sort: str = "", with_details: bool = False):
+    def get_zapisy_pelne(self, q: str = "", type: str = "", zq: str = "", month: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = "", limit: int = 1000, offset: int = 0, adv_sort: str = "", with_details: bool = False):
         """
         Retrieves accounting entries from the v_zapisy_pelne view applying all filters.
         Returns a dict: {'rows': list, 'sum_wn': float, 'sum_ma': float}
         """
-        where_sql, params = self.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id, konto, opis, min_kwota, dziennik_id)
+        where_sql, params = self.build_zapisy_where(q, type, zq, month, konto, opis, min_kwota, dziennik_id)
         
         # Order by logic
         order_by = "ORDER BY z.Z_Data ASC, z.id_zapisu ASC"

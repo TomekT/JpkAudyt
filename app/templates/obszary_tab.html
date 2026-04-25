@@ -1,0 +1,144 @@
+<div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 flex flex-col h-full overflow-hidden relative">
+    <div class="flex justify-between items-center mb-6 shrink-0">
+        <h3 class="text-xl font-black text-base-content flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Obszary Badania
+        </h3>
+        <button class="btn btn-primary btn-sm gap-2"
+            onclick="document.getElementById('modal_dodaj_obszar').showModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Dodaj Obszar
+        </button>
+    </div>
+
+    <div class="flex-1 overflow-auto rounded-lg border border-base-200 bg-base-200/30">
+        <table class="table table-zebra table-sm w-full">
+            <thead class="bg-base-200 sticky top-0 z-10 shadow-sm text-xs">
+                <tr>
+                    <th class="w-12"></th>
+                    <th>Nazwa Obszaru</th>
+                    <th>Typ</th>
+                    <th class="text-right">Wartość XML</th>
+                    <th class="text-right">Wartość ZOiS (JPK)</th>
+                    <th class="text-right">Odchylenie</th>
+                    <th class="text-center w-32">Akcje</th>
+                </tr>
+            </thead>
+            <tbody id="obszary-tbody">
+                {% for obszar in obszary %}
+                <tr class="hover cursor-pointer"
+                    onclick="const btn = this.querySelector('.drill-down-btn'); if(btn) btn.click();">
+                    <td>
+                        <button class="btn btn-ghost btn-xs btn-square drill-down-btn"
+                            hx-get="/obszary/{{obszar.Id}}/szczegoly" hx-target="#obszar-szczegoly-{{obszar.Id}}"
+                            hx-swap="innerHTML"
+                            onclick="event.stopPropagation(); const tr = document.getElementById('obszar-row-{{obszar.Id}}'); tr.classList.toggle('hidden');">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    </td>
+                    <td class="font-bold">{{obszar.Nazwa}}</td>
+                    <td>
+                        <div class="badge badge-ghost badge-sm">{{obszar.Typ or 'Brak'}}</div>
+                    </td>
+                    <td class="text-right font-mono text-xs">{{ "{:,.2f}".format(obszar.Suma_Sprawozdanie or
+                        0).replace(',',' ') }}</td>
+                    <td class="text-right font-mono text-xs">
+                        <span class="hover:underline hover:text-info transition-colors" 
+                              style="cursor: help;"
+                              hx-get="/obszary/{{obszar.Id}}/explain" 
+                              hx-target="#explain-modal-content"
+                              onclick="event.stopPropagation(); document.getElementById('modal_explain_obszar').showModal()">
+                            {{ "{:,.2f}".format(obszar.Suma_ZOiS or 0).replace(',',' ') }}
+                        </span>
+                    </td>
+                    <td
+                        class="text-right font-mono font-bold text-xs {% if (obszar.Odchylenie or 0)|abs > 0.01 %}text-error{% else %}text-success{% endif %}">
+                        {{ "{:,.2f}".format(obszar.Odchylenie or 0).replace(',',' ') }}
+                    </td>
+                    <td class="text-center" onclick="event.stopPropagation();">
+                        <button class="btn btn-outline btn-info btn-xs"
+                            onclick="document.getElementById('tab-zois').click(); htmx.ajax('GET', '/zois?obszar_id={{obszar.Id}}', '#zois-container');">
+                            Analizuj ZOiS
+                        </button>
+                    </td>
+                </tr>
+                <tr id="obszar-row-{{obszar.Id}}" class="hidden bg-base-200/50">
+                    <td colspan="7" class="p-4" id="obszar-szczegoly-{{obszar.Id}}">
+                        <span class="loading loading-spinner loading-xs text-primary"></span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-8 opacity-50">Brak zdefiniowanych obszarów.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Form -->
+    <dialog id="modal_dodaj_obszar" class="modal">
+        <div class="modal-box w-full max-w-sm">
+            <h3 class="font-bold text-lg mb-4">Nowy Obszar Badania</h3>
+            <form hx-post="/obszary" hx-target="#obszary-main-container" hx-swap="innerHTML"
+                onsubmit="document.getElementById('modal_dodaj_obszar').close()">
+                <div class="form-control w-full mb-2">
+                    <label class="label"><span
+                            class="label-text text-xs uppercase font-bold opacity-70">Nazwa</span></label>
+                    <input type="text" name="nazwa" class="input input-bordered input-sm w-full" required />
+                </div>
+                <div class="form-control w-full mt-4">
+                    <label class="label">
+                        <span class="label-text">Typ</span>
+                    </label>
+                    <select class="select select-bordered w-full" name="typ" required>
+                        <option disabled selected value="">Wybierz klasyfikację...</option>
+                        <option value="Aktywa">Aktywa</option>
+                        <option value="Pasywa">Pasywa</option>
+                        <option value="RZiS">RZiS</option>
+                        <option value="Inne">Inne / Pozabilansowe</option>
+                    </select>
+                </div>
+                <div class="modal-action">
+                    <button type="button" class="btn btn-sm"
+                        onclick="document.getElementById('modal_dodaj_obszar').close()">Anuluj</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Zapisz</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Diagnostic Explain Modal -->
+    <dialog id="modal_explain_obszar" class="modal">
+        <div class="modal-box w-11/12 max-w-4xl">
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+            </form>
+            <h3 class="font-bold text-lg mb-4">Szczegóły wyliczenia ZOiS</h3>
+            <div id="explain-modal-content" class="py-4">
+                <div class="flex justify-center p-8">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                </div>
+            </div>
+            <div class="modal-action">
+                <form method="dialog">
+                    <button class="btn btn-sm">Zamknij</button>
+                </form>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+</div>

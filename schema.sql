@@ -210,44 +210,6 @@ CREATE INDEX IF NOT EXISTS idx_zois_s12_1 ON ZOiS(S_12_1);
 CREATE INDEX IF NOT EXISTS idx_zois_typkonta ON ZOiS(TypKonta);
 CREATE INDEX IF NOT EXISTS idx_zapisy_dziennikid ON Zapisy(Dziennik_Id);
 
--- 7. System Etykietowania (Tagowania)
--- ---------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS Etykiety (
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    Nazwa TEXT UNIQUE NOT NULL,
-    Obszar TEXT NOT NULL CHECK (Obszar IN ('ZOiS', 'Zapisy', 'Dziennik'))
-);
-
-CREATE TABLE IF NOT EXISTS Etykiety_ZOiS (
-    EtykietaId INTEGER NOT NULL,
-    ZOiS_S1 TEXT NOT NULL,
-    PRIMARY KEY (EtykietaId, ZOiS_S1),
-    FOREIGN KEY (EtykietaId) REFERENCES Etykiety(Id) ON DELETE CASCADE,
-    FOREIGN KEY (ZOiS_S1) REFERENCES ZOiS(S_1) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Etykiety_Dziennik (
-    EtykietaId INTEGER NOT NULL,
-    DziennikId INTEGER NOT NULL,
-    PRIMARY KEY (EtykietaId, DziennikId),
-    FOREIGN KEY (EtykietaId) REFERENCES Etykiety(Id) ON DELETE CASCADE,
-    FOREIGN KEY (DziennikId) REFERENCES Dziennik(Id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Etykiety_Zapisy (
-    EtykietaId INTEGER NOT NULL,
-    ZapisyId INTEGER NOT NULL,
-    PRIMARY KEY (EtykietaId, ZapisyId),
-    FOREIGN KEY (EtykietaId) REFERENCES Etykiety(Id) ON DELETE CASCADE,
-    FOREIGN KEY (ZapisyId) REFERENCES Zapisy(Id) ON DELETE CASCADE
-);
-
--- Indeksy optymalizujące zapytania Many-to-Many
-CREATE INDEX IF NOT EXISTS idx_etykiety_zois_fk ON Etykiety_ZOiS(ZOiS_S1);
-CREATE INDEX IF NOT EXISTS idx_etykiety_dziennik_fk ON Etykiety_Dziennik(DziennikId);
-CREATE INDEX IF NOT EXISTS idx_etykiety_zapisy_fk ON Etykiety_Zapisy(ZapisyId);
-
 
 -- Reset i aktualizacja widoku (usuwamy stary, aby wymusić nową strukturę)
 DROP VIEW IF EXISTS v_zapisy_pelne;
@@ -287,3 +249,117 @@ FROM Zapisy z
 LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
 WHERE d.D_1 NOT LIKE 'BO%';
 
+-- =============================================================================
+-- SEKCJA: OBSZARY BADANIA (ARCHITEKTURA MAPOWANIA DZIEDZICZONEGO)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS Obszary (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Nazwa TEXT UNIQUE NOT NULL,
+    Typ TEXT,
+    Czy_Systemowy BOOLEAN DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS Sprawozdanie_Pozycje (
+    XmlTag TEXT PRIMARY KEY,
+    Nazwa TEXT NOT NULL,
+    Kwota_RB DECIMAL(18,2) DEFAULT 0,
+    Kwota_RP DECIMAL(18,2) DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS Obszary_Sprawozdanie (
+    Obszar_Id INTEGER,
+    XmlTag TEXT,
+    PRIMARY KEY (Obszar_Id, XmlTag),
+    FOREIGN KEY (Obszar_Id) REFERENCES Obszary(Id) ON DELETE CASCADE,
+    FOREIGN KEY (XmlTag) REFERENCES Sprawozdanie_Pozycje(XmlTag) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ZOiS_Mapowanie_Obszar (
+    Obszar_Id INTEGER,
+    ZOiS_S1 TEXT,
+    Strona_Salda TEXT CHECK(Strona_Salda IN ('TYLKO_WN', 'TYLKO_MA', 'PERSALDO_WN_MA', 'PERSALDO_MA_WN')),
+    UNIQUE(ZOiS_S1, Strona_Salda),
+    FOREIGN KEY (Obszar_Id) REFERENCES Obszary(Id) ON DELETE CASCADE
+);
+
+DROP VIEW IF EXISTS v_zois_resolved_mapping;
+CREATE VIEW v_zois_resolved_mapping AS
+WITH AllPossibleMappings AS (
+    SELECT 
+        z.S_1, 
+        z.S_2, 
+        z.S_10, 
+        z.S_11,
+        m.Obszar_Id,
+        m.Strona_Salda,
+        m.ZOiS_S1 AS Source_Konto,
+        CASE WHEN z.S_1 = m.ZOiS_S1 THEN 1 ELSE 0 END AS Is_Direct,
+        ROW_NUMBER() OVER (PARTITION BY z.S_1 ORDER BY LENGTH(m.ZOiS_S1) DESC) as rn
+    FROM ZOiS z
+    JOIN ZOiS_Mapowanie_Obszar m ON (z.S_1 = m.ZOiS_S1 OR z.S_1 LIKE m.ZOiS_S1 || '-%')
+)
+SELECT S_1, S_2, S_10, S_11, Obszar_Id, Strona_Salda, Is_Direct, Source_Konto
+FROM AllPossibleMappings
+WHERE rn = 1;
+
+DROP VIEW IF EXISTS v_obszary_rekoncyliacja;
+CREATE VIEW v_obszary_rekoncyliacja AS
+SELECT 
+    o.Id,
+    o.Nazwa,
+    o.Typ,
+    (SELECT SUM(sp.Kwota_RB) 
+     FROM Obszary_Sprawozdanie os
+     JOIN Sprawozdanie_Pozycje sp ON os.XmlTag = sp.XmlTag
+     WHERE os.Obszar_Id = o.Id) AS Suma_Sprawozdanie,
+    (SELECT SUM(
+        CASE 
+            WHEN rm.Strona_Salda = 'TYLKO_WN' THEN rm.S_10
+            WHEN rm.Strona_Salda = 'TYLKO_MA' THEN rm.S_11
+            WHEN rm.Strona_Salda = 'PERSALDO_WN_MA' THEN (rm.S_10 - rm.S_11)
+            WHEN rm.Strona_Salda = 'PERSALDO_MA_WN' THEN (rm.S_11 - rm.S_10)
+            ELSE 0 
+        END)
+     FROM v_zois_resolved_mapping rm
+     WHERE rm.Obszar_Id = o.Id) AS Suma_ZOiS,
+    (
+        COALESCE((SELECT SUM(
+            CASE 
+                WHEN rm.Strona_Salda = 'TYLKO_WN' THEN rm.S_10
+                WHEN rm.Strona_Salda = 'TYLKO_MA' THEN rm.S_11
+                WHEN rm.Strona_Salda = 'PERSALDO_WN_MA' THEN (rm.S_10 - rm.S_11)
+                WHEN rm.Strona_Salda = 'PERSALDO_MA_WN' THEN (rm.S_11 - rm.S_10)
+                ELSE 0 END) FROM v_zois_resolved_mapping rm WHERE rm.Obszar_Id = o.Id), 0)
+        - 
+        COALESCE((SELECT SUM(sp.Kwota_RB) FROM Obszary_Sprawozdanie os JOIN Sprawozdanie_Pozycje sp ON os.XmlTag = sp.XmlTag WHERE os.Obszar_Id = o.Id), 0)
+    ) AS Odchylenie
+FROM Obszary o;
+
+-- Dodanie predefiniowanych obszarów badania
+INSERT INTO Obszary (Nazwa, Typ, Czy_Systemowy) VALUES
+-- AKTYWA
+('WNiP', 'Aktywa', 1),
+('Środki Trwałe', 'Aktywa', 1),
+('Inwestycje długoterminowe', 'Aktywa', 1),
+('Zapasy', 'Aktywa', 1),
+('Należności handlowe', 'Aktywa', 1),
+('Inne należności', 'Aktywa', 1),
+('Środki Pieniężne', 'Aktywa', 1),
+('Krótkoterminowe rozliczenia międzyokresowe', 'Aktywa', 1),
+
+-- PASYWA
+('Kapitał własny', 'Pasywa', 1),
+('Rezerwy na zobowiązania', 'Pasywa', 1),
+('Zobowiązania długoterminowe', 'Pasywa', 1),
+('Zobowiązania krótkoterminowe', 'Pasywa', 1),
+('Rozliczenia międzyokresowe', 'Pasywa', 1),
+
+-- RZiS
+('Przychody ze sprzedaży', 'RZiS', 1),
+('Koszty własne sprzedaży', 'RZiS', 1),
+('Koszty ogólnego zarządu', 'RZiS', 1),
+('Amortyzacja', 'RZiS', 1),
+('Pozostałe przychody i koszty operacyjne', 'RZiS', 1),
+('Przychody i koszty finansowe', 'RZiS', 1),
+('Podatek dochodowy', 'RZiS', 1);

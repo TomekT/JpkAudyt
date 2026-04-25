@@ -21,7 +21,7 @@ def parse_smart_query(q: str):
 
 class DatabaseService:
 
-    def build_zois_where(self, q: str = "", type: str = "", label_id: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True):
+    def build_zois_where(self, q: str = "", type: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True):
         where_clauses = []
         params = {}
         
@@ -55,20 +55,12 @@ class DatabaseService:
         if type:
             where_clauses.append("TypKonta = :type")
             params["type"] = type
-        if label_id:
-            if label_id == "__NONE__":
-                where_clauses.append("S_1 NOT IN (SELECT ZOiS_S1 FROM Etykiety_ZOiS)")
-            elif label_id == "__MULTIPLE__":
-                where_clauses.append("S_1 IN (SELECT ZOiS_S1 FROM Etykiety_ZOiS GROUP BY ZOiS_S1 HAVING COUNT(*) > 1)")
-            else:
-                where_clauses.append("S_1 IN (SELECT ZOiS_S1 FROM Etykiety_ZOiS WHERE EtykietaId = :label_id)")
-                params["label_id"] = label_id
             
         where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         return where_sql, params
 
-    def get_zois_data(self, q: str = "", type: str = "", label_id: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True):
-        where_sql, params = self.build_zois_where(q, type, label_id, forced_ids, synthetic, empty)
+    def get_zois_data(self, q: str = "", type: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True):
+        where_sql, params = self.build_zois_where(q, type, forced_ids, synthetic, empty)
         sql = f"SELECT * FROM ZOiS {where_sql} ORDER BY S_1"
         return self.get_connection().execute(sql, params).fetchall()
 
@@ -95,8 +87,7 @@ class DatabaseService:
             self.current_db_path = path
             
             # Use the connection directly here
-            self.ensure_tagging_tables()
-            logger.info("Database connected and tagging tables ensured.")
+            logger.info("Database connected.")
         except Exception as e:
             logger.error(f"Failed to connect to database {db_path}: {e}")
             self._connection = None
@@ -147,58 +138,7 @@ class DatabaseService:
             self._connection = None
             logger.info("Database connection closed")
 
-    def ensure_tagging_tables(self):
-        """Upewnia się, że tabele systemu etykietowania istnieją w aktualnej bazie."""
-        if not self._connection: 
-            logger.error("Migration attempted with no active connection.")
-            return
-        
-        logger.info(f"Running tagging tables migration for: {self.current_db_path}")
-        cursor = self._connection.cursor()
-        try:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS Etykiety (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    Nazwa TEXT NOT NULL,
-                    Obszar TEXT NOT NULL CHECK (Obszar IN ('ZOiS', 'Zapisy', 'Dziennik')),
-                    UNIQUE(Nazwa, Obszar)
-                );
-            """)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS Etykiety_ZOiS (
-                    EtykietaId INTEGER NOT NULL,
-                    ZOiS_S1 TEXT NOT NULL,
-                    PRIMARY KEY (EtykietaId, ZOiS_S1),
-                    FOREIGN KEY (EtykietaId) REFERENCES Etykiety (Id) ON DELETE CASCADE,
-                    FOREIGN KEY (ZOiS_S1) REFERENCES ZOiS (S_1) ON DELETE CASCADE
-                );
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_etykiety_zois_s1 ON Etykiety_ZOiS(ZOiS_S1);")
-            
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS Etykiety_Dziennik (
-                    EtykietaId INTEGER NOT NULL,
-                    DziennikId INTEGER NOT NULL,
-                    PRIMARY KEY (EtykietaId, DziennikId),
-                    FOREIGN KEY (EtykietaId) REFERENCES Etykiety (Id) ON DELETE CASCADE,
-                    FOREIGN KEY (DziennikId) REFERENCES Dziennik (Id) ON DELETE CASCADE
-                );
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_etykiety_dziennik_id ON Etykiety_Dziennik(DziennikId);")
-            
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS Etykiety_Zapisy (
-                    EtykietaId INTEGER NOT NULL,
-                    ZapisyId INTEGER NOT NULL,
-                    PRIMARY KEY (EtykietaId, ZapisyId),
-                    FOREIGN KEY (EtykietaId) REFERENCES Etykiety (Id) ON DELETE CASCADE,
-                    FOREIGN KEY (ZapisyId) REFERENCES Zapisy (Id) ON DELETE CASCADE
-                );
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_etykiety_zapisy_id ON Etykiety_Zapisy(ZapisyId);")
-            self._connection.commit()
-        except Exception as e:
-            logger.error(f"Error ensuring tagging tables: {e}")
+
 
     def init_db(self, db_path: str, schema_path: str = "schema.sql"):
         """Creates a new database file and applies the schema."""
@@ -501,97 +441,7 @@ class DatabaseService:
         """Legacy alias or simple version if needed, redirected to new logic with 0 threshold."""
         return self.get_zscore_anomaly_ids(record_ids, 0.0)
 
-    def get_labels(self, area: str) -> List[str]:
-        """Pobiera listę unikalnych etykiet dla danego obszaru."""
-        try:
-            conn = self.get_connection()
-            rows = conn.execute("SELECT Nazwa FROM Etykiety WHERE Obszar = ? ORDER BY Nazwa", (area,)).fetchall()
-            return [row['Nazwa'] for row in rows]
-        except sqlite3.OperationalError as e:
-            if "no such table: Etykiety" in str(e):
-                logger.error(f"KRYTYCZNY BŁĄD: Tabela Etykiety nie została znaleziona w połączeniu!")
-                # Re-run migration just in case something went wrong with the session
-                self.ensure_tagging_tables()
-                # Try one more time
-                conn = self.get_connection()
-                rows = conn.execute("SELECT Nazwa FROM Etykiety WHERE Obszar = ? ORDER BY Nazwa", (area,)).fetchall()
-                return [row['Nazwa'] for row in rows]
-            raise e
-        except Exception as e:
-            logger.error(f"Error getting labels for area {area}: {e}")
-            return []
 
-    def get_assigned_labels_for_ids(self, area: str, ids: List[Any]) -> List[str]:
-        """Pobiera listę etykiet przypisanych do konkretnych rekordów."""
-        if not ids: return []
-        table_map = {
-            'ZOiS': ('Etykiety_ZOiS', 'ZOiS_S1'),
-            'Dziennik': ('Etykiety_Dziennik', 'DziennikId'),
-            'Zapisy': ('Etykiety_Zapisy', 'ZapisyId')
-        }
-        tbl, col = table_map[area]
-        placeholders = ','.join('?' for _ in ids)
-        query = f"""
-            SELECT DISTINCT e.Nazwa 
-            FROM Etykiety e 
-            JOIN {tbl} rel ON e.Id = rel.EtykietaId 
-            WHERE rel.{col} IN ({placeholders}) AND e.Obszar = ?
-            ORDER BY e.Nazwa
-        """
-        conn = self.get_connection()
-        rows = conn.execute(query, (*ids, area)).fetchall()
-        return [row['Nazwa'] for row in rows]
-
-    def get_assigned_labels_by_filter(self, area: str, filters: Dict[str, Any]) -> List[str]:
-        """Pobiera etykiety przypisane do rekordów pasujących do filtrów."""
-        table_map = {
-            'ZOiS': ('Etykiety_ZOiS', 'ZOiS_S1', 'ZOiS', 'S_1'),
-            'Dziennik': ('Etykiety_Dziennik', 'DziennikId', 'Zapisy', 'Dziennik_Id'),
-            'Zapisy': ('Etykiety_Zapisy', 'ZapisyId', 'Zapisy', 'Id')
-        }
-        tbl, col, base_tbl, base_col = table_map[area]
-        
-        q = filters.get("q", "")
-        type_ = filters.get("type", "")
-        zq = filters.get("zq", "")
-        month = filters.get("month", "")
-        label_id = filters.get("label_id", "")
-        label_zapisy_id = filters.get("label_zapisy_id", "")
-        
-        adv_z3 = filters.get("adv_z3", "")
-        adv_z2 = filters.get("adv_z2", "")
-        adv_d1 = filters.get("adv_d1", "")
-        adv_min_kwota = filters.get("adv_min_kwota", "")
-        
-        if area == 'ZOiS':
-            where_sql, params = self.build_zois_where(q, type_, label_id)
-            join_sql = ""
-        else:
-            z_service = ZapisyService(str(self.current_db_path))
-            where_sql, params = z_service.build_zapisy_where(
-                q=q, type=type_, zq=zq, month=month, 
-                label_id=label_id, label_zapisy_id=label_zapisy_id, 
-                konto=adv_z3, opis=adv_z2, 
-                min_kwota=adv_min_kwota, dziennik_id=adv_d1
-            )
-            join_sql = "LEFT JOIN ZOiS s ON z.Z_3 = s.S_1"
-            base_tbl = "Zapisy z"
-
-        query = f"""
-            SELECT DISTINCT e.Nazwa 
-            FROM Etykiety e 
-            JOIN {tbl} m ON e.Id = m.EtykietaId 
-            WHERE m.{col} IN (
-                SELECT {base_col} FROM {base_tbl} {join_sql} {where_sql}
-            ) AND e.Obszar = ?
-        """
-        params['area_param'] = area
-        # Note: params is a dict, we need to pass it safely.
-        # SQLite execute with dict params works!
-        query = query.replace("?", ":area_param") 
-        conn = self.get_connection()
-        rows = conn.execute(query, params).fetchall()
-        return [row['Nazwa'] for row in rows]
 
     def group_zois_accounts(self):
         """Tworzy strukturę analityczną 3-znakową dla kont ZOiS, agregując salda."""
@@ -685,128 +535,7 @@ class DatabaseService:
             for s1, new_name in final_dict.items():
                 cursor.execute("UPDATE ZOiS SET S_2 = ? WHERE S_1 = ? AND length(S_1) = 3", (new_name, s1))
 
-    def bulk_add_labels(self, area: str, ids: List[Any], label_name: str):
-        """Masowe dodawanie etykiety do listy ID w jednej transakcji."""
-        if not ids or not label_name: return
-        with self.transaction() as conn:
-            cursor = conn.cursor()
-            cursor.execute("INSERT OR IGNORE INTO Etykiety (Nazwa, Obszar) VALUES (?, ?)", (label_name, area))
-            label_id = conn.execute("SELECT Id FROM Etykiety WHERE Nazwa = ? AND Obszar = ?", (label_name, area)).fetchone()[0]
-            
-            table_map = {'ZOiS': ('Etykiety_ZOiS', 'ZOiS_S1'), 'Dziennik': ('Etykiety_Dziennik', 'DziennikId'), 'Zapisy': ('Etykiety_Zapisy', 'ZapisyId')}
-            tbl, col = table_map[area]
-            data = [(label_id, i) for i in ids]
-            cursor.executemany(f"INSERT OR IGNORE INTO {tbl} (EtykietaId, {col}) VALUES (?, ?)", data)
 
-    def bulk_add_labels_by_filter(self, area: str, filters: Dict[str, Any], label_name: str) -> int:
-        """Dodaje etykietę do rekordów pasujących do filtrów."""
-        table_map = {
-            'ZOiS': ('Etykiety_ZOiS', 'ZOiS_S1', 'ZOiS', 'S_1'),
-            'Dziennik': ('Etykiety_Dziennik', 'DziennikId', 'Zapisy', 'Dziennik_Id'),
-            'Zapisy': ('Etykiety_Zapisy', 'ZapisyId', 'Zapisy', 'Id')
-        }
-        tbl, col, base_tbl, base_col = table_map[area]
-        
-        q = filters.get("q", "")
-        type_ = filters.get("type", "")
-        zq = filters.get("zq", "")
-        month = filters.get("month", "")
-        label_id = filters.get("label_id", "")
-        label_zapisy_id = filters.get("label_zapisy_id", "")
-        
-        adv_z3 = filters.get("adv_z3", "")
-        adv_z2 = filters.get("adv_z2", "")
-        adv_d1 = filters.get("adv_d1", "")
-        adv_min_kwota = filters.get("adv_min_kwota", "")
-        
-        if area == 'ZOiS':
-            where_sql, params = self.build_zois_where(q, type_, label_id)
-            join_sql = ""
-        else:
-            z_service = ZapisyService(str(self.current_db_path))
-            where_sql, params = z_service.build_zapisy_where(
-                q=q, type=type_, zq=zq, month=month, 
-                label_id=label_id, label_zapisy_id=label_zapisy_id, 
-                konto=adv_z3, opis=adv_z2, 
-                min_kwota=adv_min_kwota, dziennik_id=adv_d1
-            )
-            join_sql = "LEFT JOIN ZOiS s ON z.Z_3 = s.S_1"
-            base_tbl = "Zapisy z"
-
-        with self.transaction() as conn:
-            conn.execute("INSERT OR IGNORE INTO Etykiety (Nazwa, Obszar) VALUES (?, ?)", (label_name, area))
-            label_id = conn.execute("SELECT Id FROM Etykiety WHERE Nazwa = ? AND Obszar = ?", (label_name, area)).fetchone()[0]
-            
-            insert_query = f"""
-                INSERT OR IGNORE INTO {tbl} (EtykietaId, {col})
-                SELECT :label_id, {base_col} FROM {base_tbl} {join_sql} {where_sql}
-            """
-            params['label_id'] = label_id
-            cursor = conn.execute(insert_query, params)
-            return cursor.rowcount
-
-    def bulk_remove_labels(self, area: str, ids: List[Any], label_name: str):
-        """Masowe usuwanie powiązania etykiety z listą ID."""
-        if not ids or not label_name: return
-        with self.transaction() as conn:
-            cursor = conn.cursor()
-            label_row = cursor.execute("SELECT Id FROM Etykiety WHERE Nazwa = ? AND Obszar = ?", (label_name, area)).fetchone()
-            if not label_row: return
-            label_id = label_row[0]
-            
-            table_map = {'ZOiS': ('Etykiety_ZOiS', 'ZOiS_S1'), 'Dziennik': ('Etykiety_Dziennik', 'DziennikId'), 'Zapisy': ('Etykiety_Zapisy', 'ZapisyId')}
-            tbl, col = table_map[area]
-            placeholders = ','.join('?' for _ in ids)
-            cursor.execute(f"DELETE FROM {tbl} WHERE EtykietaId = ? AND {col} IN ({placeholders})", (label_id, *ids))
-
-    def bulk_remove_labels_by_filter(self, area: str, filters: Dict[str, Any], label_name: str) -> int:
-        """Usuwa etykietę z rekordów pasujących do filtrów."""
-        table_map = {
-            'ZOiS': ('Etykiety_ZOiS', 'ZOiS_S1', 'ZOiS', 'S_1'),
-            'Dziennik': ('Etykiety_Dziennik', 'DziennikId', 'Zapisy', 'Dziennik_Id'),
-            'Zapisy': ('Etykiety_Zapisy', 'ZapisyId', 'Zapisy', 'Id')
-        }
-        tbl, col, base_tbl, base_col = table_map[area]
-        
-        q = filters.get("q", "")
-        type_ = filters.get("type", "")
-        zq = filters.get("zq", "")
-        month = filters.get("month", "")
-        label_id = filters.get("label_id", "")
-        label_zapisy_id = filters.get("label_zapisy_id", "")
-        
-        adv_z3 = filters.get("adv_z3", "")
-        adv_z2 = filters.get("adv_z2", "")
-        adv_d1 = filters.get("adv_d1", "")
-        adv_min_kwota = filters.get("adv_min_kwota", "")
-        
-        if area == 'ZOiS':
-            where_sql, params = self.build_zois_where(q, type_, label_id)
-            join_sql = ""
-        else:
-            z_service = ZapisyService(str(self.current_db_path))
-            where_sql, params = z_service.build_zapisy_where(
-                q=q, type=type_, zq=zq, month=month, 
-                label_id=label_id, label_zapisy_id=label_zapisy_id, 
-                konto=adv_z3, opis=adv_z2, 
-                min_kwota=adv_min_kwota, dziennik_id=adv_d1
-            )
-            join_sql = "LEFT JOIN ZOiS s ON z.Z_3 = s.S_1"
-            base_tbl = "Zapisy z"
-
-        with self.transaction() as conn:
-            label_row = conn.execute("SELECT Id FROM Etykiety WHERE Nazwa = ? AND Obszar = ?", (label_name, area)).fetchone()
-            if not label_row: return 0
-            label_id = label_row[0]
-            
-            delete_query = f"""
-                DELETE FROM {tbl} WHERE EtykietaId = :label_id AND {col} IN (
-                    SELECT {base_col} FROM {base_tbl} {join_sql} {where_sql}
-                )
-            """
-            params['label_id'] = label_id
-            cursor = conn.execute(delete_query, params)
-            return cursor.rowcount
 
     def find_account_mapping(self, bz_target: float, bo_target: Optional[float], side: str, prefixes: str, timeout: int = 30) -> Optional[List[str]]:
         import time

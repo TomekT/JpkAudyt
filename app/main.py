@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 from app.core.config import config_manager, config_ai_manager
 from app.services.database import db_service
 from app.services.zapisy_service import ZapisyService
-from app.services.router import jpk_router, ai_router, label_router
+from app.services.router import jpk_router, ai_router, api_router
+from app.services.router_obszary import router as obszary_router
 from app.services.agent_chat import AgentChat
 
 # Define lifespan event handler to manage startup/shutdown
@@ -75,7 +76,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(ai_router)
-app.include_router(label_router)
+app.include_router(api_router)
+app.include_router(obszary_router)
+
 
 @app.middleware("http")
 async def add_privacy_headers(request: Request, call_next):
@@ -747,6 +750,14 @@ def render_zois_tree(nodes, depth=0, expand_all=False):
         else:
             nazwa_html = f'<div class="truncate">{nazwa_full}</div>'
             
+        mapuj_btn = f'<button class="btn btn-xs btn-ghost btn-square text-info shrink-0 ml-1" onclick="openMapModal(\'{konto_full}\'); event.preventDefault(); event.stopPropagation();" title="Mapuj na Obszar Badania"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg></button>'
+        
+        unmap_btn = ""
+        if node.get('Is_Direct'):
+            unmap_btn = f'<button class="btn btn-xs btn-ghost btn-square text-error shrink-0" hx-delete="/api/zois/unmap/{konto_full}" hx-target="closest .grid" hx-swap="outerHTML" onclick="event.stopPropagation();" title="Usuń mapowanie"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>'
+
+        nazwa_html = f'<div class="flex items-center w-full min-w-0">{nazwa_html}{mapuj_btn}{unmap_btn}</div>'
+            
         weight_class = ""
         if is_analytical or not has_children:
             weight_class = "font-normal text-base-content/80 text-[11px]"
@@ -755,8 +766,23 @@ def render_zois_tree(nodes, depth=0, expand_all=False):
 
         expander_svg = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>'
 
-        # Grid config: Konto (10rem), Nazwa (flex), Amounts (6x 7rem)
-        grid_class = f"grid grid-cols-[10rem_minmax(0,1fr)_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-1 border-b border-base-content/5 items-center hover:bg-base-200 w-full overflow-hidden {weight_class}"
+        # Grid config: Konto (10rem), Nazwa (flex), Obszar (5rem), Amounts (6x 7rem)
+        grid_class = f"grid grid-cols-[10rem_minmax(0,1fr)_5rem_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-1 border-b border-base-content/5 items-center hover:bg-base-200 w-full overflow-hidden {weight_class}"
+
+        obszar_id = node.get('Obszar_Id')
+        strona_salda = node.get('Strona_Salda')
+        is_direct = node.get('Is_Direct', 0)
+        obszar_html = ""
+        if obszar_id:
+            # Badge logic: direct = primary, inherited = outline with arrow
+            if is_direct:
+                badge_class = "badge-primary"
+                icon = ""
+            else:
+                badge_class = "badge-outline badge-primary opacity-70"
+                icon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>'
+            
+            obszar_html = f'<div class="badge {badge_class} badge-xs font-bold gap-1" title="Obszar ID: {obszar_id}, Saldo: {strona_salda} ({ "Bezpośrednio" if is_direct else "Dziedziczone" })">{icon}O:{obszar_id}</div>'
 
         if has_children:
             children_html = render_zois_tree(node['children'], depth + 1, expand_all)
@@ -772,6 +798,7 @@ def render_zois_tree(nodes, depth=0, expand_all=False):
                             <div class="z-10 flex-grow hover:underline min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{konto_html}</div>
                         </div>
                         <div onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();" class="hover:underline min-w-0">{nazwa_html}</div>
+                        <div>{obszar_html}</div>
                         <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(bo_wn)}</div>
                         <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(bo_ma)}</div>
                         <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(obroty_wn)}</div>
@@ -798,6 +825,7 @@ def render_zois_tree(nodes, depth=0, expand_all=False):
                     </div>
                 </div>
                 <div class="hover:underline min-w-0">{nazwa_html}</div>
+                <div>{obszar_html}</div>
                 <div class="text-right font-mono min-w-0">{sanitize_text(bo_wn)}</div>
                 <div class="text-right font-mono min-w-0">{sanitize_text(bo_ma)}</div>
                 <div class="text-right font-mono min-w-0">{sanitize_text(obroty_wn)}</div>
@@ -810,8 +838,8 @@ def render_zois_tree(nodes, depth=0, expand_all=False):
     return html
 
 @app.get("/zois", response_class=HTMLResponse)
-async def get_zois(request: Request, q: str = "", type: str = "", label_id: str = "", forced_ids: str = "", 
-                   synthetic: str = "true", expand: str = "false", empty: str = "true"):
+async def get_zois(request: Request, q: str = "", type: str = "", forced_ids: str = "", 
+                   synthetic: str = "true", expand: str = "false", empty: str = "true", obszar_id: str = ""):
     is_synthetic = synthetic.lower() == "true"
     is_expand = expand.lower() == "true"
     is_empty = empty.lower() == "true"
@@ -827,7 +855,6 @@ async def get_zois(request: Request, q: str = "", type: str = "", label_id: str 
         where_sql, params = db_service.build_zois_where(
             q=q if q else None,
             type=type if type else None,
-            label_id=label_id if label_id else None,
             forced_ids=forced_ids_list,
             synthetic=is_synthetic,
             empty=is_empty
@@ -835,11 +862,33 @@ async def get_zois(request: Request, q: str = "", type: str = "", label_id: str 
 
         try:
             sql = f"""
-                SELECT S_1, S_2, S_3, S_4, S_5, S_8, S_9, S_10, S_11, IsAnalytical, TypKonta
-                FROM ZOiS {where_sql} 
-                ORDER BY S_1
+                SELECT z.S_1, z.S_2, z.S_3, z.S_4, z.S_5, z.S_8, z.S_9, z.S_10, z.S_11, z.IsAnalytical, z.TypKonta,
+                       rm.Obszar_Id, rm.Strona_Salda, rm.Is_Direct
+                FROM (SELECT * FROM ZOiS {where_sql}) z
+                LEFT JOIN v_zois_resolved_mapping rm ON z.S_1 = rm.S_1
+                ORDER BY z.S_1
             """
             rows = conn.execute(sql, params).fetchall()
+            
+            row_dicts = [dict(r) for r in rows]
+            
+            if obszar_id:
+                try:
+                    target_obszar = int(obszar_id)
+                    matched_s1 = set(r['S_1'] for r in row_dicts if r['Obszar_Id'] == target_obszar)
+                    
+                    keep_s1 = set(matched_s1)
+                    parent_map = {r['S_1']: r['S_3'] for r in row_dicts}
+                    
+                    for s1 in matched_s1:
+                        curr = s1
+                        while curr in parent_map and parent_map[curr] and parent_map[curr] != curr:
+                            curr = parent_map[curr]
+                            keep_s1.add(curr)
+                            
+                    row_dicts = [r for r in row_dicts if r['S_1'] in keep_s1]
+                except ValueError:
+                    pass
             
             # Calculate totals and check types for the filtered set - only analytical accounts for sums
             totals_where = where_sql + (" AND " if where_sql else "WHERE ") + "IsAnalytical = 1"
@@ -867,7 +916,7 @@ async def get_zois(request: Request, q: str = "", type: str = "", label_id: str 
             return "<div>Brak danych w tabeli ZOiS.</div>"
             
         # Build and render the tree structure
-        tree_nodes = build_zois_tree(rows)
+        tree_nodes = build_zois_tree(row_dicts)
         html_rows = render_zois_tree(tree_nodes, expand_all=is_expand)
         
         if not html_rows:
@@ -895,9 +944,10 @@ async def get_zois(request: Request, q: str = "", type: str = "", label_id: str 
             <div class="overflow-x-auto flex-grow bg-base-100 pb-8">
                 <div class="w-full">
                     <!-- Tree Table Header -->
-                    <div class="grid grid-cols-[10rem_minmax(0,1fr)_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-2 border-b-2 border-base-content/20 text-[10px] font-bold text-base-content/60 uppercase tracking-wider bg-base-200 sticky top-0 z-10 shadow-sm w-full overflow-hidden" style="padding-left: 0.5rem;">
+                    <div class="grid grid-cols-[10rem_minmax(0,1fr)_5rem_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-2 border-b-2 border-base-content/20 text-[10px] font-bold text-base-content/60 uppercase tracking-wider bg-base-200 sticky top-0 z-10 shadow-sm w-full overflow-hidden" style="padding-left: 0.5rem;">
                         <div class="min-w-0">Konto</div>
                         <div class="min-w-0">Nazwa</div>
+                        <div class="min-w-0">Obszar</div>
                         <div class="text-right min-w-0">BO Wn</div>
                         <div class="text-right min-w-0">BO Ma</div>
                         <div class="text-right min-w-0">Obroty N Wn</div>
@@ -935,40 +985,7 @@ async def get_zois_filters():
         logger.error(f"Error getting ZOiS filters: {e}")
         return '<option value="">Wszystkie (Typ Konta)</option>'
 
-@app.get("/zois/labels", response_class=HTMLResponse)
-async def get_zois_labels():
-    options = '<option value="">Wszystkie (Etykieta)</option>'
-    options += '<option value="__NONE__">Brak</option>'
-    options += '<option value="__MULTIPLE__">Wiele</option>'
-    try:
-        conn = db_service.get_connection()
-        rows = conn.execute("SELECT Id, Nazwa FROM Etykiety WHERE Obszar = 'ZOiS'").fetchall()
-        
-        # Polish-aware sorting
-        sorted_rows = sorted(rows, key=lambda r: polish_sort_key(r['Nazwa']))
-        
-        for r in sorted_rows:
-            options += f'<option value="{r["Id"]}">{r["Nazwa"]}</option>'
-    except Exception as e:
-        logger.error(f"Error getting ZOiS labels: {e}")
-    return options
 
-@app.get("/api/labels/Zapisy", response_class=HTMLResponse)
-async def get_zapisy_labels():
-    try:
-        options = '<option value="">Wszystkie (Etykieta)</option>'
-        conn = db_service.get_connection()
-        rows = conn.execute("SELECT Id, Nazwa FROM Etykiety WHERE Obszar = 'Zapisy'").fetchall()
-        
-        # Polish-aware sorting
-        sorted_rows = sorted(rows, key=lambda r: polish_sort_key(r['Nazwa']))
-        
-        for r in sorted_rows:
-            options += f'<option value="{r["Id"]}">{r["Nazwa"]}</option>'
-        return options
-    except Exception as e:
-        logger.error(f"Error getting Zapisy labels: {e}")
-        return '<option value="">Wszystkie (Etykieta)</option>'
 
 @app.get("/dziennik", response_class=HTMLResponse)
 async def get_dziennik():
@@ -1023,7 +1040,7 @@ async def get_dziennik():
 @app.get("/data/table", response_class=HTMLResponse)
 @app.get("/data/zapisy", response_class=HTMLResponse)
 @app.get("/zapisy", response_class=HTMLResponse)
-async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = "", details: str = "", with_details: bool = False, page: int = 1, konto: str = "", opis: str = "", min_kwota: str = "", adv_sort: str = "", dziennik_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
+async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", details: str = "", with_details: bool = False, page: int = 1, konto: str = "", opis: str = "", min_kwota: str = "", adv_sort: str = "", dziennik_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
     pageSize = 1000
     offset = (page - 1) * pageSize
     try:
@@ -1042,7 +1059,6 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
         # Use the service to get full records and totals
         data = z_service.get_zapisy_pelne(
             q=q, type=type, zq=zq, month=month, 
-            label_id=label_id, label_zapisy_id=label_zapisy_id, 
             konto=final_konto, opis=final_opis, 
             min_kwota=final_min_kwota, dziennik_id=final_dziennik_id,
             limit=pageSize, offset=offset, adv_sort=adv_sort,
@@ -1823,12 +1839,12 @@ def calculate_mus(populacja_rows, interval, start_point):
     return wybrane_id
 
 @app.get("/api/mus/prepare", response_class=HTMLResponse)
-async def mus_prepare(q: str = "", type: str = "", zq: str = "", month: str = "", label_id: str = "", label_zapisy_id: str = ""):
+async def mus_prepare(q: str = "", type: str = "", zq: str = "", month: str = ""):
     try:
         conn = db_service.get_connection()
         db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
         z_service = ZapisyService(db_path)
-        where_sql, params = z_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
+        where_sql, params = z_service.build_zapisy_where(q, type, zq, month)
 
         sum_query = f"""
             SELECT SUM(z.Z_4) as sum_wn, SUM(z.Z_7) as sum_ma
@@ -1857,8 +1873,6 @@ async def mus_execute(
     type: str = Form(""), 
     zq: str = Form(""),
     month: str = Form(""),
-    label_id: str = Form(""),
-    label_zapisy_id: str = Form(""),
     istotnosc: float = Form(...),
     wspolczynnik: float = Form(...),
     punkt_startowy: float = Form(...)
@@ -1872,7 +1886,7 @@ async def mus_execute(
         conn = db_service.get_connection()
         db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
         z_service = ZapisyService(db_path)
-        where_sql, params = z_service.build_zapisy_where(q, type, zq, month, label_id, label_zapisy_id)
+        where_sql, params = z_service.build_zapisy_where(q, type, zq, month)
 
         # Pobieramy rzędy tylko do zbudowania próby MUS iterując
         pop_query = f"""

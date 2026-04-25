@@ -90,6 +90,7 @@ jpk_router = JPKRouter()
 # --- AI AGENT SECTION ---
 
 ai_router = APIRouter()
+api_router = APIRouter()
 
 class ChatRequest(BaseModel):
     message: str
@@ -133,112 +134,9 @@ async def chat_with_ai(request_data: ChatRequest, request: Request):
         logger.error(f"Błąd w /api/chat: {e}")
         # Nie rzucamy 500, aby frontend mógł wyświetlić czytelny komunikat o błędzie
         return {"response": f"Wystąpił błąd podczas przetwarzania pytania: {str(e)}"}
-# --- LABELING SECTION ---
 
-label_router = APIRouter()
 
-class BulkLabelRequest(BaseModel):
-    area: str
-    label: str
-    ids: Optional[List[Any]] = None
-    filters: Optional[Dict[str, Any]] = None
-
-@label_router.get("/api/labels/list")
-async def list_labels(area: str):
-    return {"labels": db_service.get_labels(area)}
-
-@label_router.get("/api/debug/db-status")
-async def db_status():
-    try:
-        conn = db_service.get_connection()
-        path = str(db_service.current_db_path.absolute()) if db_service.current_db_path else "None"
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [row[0] for row in cursor.fetchall()]
-        return {
-            "path": path,
-            "tables": tables,
-            "sqlite_version": sqlite3.sqlite_version
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-@label_router.post("/api/labels/assigned")
-async def list_assigned_labels(request_data: Dict[str, Any]):
-    area = request_data.get("area")
-    ids = request_data.get("ids")
-    filters = request_data.get("filters")
-    
-    if filters and not ids:
-        # Pobierz etykiety na podstawie filtrów
-        return {"labels": db_service.get_assigned_labels_by_filter(area, filters)}
-    
-    return {"labels": db_service.get_assigned_labels_for_ids(area, ids or [])}
-
-@label_router.post("/api/labels/bulk-add")
-async def bulk_add(request_data: BulkLabelRequest):
-    try:
-        if request_data.filters:
-            count = db_service.bulk_add_labels_by_filter(request_data.area, request_data.filters, request_data.label)
-        else:
-            db_service.bulk_add_labels(request_data.area, request_data.ids or [], request_data.label)
-            count = len(request_data.ids or [])
-        return {"status": "success", "message": f"Dodano etykietę '{request_data.label}' do {count} rekordów."}
-    except Exception as e:
-        logger.error(f"Bulk add error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@label_router.post("/api/labels/bulk-remove")
-async def bulk_remove(request_data: BulkLabelRequest):
-    try:
-        if request_data.filters:
-            count = db_service.bulk_remove_labels_by_filter(request_data.area, request_data.filters, request_data.label)
-        else:
-            db_service.bulk_remove_labels(request_data.area, request_data.ids or [], request_data.label)
-            count = len(request_data.ids or [])
-        return {"status": "success", "message": f"Usunięto etykietę '{request_data.label}' z {count} rekordów."}
-    except Exception as e:
-        logger.error(f"Bulk remove error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@label_router.get("/api/zois/filtered-ids")
-async def get_zois_filtered_ids(q: str = "", type: str = ""):
-    """Zwraca listę S_1 (numerów kont) pasujących do filtrów."""
-    try:
-        # Reusing the filter logic (this will be moved to db_service for better sharing)
-        where_sql, params = db_service.build_zois_where(q, type)
-        sql = f"SELECT S_1 FROM ZOiS {where_sql}"
-        conn = db_service.get_connection()
-        rows = conn.execute(sql, params).fetchall()
-        return {"ids": [row['S_1'] for row in rows]}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@label_router.get("/api/dziennik/filtered-ids")
-async def get_dziennik_filtered_ids(zq: str = "", month: str = "", q: str = "", type: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = ""):
-    """Zwraca listę ID dziennika pasujących do filtrów zapisów."""
-    try:
-        # Reusing the filter logic from the new ZapisyService
-        db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
-        zapisy_service = ZapisyService(db_path)
-        where_sql, params = zapisy_service.build_zapisy_where(q, type, zq, month, konto=konto, opis=opis, min_kwota=min_kwota, dziennik_id=dziennik_id)
-        sql = f"""
-            SELECT DISTINCT z.Dziennik_Id 
-            FROM Zapisy z 
-            LEFT JOIN ZOiS s ON z.Z_3 = s.S_1 
-            {where_sql}
-        """
-        conn = db_service.get_connection()
-        rows = conn.execute(sql, params).fetchall()
-        return {"ids": [row['Dziennik_Id'] for row in rows]}
-    except Exception as e:
-        logger.error(f"Error in get_dziennik_filtered_ids: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-from app.services.agent_group_zois import ZoisNamingAgent, AIConnectionError
-import json
-
-@label_router.post("/api/zois/group-ai")
+@api_router.post("/api/zois/group-ai")
 async def group_zois_accounts():
     """Tworzy grupy syntetyczne kont 3-znakowych, agreguje salda, i opcjonalnie nazywa z AI."""
     try:
@@ -250,14 +148,15 @@ async def group_zois_accounts():
         try:
             groups_data = db_service.get_unnamed_groups()
             if groups_data:
+                from app.services.agent_group_zois import ZoisNamingAgent, AIConnectionError
                 agent = ZoisNamingAgent()
                 new_names = agent.generate_names(groups_data)
                 db_service.update_group_names(new_names)
             return Response(status_code=204, headers={"HX-Trigger": "db-changed"})
             
         # C) Obsługa błędów AI
-        except AIConnectionError as e:
-            logger.warning(f"ZoisNamingAgent failed (AI fallback invoked): {e}")
+        except Exception as ai_e:
+            logger.warning(f"ZoisNamingAgent failed (AI fallback invoked): {ai_e}")
             headers = {
                 "HX-Trigger": json.dumps({
                     "db-changed": "", 
@@ -286,10 +185,9 @@ def format_amount(value):
     except:
         return str(value)
 
-@label_router.get("/zapisy/powiazania", response_class=HTMLResponse)
+@api_router.get("/zapisy/powiazania", response_class=HTMLResponse)
 async def get_zapisy_powiazania(
     q: str = "", type: str = "", zq: str = "", month: str = "", 
-    label_id: str = "", label_zapisy_id: str = "",
     konto: str = "", opis: str = "", dziennik_id: str = "", min_kwota: str = ""
 ):
     try:
@@ -301,7 +199,6 @@ async def get_zapisy_powiazania(
         # Przekazujemy wszystkie parametry do budowania warunku WHERE
         where_sql, params = z_service.build_zapisy_where(
             q=q, type=type, zq=zq, month=month,
-            label_id=label_id, label_zapisy_id=label_zapisy_id,
             konto=konto, 
             opis=opis, 
             dziennik_id=dziennik_id, 
@@ -375,10 +272,9 @@ async def get_zapisy_powiazania(
         logger.error(f"Error in zapisy/powiazania: {e}")
         return HTMLResponse(content=f"<div class='alert alert-error'>Błąd: {html.escape(str(e))}</div>")
 
-@label_router.get("/zapisy/wykres", response_class=HTMLResponse)
+@api_router.get("/zapisy/wykres", response_class=HTMLResponse)
 async def get_zapisy_wykres(
     q: str = "", type: str = "", zq: str = "", month: str = "", 
-    label_id: str = "", label_zapisy_id: str = "",
     konto: str = "", opis: str = "", dziennik_id: str = "", min_kwota: str = ""
 ):
     try:
@@ -389,7 +285,6 @@ async def get_zapisy_wykres(
         z_service = ZapisyService(db_path)
         where_sql, params = z_service.build_zapisy_where(
             q=q, type=type, zq=zq, month=month,
-            label_id=label_id, label_zapisy_id=label_zapisy_id,
             konto=konto, 
             opis=opis, 
             dziennik_id=dziennik_id, 

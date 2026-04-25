@@ -396,7 +396,7 @@
                         <span class="hidden lg:inline">Asystent AI</span>
                     </button>
                     <input id="tab-zois" type="radio" name="main_tabs" role="tab" class="tab" aria-label="ZOiS" checked
-                        onclick="triggerAiSave(); resetAllZoisFilters();" />
+                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
 
@@ -439,29 +439,7 @@
                                                         Kopiuj tabelę
                                                     </a>
                                                 </li>
-                                                <li class="dropdown-item">
-                                                    <a onclick="openLabelModal('ZOiS')" class="flex gap-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                                        </svg>
-                                                        Dodaj etykietę
-                                                    </a>
-                                                </li>
-                                                <li class="dropdown-item">
-                                                    <a onclick="openLabelModal('ZOiS', true)"
-                                                        class="flex gap-2 text-error">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                        Usuń etykietę
-                                                    </a>
-                                                </li>
+
                                             </ul>
                                         </div>
                                     </div>
@@ -589,18 +567,7 @@
                                                     <option value="">Wszystkie (Typ Konta)</option>
                                                 </select>
                                             </div>
-                                            <div class="form-control w-full mt-2">
-                                                <label class="label"><span
-                                                        class="label-text text-xs uppercase font-bold opacity-60">Etykieta</span></label>
-                                                <select id="filter-label-tag" name="label_id"
-                                                    class="select select-sm select-bordered w-full text-xs zois-filter"
-                                                    hx-get="/zois" hx-target="#zois-container" hx-include=".zois-filter"
-                                                    hx-trigger="change, db-changed from:body"
-                                                    hx-indicator="#zois-spinner"
-                                                    hx-on:change="htmx.trigger('body', 'filter-updated')">
-                                                    <option value="">Wszystkie (Etykieta)</option>
-                                                </select>
-                                            </div>
+
                                             <div class="card-actions flex flex-col items-stretch mt-4">
                                                 <button
                                                     class="btn btn-xs btn-ghost text-success hover:bg-success/10 w-full justify-start gap-2"
@@ -640,9 +607,7 @@
                                     <!-- Hidden HTMX dummy to populate the selects above -->
                                     <div hx-get="/zois/filters" hx-trigger="load, db-changed from:body"
                                         hx-target="#filter-account-type" class="hidden"></div>
-                                    <div hx-get="/zois/labels"
-                                        hx-trigger="load, db-changed from:body, label-changed from:body"
-                                        hx-target="#filter-label-tag" class="hidden"></div>
+
 
                                     <input id="global-zois-q" name="q"
                                         class="input input-bordered input-sm join-item zois-filter"
@@ -662,6 +627,15 @@
                             Ładowanie danych...
                         </div>
                     </div> <!-- end tabpanel for ZOiS -->
+
+                    <input id="tab-obszary" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Obszary"
+                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
+                    <div role="tabpanel"
+                        class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
+                        <div id="obszary-main-container" hx-get="/obszary" hx-trigger="load, db-changed from:body" hx-swap="innerHTML">
+                            <span class="loading loading-spinner loading-lg"></span> Ładowanie danych...
+                        </div>
+                    </div>
 
                     <input id="tab-zapisy" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Zapisy"
                         onclick="triggerAiSave(); htmx.trigger('body', 'filter-updated');" />
@@ -715,29 +689,7 @@
                                                         Kopiuj tabelę
                                                     </a>
                                                 </li>
-                                                <li class="dropdown-item">
-                                                    <a onclick="openLabelModal('Zapisy')" class="flex gap-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                                        </svg>
-                                                        Dodaj etykietę
-                                                    </a>
-                                                </li>
-                                                <li class="dropdown-item">
-                                                    <a onclick="openLabelModal('Zapisy', true)"
-                                                        class="flex gap-2 text-error">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                        Usuń etykietę
-                                                    </a>
-                                                </li>
+
                                             </ul>
                                         </div>
                                     </div>
@@ -872,22 +824,7 @@
                                                     <option value="12">Grudzień</option>
                                                 </select>
                                             </div>
-                                            <div class="form-control w-full mt-2">
-                                                <label class="label">
-                                                    <span
-                                                        class="label-text text-xs uppercase font-bold opacity-60">Etykieta
-                                                        (Zapisy)</span>
-                                                </label>
-                                                <select id="filter-zapisy-label" name="label_zapisy_id"
-                                                    class="select select-sm select-bordered w-full text-xs zapisy-filter"
-                                                    hx-trigger="change"
-                                                    hx-on:change="htmx.trigger('body', 'filter-updated')">
-                                                    <option value="">Wszystkie (Etykieta)</option>
-                                                </select>
-                                                <div hx-get="/api/labels/Zapisy"
-                                                    hx-trigger="load, db-changed from:body, label-changed from:body"
-                                                    hx-target="#filter-zapisy-label" class="hidden"></div>
-                                            </div>
+
                                             <div
                                                 class="card-actions flex flex-col items-stretch mt-4 border-t border-base-content/10 pt-4">
                                                 <button
@@ -935,7 +872,7 @@
                     </div> <!-- end tabpanel for Zapisy -->
 
                     <input id="tab-dziennik" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Dziennik"
-                        onclick="triggerAiSave()" />
+                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                         <!-- Dziennik View -->
@@ -960,7 +897,7 @@
                     </div>
 
                     <input id="tab-podmiot" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Podmiot"
-                        onclick="triggerAiSave()" />
+                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                         <!-- Podmiot View -->
@@ -976,7 +913,7 @@
 
                     <!-- Settings Tab (Ustawienia) -->
                     <input id="tab-settings" type="radio" name="main_tabs" role="tab" class="tab"
-                        aria-label="Ustawienia" onclick="triggerAiSave()" />
+                        aria-label="Ustawienia" onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                         <div class="flex h-full gap-6">
@@ -1180,6 +1117,41 @@
     <div hx-get="/api/jpk/check-consistency" hx-trigger="show-consistency from:body" hx-target="#modal-container"
         hx-swap="innerHTML"></div>
 
+    <!-- Map Obszar Modal -->
+    <dialog id="map_obszar_modal" class="modal">
+        <div class="modal-box w-full max-w-sm">
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+            </form>
+            <h3 class="font-bold text-lg mb-4">Mapuj Konto</h3>
+            <form hx-post="/api/zois/map-obszar" hx-target="#toast-container" hx-swap="beforeend" onsubmit="document.getElementById('map_obszar_modal').close()">
+                <input type="hidden" id="map_konto_id" name="konto_id" value="">
+                <div class="form-control w-full mb-2">
+                    <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Obszar</span></label>
+                    <select id="map_obszar_id" name="obszar_id" class="select select-bordered select-sm" required>
+                        <!-- To be populated via htmx -->
+                    </select>
+                </div>
+                <div class="form-control w-full mb-6">
+                    <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Strona Salda</span></label>
+                    <select name="strona_salda" class="select select-bordered select-sm" required>
+                        <option value="PERSALDO_WN_MA">Persaldo (Wn - Ma) - np. Aktywa, Koszty</option>
+                        <option value="PERSALDO_MA_WN">Persaldo (Ma - Wn) - np. Pasywa, Przychody</option>
+                        <option value="TYLKO_WN">Tylko saldo Wn (dodatnie)</option>
+                        <option value="TYLKO_MA">Tylko saldo Ma (dodatnie)</option>
+                    </select>
+                </div>
+                <div class="modal-action">
+                    <button type="button" class="btn btn-sm" onclick="document.getElementById('map_obszar_modal').close()">Anuluj</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Zapisz</button>
+                </div>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
     <!-- Dziennik Details Modal -->
     <dialog id="dziennik_modal" class="modal">
         <div class="modal-box w-11/12 max-w-4xl h-fit max-h-[95vh] relative">
@@ -1364,11 +1336,9 @@
         function resetZoisFilter() {
             const qInput = document.getElementById('global-zois-q');
             const typeSelect = document.getElementById('filter-account-type');
-            const labelSelect = document.getElementById('filter-label-tag');
 
             if (qInput) qInput.value = "";
             if (typeSelect) typeSelect.value = "";
-            if (labelSelect) labelSelect.value = "";
 
             // Trigger HTMX reload
             htmx.trigger('body', 'filter-updated');
@@ -1399,18 +1369,31 @@
             }
         }
 
+        function openMapModal(konto_id) {
+            const modal = document.getElementById('map_obszar_modal');
+            document.getElementById('map_konto_id').value = konto_id;
+            
+            htmx.ajax('GET', '/api/obszary/options', {
+                target: '#map_obszar_id',
+                swap: 'innerHTML'
+            });
+            
+            modal.showModal();
+        }
+
         function drillDown(konto) {
             const qInput = document.getElementById('global-zois-q');
             const typeSelect = document.getElementById('filter-account-type');
-            const labelSelect = document.getElementById('filter-label-tag');
             const tabZapisy = document.getElementById('tab-zapisy');
 
             if (qInput && tabZapisy) {
+                // Reset local Zapisy filters silently to prevent conflicts (like assoc:)
+                resetZapisyLocalFilters(false);
+
                 // Set the account number in search with specific prefix
                 qInput.value = "konto:" + konto;
                 // Reset other filters to ensure the account is visible
                 if (typeSelect) typeSelect.value = "";
-                if (labelSelect) labelSelect.value = "";
 
                 // Trigger HTMX reload for both tabs
                 htmx.trigger('body', 'filter-updated');
@@ -1713,10 +1696,7 @@
                 const el = document.getElementById('filter-account-type');
                 if (el) el.value = urlParams.get('type');
             }
-            if (urlParams.has('label_id')) {
-                const el = document.getElementById('filter-label-tag');
-                if (el) el.value = urlParams.get('label_id');
-            }
+
             if (urlParams.has('zq')) {
                 const el = document.getElementById('zapisy-local-q');
                 if (el) el.value = urlParams.get('zq');
@@ -1725,10 +1705,7 @@
                 const el = document.getElementById('filter-month');
                 if (el) el.value = urlParams.get('month');
             }
-            if (urlParams.has('label_zapisy_id')) {
-                const el = document.getElementById('filter-zapisy-label');
-                if (el) el.value = urlParams.get('label_zapisy_id');
-            }
+
         })();
 
         function applyAdvancedFilters() {
@@ -1737,17 +1714,17 @@
             // 1. Capture CURRENT UI state of major filters to prevent context loss
             const qVal = document.getElementById('global-zois-q')?.value;
             const typeVal = document.getElementById('filter-account-type')?.value;
-            const labelVal = document.getElementById('filter-label-tag')?.value;
+
             const localQVal = document.getElementById('zapisy-local-q')?.value;
             const monthVal = document.getElementById('filter-month')?.value;
-            const labelZapisyVal = document.getElementById('filter-zapisy-label')?.value;
+
 
             if (qVal) urlParams.set('q', qVal); else urlParams.delete('q');
             if (typeVal) urlParams.set('type', typeVal); else urlParams.delete('type');
-            if (labelVal) urlParams.set('label_id', labelVal); else urlParams.delete('label_id');
+
             if (localQVal) urlParams.set('zq', localQVal); else urlParams.delete('zq');
             if (monthVal) urlParams.set('month', monthVal); else urlParams.delete('month');
-            if (labelZapisyVal) urlParams.set('label_zapisy_id', labelZapisyVal); else urlParams.delete('label_zapisy_id');
+
 
             // 2. Capture ADVANCED filter modal state
             const z3 = document.getElementById('adv_z3')?.value || '';
@@ -1907,10 +1884,8 @@
             const q = document.getElementById('global-zois-q')?.value || "";
             const zq = document.getElementById('zapisy-local-q')?.value || "";
             const month = document.getElementById('filter-month')?.value || "";
-            const label_zapisy_id = document.getElementById('filter-zapisy-label')?.value || "";
-            const label_id = document.getElementById('filter-label-tag')?.value || "";
             try {
-                const res = await fetch(`/api/mus/prepare?type=${encodeURIComponent(type)}&q=${encodeURIComponent(q)}&zq=${encodeURIComponent(zq)}&month=${encodeURIComponent(month)}&label_id=${encodeURIComponent(label_id)}&label_zapisy_id=${encodeURIComponent(label_zapisy_id)}`);
+                const res = await fetch(`/api/mus/prepare?type=${encodeURIComponent(type)}&q=${encodeURIComponent(q)}&zq=${encodeURIComponent(zq)}&month=${encodeURIComponent(month)}`);
                 const data = await res.json();
 
                 if (data.error) {
@@ -1997,9 +1972,6 @@
             const q = document.getElementById('global-zois-q')?.value || "";
             const zq = document.getElementById('zapisy-local-q')?.value || "";
             const month = document.getElementById('filter-month')?.value || "";
-            const label_zapisy_id = document.getElementById('filter-zapisy-label')?.value || "";
-            const label_id = document.getElementById('filter-label-tag')?.value || "";
-
             const istotnosc = document.getElementById('mus-istotnosc').value;
             const wspolczynnik = document.getElementById('mus-ryzyko').value;
             const startNode = document.getElementById('mus-start').value;
@@ -2009,8 +1981,6 @@
             formData.append('q', q);
             formData.append('zq', zq);
             formData.append('month', month);
-            formData.append('label_id', label_id);
-            formData.append('label_zapisy_id', label_zapisy_id);
             formData.append('istotnosc', istotnosc);
             formData.append('wspolczynnik', wspolczynnik);
             formData.append('punkt_startowy', startNode);
@@ -2407,68 +2377,15 @@
             if (loader) loader.remove();
         }
     </script>
-    <!-- MODALE SYSTEMU ETYKIET (Globalne) -->
-    <dialog id="modal-label-add" class="modal">
-        <div class="modal-box max-w-sm">
-            <h3 class="font-bold text-lg mb-4">Dodaj etykietę</h3>
-            <p class="text-xs opacity-60 mb-4">Etykieta zostanie przypisana do wszystkich rekordów pasujących do
-                obecnych filtrów.</p>
 
-            <input type="hidden" name="area">
-            <div class="form-control gap-4">
-                <div>
-                    <label class="label"><span class="label-text">Wybierz istniejącą:</span></label>
-                    <select name="label_select" class="select select-bordered w-full select-sm">
-                        <option value="">-- brak --</option>
-                    </select>
-                </div>
-
-                <div class="divider text-[10px] opacity-40 uppercase">Lub</div>
-
-                <div>
-                    <label class="label"><span class="label-text">Nowa etykieta:</span></label>
-                    <input type="text" name="label_new" placeholder="Wpisz nazwę..."
-                        class="input input-bordered w-full input-sm">
-                </div>
-            </div>
-
-            <div class="modal-action">
-                <button class="btn btn-sm" onclick="document.getElementById('modal-label-add').close()">Anuluj</button>
-                <button class="btn btn-sm btn-primary" onclick="submitLabelAction(false)">Zastosuj</button>
-            </div>
-        </div>
-    </dialog>
-
-    <dialog id="modal-label-remove" class="modal">
-        <div class="modal-box max-w-sm">
-            <h3 class="font-bold text-lg mb-4 text-error">Usuń etykietę</h3>
-            <p class="text-xs opacity-60 mb-4">Wybrana etykieta zostanie usunięta z rekordów widocznych przy obecnym
-                filtrowaniu.</p>
-
-            <input type="hidden" name="area">
-            <div class="form-control">
-                <label class="label"><span class="label-text">Wybierz etykietę do usunięcia:</span></label>
-                <select name="label_select" class="select select-bordered w-full select-sm">
-                    <option value="">-- brak przypisanych --</option>
-                </select>
-            </div>
-
-            <div class="modal-action">
-                <button class="btn btn-sm"
-                    onclick="document.getElementById('modal-label-remove').close()">Anuluj</button>
-                <button class="btn btn-sm btn-error" onclick="submitLabelAction(true)">Usuń z wybranych</button>
-            </div>
-        </div>
-    </dialog>
 
     <script>
         function updateFilterState(tabName) {
             if (tabName === 'ZOiS') {
                 const q = document.getElementById('global-zois-q')?.value || '';
                 const type = document.getElementById('filter-account-type')?.value || '';
-                const label = document.getElementById('filter-label-tag')?.value || '';
                 const badge = document.getElementById('zois-filters-badge');
-                if (q !== '' || type !== '' || label !== '') {
+                if (q !== '' || type !== '') {
                     badge?.classList.remove('hidden');
                 } else {
                     badge?.classList.add('hidden');
@@ -2476,9 +2393,8 @@
             } else if (tabName === 'Zapisy') {
                 const zq = document.getElementById('zapisy-local-q')?.value || '';
                 const month = document.getElementById('filter-month')?.value || '';
-                const label = document.getElementById('filter-zapisy-label')?.value || '';
                 const badge = document.getElementById('zapisy-filters-badge');
-                if (zq !== '' || month !== '' || label !== '') {
+                if (zq !== '' || month !== '') {
                     badge?.classList.remove('hidden');
                 } else {
                     badge?.classList.add('hidden');
@@ -2486,46 +2402,32 @@
             }
         }
 
-        function getLabelFilters(area) {
-            const q = document.getElementById('global-zois-q')?.value || '';
-            const type = document.getElementById('filter-account-type')?.value || '';
-            const label_id = document.getElementById('filter-label-tag')?.value || '';
-            if (area === 'ZOiS') {
-                return { q, type, label_id };
-            } else {
-                // Zapisy / Dziennik
-                const zq = document.getElementById('zapisy-local-q')?.value || '';
-                const month = document.getElementById('filter-month')?.value || '';
-                const label_zapisy_id = document.getElementById('filter-zapisy-label')?.value || '';
-                return { q, type, zq, month, label_id, label_zapisy_id };
-            }
-        }
 
-        function resetAllZoisFilters() {
+
+        function resetAllZoisFilters(trigger = true) {
             const q = document.getElementById('global-zois-q');
             const type = document.getElementById('filter-account-type');
-            const label = document.getElementById('filter-label-tag');
             const forced = document.getElementById('zois-forced-ids');
 
             if (q) q.value = '';
             if (type) type.value = '';
-            if (label) label.value = '';
             if (forced) forced.value = '';
 
             updateFilterState('ZOiS');
 
-            // Trigger HTMX to reload the container with empty filters
-            htmx.ajax('GET', '/zois', {
-                target: '#zois-container',
-                values: { q: '', type: '', label_id: '', forced_ids: '' }
-            });
-            htmx.trigger('body', 'filter-updated');
+            if (trigger) {
+                // Trigger HTMX to reload the container with empty filters
+                htmx.ajax('GET', '/zois', {
+                    target: '#zois-container',
+                    values: { q: '', type: '', forced_ids: '' }
+                });
+                htmx.trigger('body', 'filter-updated');
+            }
         }
 
-        function resetZapisyLocalFilters() {
+        function resetZapisyLocalFilters(trigger = true) {
             const q = document.getElementById('zapisy-local-q');
             const month = document.getElementById('filter-month');
-            const label = document.getElementById('filter-zapisy-label');
             const adv_z3 = document.getElementById('adv_z3');
             const adv_z2 = document.getElementById('adv_z2');
             const adv_d1 = document.getElementById('adv_d1');
@@ -2533,110 +2435,18 @@
 
             if (q) q.value = '';
             if (month) month.value = '';
-            if (label) label.value = '';
             if (adv_z3) adv_z3.value = '';
             if (adv_z2) adv_z2.value = '';
             if (adv_d1) adv_d1.value = '';
             if (adv_min_kwota) adv_min_kwota.value = '';
 
             updateFilterState('Zapisy');
-            htmx.trigger('body', 'filter-updated');
-        }
-
-        async function openLabelModal(area, isRemoval = false) {
-            const modalId = isRemoval ? 'modal-label-remove' : 'modal-label-add';
-            const modal = document.getElementById(modalId);
-            if (!modal) return;
-
-            const areaInput = modal.querySelector('input[name="area"]');
-            areaInput.value = area;
-
-            const filters = getLabelFilters(area);
-            modal.dataset.filters = JSON.stringify(filters);
-
-            const dropdown = modal.querySelector('select[name="label_select"]');
-            dropdown.innerHTML = '<option value="">-- wybierz etykietę --</option>';
-
-            try {
-                let labels = [];
-                if (isRemoval) {
-                    const resp = await fetch(`/api/labels/assigned`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ area, filters })
-                    });
-                    const data = await resp.json();
-                    labels = data.labels || [];
-                } else {
-                    const resp = await fetch(`/api/labels/list?area=${area}`);
-                    const data = await resp.json();
-                    labels = data.labels || [];
-                }
-
-                labels.forEach(l => {
-                    const opt = document.createElement('option');
-                    opt.value = l;
-                    opt.textContent = l;
-                    dropdown.appendChild(opt);
-                });
-            } catch (e) {
-                console.error("Błąd listowania etykiet", e);
-            }
-
-            if (typeof modal.showModal === 'function') {
-                modal.showModal();
-            } else {
-                modal.setAttribute('open', '');
+            if (trigger) {
+                htmx.trigger('body', 'filter-updated');
             }
         }
 
-        async function submitLabelAction(isRemoval) {
-            const modalId = isRemoval ? 'modal-label-remove' : 'modal-label-add';
-            const modal = document.getElementById(modalId);
-            const area = modal.querySelector('input[name="area"]').value;
-            const filters = JSON.parse(modal.dataset.filters || '{}');
 
-            let label = modal.querySelector('select[name="label_select"]').value;
-            if (!isRemoval) {
-                const custom = modal.querySelector('input[name="label_new"]').value.trim();
-                if (custom) label = custom;
-            }
-
-            if (!label) {
-                alert("Wybierz lub wpisz nazwę etykiety.");
-                return;
-            }
-
-            const endpoint = isRemoval ? '/api/labels/bulk-remove' : '/api/labels/bulk-add';
-            try {
-                const resp = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ area, label, filters })
-                });
-                const result = await resp.json();
-
-                if (result.status === 'success') {
-                    if (window.showNotification) showNotification(result.message, "success");
-                    else alert(result.message);
-
-                    modal.close();
-                    if (!isRemoval) {
-                        const inputNew = modal.querySelector('input[name="label_new"]');
-                        if (inputNew) inputNew.value = '';
-                    }
-                    htmx.trigger('body', 'db-changed');
-                    htmx.trigger('body', 'label-changed');
-                } else {
-                    const err = result.detail || "Nieznany błąd";
-                    if (window.showNotification) showNotification("Błąd: " + err, "error");
-                    else alert("Błąd: " + err);
-                }
-            } catch (e) {
-                console.error(e);
-                alert("Błąd komunikacji z serwerem");
-            }
-        }
 
         // Account Mapping Handler
         function formatCurrencyInput(input, blur = false) {
@@ -2731,16 +2541,14 @@
 
                     // Clear categorical filters to focus on the mapped account(s)
                     const typeInput = document.getElementById('filter-account-type');
-                    const labelInput = document.getElementById('filter-label-tag');
                     if (typeInput) typeInput.value = '';
-                    if (labelInput) labelInput.value = '';
 
                     updateFilterState('ZOiS');
 
                     // Reload ZOiS with the new query
                     await htmx.ajax('GET', '/zois', {
                         target: '#zois-container',
-                        values: { q: '', type: '', label_id: '', forced_ids: data.forced_ids.join(',') }
+                        values: { q: '', type: '', forced_ids: data.forced_ids.join(',') }
                     });
 
                     htmx.trigger('body', 'filter-updated');
@@ -2761,7 +2569,7 @@
 
         // Initialize Filter Indicators and Listeners
         document.addEventListener('DOMContentLoaded', () => {
-            const zoisInputs = ['global-zois-q', 'filter-account-type', 'filter-label-tag'];
+            const zoisInputs = ['global-zois-q', 'filter-account-type'];
             zoisInputs.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -2770,7 +2578,7 @@
                 }
             });
 
-            const zapisyInputs = ['zapisy-local-q', 'filter-month', 'filter-zapisy-label'];
+            const zapisyInputs = ['zapisy-local-q', 'filter-month'];
             zapisyInputs.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -2789,7 +2597,6 @@
             const shouldBeInZapisy = urlParams.has('adv_z3') || urlParams.has('adv_z2') ||
                 urlParams.has('adv_d1') || urlParams.has('adv_min_kwota') ||
                 urlParams.has('zq') || urlParams.has('month') ||
-                urlParams.has('label_zapisy_id') ||
                 qParam.includes('konto:') || qParam.includes('assoc:');
 
             if (shouldBeInZapisy) {
@@ -3007,6 +2814,8 @@
             <p class="text-xs opacity-60 mt-2">To może zająć kilka sekund, proszę czekać.</p>
         </div>
     </div>
+    
+    <div id="toast-container"></div>
 </body>
 
 </html>
