@@ -14,12 +14,21 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 async def get_obszary(request: Request):
     try:
         conn = db_service.get_connection()
-        rows = conn.execute("SELECT * FROM v_obszary_rekoncyliacja ORDER BY Id").fetchall()
+        rows = conn.execute("SELECT * FROM v_obszary_rekoncyliacja ORDER BY Typ, Id").fetchall()
         obszary_list = [dict(r) for r in rows]
         
+        # Grouping for dropdowns
+        grouped_obszary = {}
+        for o in obszary_list:
+            t = o.get('Typ') or 'Inne'
+            if t not in grouped_obszary:
+                grouped_obszary[t] = []
+            grouped_obszary[t].append(o)
+
         return templates.TemplateResponse("obszary_tab.html", {
             "request": request,
-            "obszary": obszary_list
+            "obszary": obszary_list,
+            "grouped_obszary": grouped_obszary
         })
     except Exception as e:
         return f"<div class='alert alert-error'>Błąd: {e}</div>"
@@ -108,17 +117,29 @@ async def get_zois_map_modal(konto_id: str):
             """, (konto_id,)).fetchone()
 
         # Get all areas for dropdown
-        obszary = conn.execute("SELECT Id, Nazwa FROM Obszary ORDER BY Nazwa").fetchall()
+        rows = conn.execute("SELECT Id, Nazwa, Typ FROM Obszary ORDER BY Typ, Id").fetchall()
+        obszary = [dict(r) for r in rows]
         
+        # Grouping
+        grouped = {}
+        for o in obszary:
+            t = o.get('Typ') or 'Inne'
+            if t not in grouped:
+                grouped[t] = []
+            grouped[t].append(o)
+
         # Pre-selected values
         current_obszar_id = mapping['Obszar_Id'] if mapping else (inherited['Obszar_Id'] if inherited else None)
         current_strona = mapping['Strona_Salda'] if mapping else (inherited['Strona_Salda'] if inherited else "PERSALDO_WN_MA")
         
-        # Build options
+        # Build options with optgroup
         obszary_options = ""
-        for o in obszary:
-            selected = 'selected' if current_obszar_id == o['Id'] else ''
-            obszary_options += f'<option value="{o["Id"]}" {selected}>{html.escape(o["Nazwa"])}</option>'
+        for typ, lista in grouped.items():
+            obszary_options += f'<optgroup label="{html.escape(typ)}">'
+            for o in lista:
+                selected = 'selected' if current_obszar_id == o['Id'] else ''
+                obszary_options += f'<option value="{o["Id"]}" {selected}>{html.escape(o["Nazwa"])}</option>'
+            obszary_options += '</optgroup>'
             
         # Build side options
         side_options = ""
@@ -194,10 +215,22 @@ async def get_zois_map_modal(konto_id: str):
 async def get_obszary_options():
     try:
         conn = db_service.get_connection()
-        rows = conn.execute("SELECT Id, Nazwa FROM Obszary ORDER BY Nazwa").fetchall()
+        rows = conn.execute("SELECT Id, Nazwa, Typ FROM Obszary ORDER BY Typ, Id").fetchall()
+        obszary = [dict(r) for r in rows]
+        
+        grouped = {}
+        for o in obszary:
+            t = o.get('Typ') or 'Inne'
+            if t not in grouped:
+                grouped[t] = []
+            grouped[t].append(o)
+
         html_options = '<option value="" disabled selected>Wybierz obszar...</option>'
-        for row in rows:
-            html_options += f'<option value="{row["Id"]}">{html.escape(row["Nazwa"])}</option>'
+        for typ, lista in grouped.items():
+            html_options += f'<optgroup label="{html.escape(typ)}">'
+            for o in lista:
+                html_options += f'<option value="{o["Id"]}">{html.escape(o["Nazwa"])}</option>'
+            html_options += '</optgroup>'
         return html_options
     except Exception as e:
         return f'<option value="" disabled>Błąd ładowania</option>'

@@ -395,11 +395,15 @@ async def dashboard(request: Request):
         "api_key": dummy_agent.config.get("api_key", "")
     }
     
-    obszary = []
+    grouped_obszary = {}
     try:
         conn = db_service.get_connection()
-        rows = conn.execute("SELECT Id, Nazwa FROM Obszary ORDER BY Nazwa").fetchall()
-        obszary = [dict(row) for row in rows]
+        rows = conn.execute("SELECT Id, Nazwa, Typ FROM Obszary ORDER BY Typ, Id").fetchall()
+        for row in rows:
+            typ = row['Typ'] or "Inne"
+            if typ not in grouped_obszary:
+                grouped_obszary[typ] = []
+            grouped_obszary[typ].append(dict(row))
     except Exception:
         pass
         
@@ -408,7 +412,7 @@ async def dashboard(request: Request):
         "params": params, 
         "config": config,
         "ai_assistant": ai_assistant,
-        "obszary": obszary
+        "grouped_obszary": grouped_obszary
     })
 
 @app.get("/api/settings/ai-assistant")

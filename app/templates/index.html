@@ -578,8 +578,18 @@
                                                     hx-indicator="#zois-spinner"
                                                     hx-on:change="htmx.trigger('body', 'filter-updated')">
                                                     <option value="">Wszystkie obszary</option>
-                                                    {% for obszar in obszary %}
-                                                    <option value="{{ obszar.Id }}">{{ obszar.Nazwa }}</option>
+                                                    {% for typ, obszary_lista in grouped_obszary.items() %}
+
+                                                        <optgroup label="{{ typ }}">
+
+                                                            {% for obszar in obszary_lista %}
+
+                                                                <option value="{{ obszar.Id }}">{{ obszar.Nazwa }}</option>
+
+                                                            {% endfor %}
+
+                                                        </optgroup>
+
                                                     {% endfor %}
                                                 </select>
                                             </div>
@@ -849,8 +859,18 @@
                                                     hx-trigger="change"
                                                     hx-on:change="htmx.trigger('body', 'filter-updated')">
                                                     <option value="">Wszystkie obszary</option>
-                                                    {% for obszar in obszary %}
-                                                    <option value="{{ obszar.Id }}">{{ obszar.Nazwa }}</option>
+                                                    {% for typ, obszary_lista in grouped_obszary.items() %}
+
+                                                        <optgroup label="{{ typ }}">
+
+                                                            {% for obszar in obszary_lista %}
+
+                                                                <option value="{{ obszar.Id }}">{{ obszar.Nazwa }}</option>
+
+                                                            {% endfor %}
+
+                                                        </optgroup>
+
                                                     {% endfor %}
                                                 </select>
                                             </div>
