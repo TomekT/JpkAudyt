@@ -68,7 +68,7 @@
                     </td>
                     <td class="text-center" onclick="event.stopPropagation();">
                         <button class="btn btn-outline btn-info btn-xs"
-                            onclick="document.getElementById('tab-zois').click(); htmx.ajax('GET', '/zois?obszar_id={{obszar.Id}}', '#zois-container');">
+                            onclick="document.getElementById('tab-zois').click(); const sel = document.getElementById('filter-obszar'); sel.value='{{obszar.Id}}'; sel.dispatchEvent(new Event('change'));">
                             Analizuj ZOiS
                         </button>
                     </td>

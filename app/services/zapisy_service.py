@@ -23,7 +23,7 @@ class ZapisyService:
         parts = re.split(r'\s+LUB\s+|[,|]', q, flags=re.IGNORECASE)
         return [p.strip() for p in parts if p.strip()]
 
-    def build_zapisy_where(self, q: str = "", type: str = "", zq: str = "", month: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = ""):
+    def build_zapisy_where(self, q: str = "", type: str = "", zq: str = "", month: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = "", obszar_id: str = ""):
         where_clauses = []
         params = {}
         if q:
@@ -101,15 +101,23 @@ class ZapisyService:
             except ValueError:
                 pass
                 
+        if obszar_id:
+            try:
+                target_obszar = int(obszar_id)
+                where_clauses.append("z.Z_3 IN (SELECT S_1 FROM v_zois_resolved_mapping WHERE Obszar_Id = :oid)")
+                params["oid"] = target_obszar
+            except ValueError:
+                pass
+                
         where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         return where_sql, params
 
-    def get_zapisy_pelne(self, q: str = "", type: str = "", zq: str = "", month: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = "", limit: int = 1000, offset: int = 0, adv_sort: str = "", with_details: bool = False):
+    def get_zapisy_pelne(self, q: str = "", type: str = "", zq: str = "", month: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = "", limit: int = 1000, offset: int = 0, adv_sort: str = "", with_details: bool = False, obszar_id: str = ""):
         """
         Retrieves accounting entries from the v_zapisy_pelne view applying all filters.
         Returns a dict: {'rows': list, 'sum_wn': float, 'sum_ma': float}
         """
-        where_sql, params = self.build_zapisy_where(q, type, zq, month, konto, opis, min_kwota, dziennik_id)
+        where_sql, params = self.build_zapisy_where(q, type, zq, month, konto, opis, min_kwota, dziennik_id, obszar_id)
         
         # Order by logic
         order_by = "ORDER BY z.Z_Data ASC, z.id_zapisu ASC"

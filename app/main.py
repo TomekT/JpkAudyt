@@ -395,11 +395,20 @@ async def dashboard(request: Request):
         "api_key": dummy_agent.config.get("api_key", "")
     }
     
+    obszary = []
+    try:
+        conn = db_service.get_connection()
+        rows = conn.execute("SELECT Id, Nazwa FROM Obszary ORDER BY Nazwa").fetchall()
+        obszary = [dict(row) for row in rows]
+    except Exception:
+        pass
+        
     return templates.TemplateResponse("index.html", {
         "request": request, 
         "params": params, 
         "config": config,
-        "ai_assistant": ai_assistant
+        "ai_assistant": ai_assistant,
+        "obszary": obszary
     })
 
 @app.get("/api/settings/ai-assistant")
@@ -750,13 +759,36 @@ def render_zois_tree(nodes, depth=0, expand_all=False):
         else:
             nazwa_html = f'<div class="truncate">{nazwa_full}</div>'
             
-        mapuj_btn = f'<button class="btn btn-xs btn-ghost btn-square text-info shrink-0 ml-1" onclick="openMapModal(\'{konto_full}\'); event.preventDefault(); event.stopPropagation();" title="Mapuj na Obszar Badania"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg></button>'
+        # Minimalist mapping icon logic
+        obszar_id = node.get('Obszar_Id')
+        is_direct = node.get('Is_Direct', 0)
         
-        unmap_btn = ""
-        if node.get('Is_Direct'):
-            unmap_btn = f'<button class="btn btn-xs btn-ghost btn-square text-error shrink-0" hx-delete="/api/zois/unmap/{konto_full}" hx-target="closest .grid" hx-swap="outerHTML" onclick="event.stopPropagation();" title="Usuń mapowanie"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>'
+        if is_direct:
+            icon_class = "text-success"
+            icon_title = f"Mapowanie bezpośrednie (ID: {obszar_id})"
+        elif obszar_id:
+            icon_class = "text-info opacity-40"
+            icon_title = "Dziedziczy mapowanie z konta nadrzędnego"
+        else:
+            icon_class = "opacity-20"
+            icon_title = "Brak mapowania - kliknij, aby przypisać"
+        
+        obszar_html = f"""
+        <div class="flex justify-center">
+            <button class="btn btn-ghost btn-xs btn-square {icon_class}" 
+                    hx-get="/api/zois/get-map-modal?konto_id={konto_full}" 
+                    hx-target="#map_obszar_modal" 
+                    hx-swap="innerHTML"
+                    onclick="document.getElementById('map_obszar_modal').showModal(); event.preventDefault(); event.stopPropagation();" 
+                    title="{icon_title}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+            </button>
+        </div>
+        """
 
-        nazwa_html = f'<div class="flex items-center w-full min-w-0">{nazwa_html}{mapuj_btn}{unmap_btn}</div>'
+        nazwa_html = f'<div class="flex items-center w-full min-w-0">{nazwa_html}</div>'
             
         weight_class = ""
         if is_analytical or not has_children:
@@ -766,23 +798,9 @@ def render_zois_tree(nodes, depth=0, expand_all=False):
 
         expander_svg = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>'
 
-        # Grid config: Konto (10rem), Nazwa (flex), Obszar (5rem), Amounts (6x 7rem)
-        grid_class = f"grid grid-cols-[10rem_minmax(0,1fr)_5rem_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-1 border-b border-base-content/5 items-center hover:bg-base-200 w-full overflow-hidden {weight_class}"
+        # Grid config: Konto (10rem), Nazwa (flex), Obszar (3rem), Amounts (6x 7rem)
+        grid_class = f"grid grid-cols-[10rem_minmax(0,1fr)_3rem_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-1 border-b border-base-content/5 items-center hover:bg-base-200 w-full overflow-hidden {weight_class}"
 
-        obszar_id = node.get('Obszar_Id')
-        strona_salda = node.get('Strona_Salda')
-        is_direct = node.get('Is_Direct', 0)
-        obszar_html = ""
-        if obszar_id:
-            # Badge logic: direct = primary, inherited = outline with arrow
-            if is_direct:
-                badge_class = "badge-primary"
-                icon = ""
-            else:
-                badge_class = "badge-outline badge-primary opacity-70"
-                icon = '<svg xmlns="http://www.w3.org/2000/svg" class="h-2 w-2 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>'
-            
-            obszar_html = f'<div class="badge {badge_class} badge-xs font-bold gap-1" title="Obszar ID: {obszar_id}, Saldo: {strona_salda} ({ "Bezpośrednio" if is_direct else "Dziedziczone" })">{icon}O:{obszar_id}</div>'
 
         if has_children:
             children_html = render_zois_tree(node['children'], depth + 1, expand_all)
@@ -797,7 +815,7 @@ def render_zois_tree(nodes, depth=0, expand_all=False):
                             <span class="z-10 group-open:rotate-90 transition-transform duration-200 inline-block cursor-pointer p-0.5 hover:bg-base-300 rounded" onclick="this.closest('details').open = !this.closest('details').open; event.preventDefault(); event.stopPropagation();">{expander_svg}</span>
                             <div class="z-10 flex-grow hover:underline min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{konto_html}</div>
                         </div>
-                        <div onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();" class="hover:underline min-w-0">{nazwa_html}</div>
+                        <div class="hover:underline min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{nazwa_html}</div>
                         <div>{obszar_html}</div>
                         <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(bo_wn)}</div>
                         <div class="text-right font-mono min-w-0" onclick="drillDown('{konto_full}'); event.preventDefault(); event.stopPropagation();">{sanitize_text(bo_ma)}</div>
@@ -891,16 +909,45 @@ async def get_zois(request: Request, q: str = "", type: str = "", forced_ids: st
                     pass
             
             # Calculate totals and check types for the filtered set - only analytical accounts for sums
-            totals_where = where_sql + (" AND " if where_sql else "WHERE ") + "IsAnalytical = 1"
-            totals_sql = f"""
-                SELECT 
-                    SUM(S_10) as sum_wn, 
-                    SUM(S_11) as sum_ma,
-                    COUNT(*) as total_count,
-                    SUM(CASE WHEN TypKonta LIKE 'PASYWA%' OR TypKonta LIKE 'WYNIKOWE%' THEN 1 ELSE 0 END) as special_count
-                FROM ZOiS {totals_where}
-            """
-            totals = conn.execute(totals_sql, params).fetchone()
+            if obszar_id:
+                try:
+                    target_obszar = int(obszar_id)
+                    totals_sql = f"""
+                        SELECT 
+                            SUM(z.S_10) as sum_wn, 
+                            SUM(z.S_11) as sum_ma,
+                            COUNT(z.S_1) as total_count,
+                            SUM(CASE WHEN z.TypKonta LIKE 'PASYWA%' OR z.TypKonta LIKE 'WYNIKOWE%' THEN 1 ELSE 0 END) as special_count
+                        FROM (SELECT * FROM ZOiS {where_sql}) z
+                        JOIN v_zois_resolved_mapping rm ON z.S_1 = rm.S_1
+                        WHERE rm.Obszar_Id = :oid AND z.IsAnalytical = 1
+                    """
+                    totals_params = params.copy()
+                    totals_params["oid"] = target_obszar
+                except ValueError:
+                    totals_where = where_sql + (" AND " if where_sql else "WHERE ") + "IsAnalytical = 1"
+                    totals_sql = f"""
+                        SELECT 
+                            SUM(S_10) as sum_wn, 
+                            SUM(S_11) as sum_ma,
+                            COUNT(*) as total_count,
+                            SUM(CASE WHEN TypKonta LIKE 'PASYWA%' OR TypKonta LIKE 'WYNIKOWE%' THEN 1 ELSE 0 END) as special_count
+                        FROM ZOiS {totals_where}
+                    """
+                    totals_params = params
+            else:
+                totals_where = where_sql + (" AND " if where_sql else "WHERE ") + "IsAnalytical = 1"
+                totals_sql = f"""
+                    SELECT 
+                        SUM(S_10) as sum_wn, 
+                        SUM(S_11) as sum_ma,
+                        COUNT(*) as total_count,
+                        SUM(CASE WHEN TypKonta LIKE 'PASYWA%' OR TypKonta LIKE 'WYNIKOWE%' THEN 1 ELSE 0 END) as special_count
+                    FROM ZOiS {totals_where}
+                """
+                totals_params = params
+                
+            totals = conn.execute(totals_sql, totals_params).fetchone()
             sum_wn = totals['sum_wn'] or 0
             sum_ma = totals['sum_ma'] or 0
             total_count = totals['total_count'] or 0
@@ -922,21 +969,43 @@ async def get_zois(request: Request, q: str = "", type: str = "", forced_ids: st
         if not html_rows:
             html_rows = "<div class='text-center p-4 border-b border-base-content/10'>Brak danych</div>"
             
+        transition_btn = ""
+        if obszar_id:
+            # Pobieramy nazwę obszaru dla czytelniejszego przycisku
+            obszar_name = "tego obszaru"
+            try:
+                res = conn.execute("SELECT Nazwa FROM Obszary WHERE Id = ?", (obszar_id,)).fetchone()
+                if res:
+                    obszar_name = res['Nazwa']
+            except:
+                pass
+
+            transition_btn = f"""
+            <button class="btn btn-primary btn-sm gap-2 shadow-sm"
+                    onclick="document.getElementById('tab-zapisy').click(); const sel = document.getElementById('filter-obszar-zapisy'); sel.value='{obszar_id}'; sel.dispatchEvent(new Event('change'));">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                Pokaż zapisy dla obszaru {html.escape(obszar_name)}
+            </button>
+            """
+            
         return f"""
         <div class="flex flex-col h-full overflow-hidden">
             <!-- Summation Panel (Top) -->
-            <div class="mb-4 p-3 bg-base-200 rounded-xl border border-base-content/5 flex justify-end items-center gap-8 px-6 shadow-inner">
-                <div class="flex flex-col items-end">
-                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Wn</span>
-                    <span class="text-lg font-black text-secondary font-mono">{format_amount(sum_wn)}</span>
-                </div>
-                <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
-                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Ma</span>
-                    <span class="text-lg font-black text-secondary font-mono">{format_amount(sum_ma)}</span>
-                </div>
-                <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
-                    <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">{persaldo_label}</span>
-                    <span class="text-lg font-black text-primary font-mono">{format_amount(persaldo)}</span>
+            <div class="mb-4 p-3 bg-base-200 rounded-xl border border-base-content/5 flex justify-between items-center gap-8 px-6 shadow-inner">
+                <div>{transition_btn}</div>
+                <div class="flex gap-8">
+                    <div class="flex flex-col items-end">
+                        <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Wn</span>
+                        <span class="text-lg font-black text-secondary font-mono">{format_amount(sum_wn)}</span>
+                    </div>
+                    <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
+                        <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">Suma Saldo Ma</span>
+                        <span class="text-lg font-black text-secondary font-mono">{format_amount(sum_ma)}</span>
+                    </div>
+                    <div class="flex flex-col items-end border-l border-base-content/10 pl-8">
+                        <span class="text-[9px] font-bold opacity-50 uppercase leading-none mb-1">{persaldo_label}</span>
+                        <span class="text-lg font-black text-primary font-mono">{format_amount(persaldo)}</span>
+                    </div>
                 </div>
             </div>
 
@@ -944,10 +1013,10 @@ async def get_zois(request: Request, q: str = "", type: str = "", forced_ids: st
             <div class="overflow-x-auto flex-grow bg-base-100 pb-8">
                 <div class="w-full">
                     <!-- Tree Table Header -->
-                    <div class="grid grid-cols-[10rem_minmax(0,1fr)_5rem_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-2 border-b-2 border-base-content/20 text-[10px] font-bold text-base-content/60 uppercase tracking-wider bg-base-200 sticky top-0 z-10 shadow-sm w-full overflow-hidden" style="padding-left: 0.5rem;">
+                    <div class="grid grid-cols-[10rem_minmax(0,1fr)_3rem_7rem_7rem_7rem_7rem_7rem_7rem] gap-4 p-2 border-b-2 border-base-content/20 text-[10px] font-bold text-base-content/60 uppercase tracking-wider bg-base-200 sticky top-0 z-10 shadow-sm w-full overflow-hidden" style="padding-left: 0.5rem;">
                         <div class="min-w-0">Konto</div>
                         <div class="min-w-0">Nazwa</div>
-                        <div class="min-w-0">Obszar</div>
+                        <div class="text-center min-w-0">Obszar</div>
                         <div class="text-right min-w-0">BO Wn</div>
                         <div class="text-right min-w-0">BO Ma</div>
                         <div class="text-right min-w-0">Obroty N Wn</div>
@@ -1040,7 +1109,7 @@ async def get_dziennik():
 @app.get("/data/table", response_class=HTMLResponse)
 @app.get("/data/zapisy", response_class=HTMLResponse)
 @app.get("/zapisy", response_class=HTMLResponse)
-async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", details: str = "", with_details: bool = False, page: int = 1, konto: str = "", opis: str = "", min_kwota: str = "", adv_sort: str = "", dziennik_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = ""):
+async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", details: str = "", with_details: bool = False, page: int = 1, konto: str = "", opis: str = "", min_kwota: str = "", adv_sort: str = "", dziennik_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = "", obszar_id: str = ""):
     pageSize = 1000
     offset = (page - 1) * pageSize
     try:
@@ -1062,7 +1131,7 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
             konto=final_konto, opis=final_opis, 
             min_kwota=final_min_kwota, dziennik_id=final_dziennik_id,
             limit=pageSize, offset=offset, adv_sort=adv_sort,
-            with_details=show_details
+            with_details=show_details, obszar_id=obszar_id
         )
         
         rows = data['rows']

@@ -285,23 +285,24 @@ CREATE TABLE IF NOT EXISTS ZOiS_Mapowanie_Obszar (
 
 DROP VIEW IF EXISTS v_zois_resolved_mapping;
 CREATE VIEW v_zois_resolved_mapping AS
-WITH AllPossibleMappings AS (
+WITH AllMatches AS (
     SELECT 
         z.S_1, 
         z.S_2, 
+        z.S_3,
         z.S_10, 
         z.S_11,
         m.Obszar_Id,
         m.Strona_Salda,
         m.ZOiS_S1 AS Source_Konto,
         CASE WHEN z.S_1 = m.ZOiS_S1 THEN 1 ELSE 0 END AS Is_Direct,
-        ROW_NUMBER() OVER (PARTITION BY z.S_1 ORDER BY LENGTH(m.ZOiS_S1) DESC) as rn
+        ROW_NUMBER() OVER (PARTITION BY z.S_1 ORDER BY LENGTH(m.ZOiS_S1) DESC) as rnk
     FROM ZOiS z
     JOIN ZOiS_Mapowanie_Obszar m ON (z.S_1 = m.ZOiS_S1 OR z.S_1 LIKE m.ZOiS_S1 || '-%')
 )
-SELECT S_1, S_2, S_10, S_11, Obszar_Id, Strona_Salda, Is_Direct, Source_Konto
-FROM AllPossibleMappings
-WHERE rn = 1;
+SELECT S_1, S_2, S_3, S_10, S_11, Obszar_Id, Strona_Salda, Is_Direct, Source_Konto
+FROM AllMatches
+WHERE rnk = 1;
 
 DROP VIEW IF EXISTS v_obszary_rekoncyliacja;
 CREATE VIEW v_obszary_rekoncyliacja AS
@@ -322,7 +323,9 @@ SELECT
             ELSE 0 
         END)
      FROM v_zois_resolved_mapping rm
-     WHERE rm.Obszar_Id = o.Id) AS Suma_ZOiS,
+     WHERE rm.Obszar_Id = o.Id
+     AND rm.S_1 NOT IN (SELECT S_3 FROM ZOiS WHERE S_3 IS NOT NULL AND S_3 != '')
+    ) AS Suma_ZOiS,
     (
         COALESCE((SELECT SUM(
             CASE 
@@ -330,7 +333,7 @@ SELECT
                 WHEN rm.Strona_Salda = 'TYLKO_MA' THEN rm.S_11
                 WHEN rm.Strona_Salda = 'PERSALDO_WN_MA' THEN (rm.S_10 - rm.S_11)
                 WHEN rm.Strona_Salda = 'PERSALDO_MA_WN' THEN (rm.S_11 - rm.S_10)
-                ELSE 0 END) FROM v_zois_resolved_mapping rm WHERE rm.Obszar_Id = o.Id), 0)
+                ELSE 0 END) FROM v_zois_resolved_mapping rm WHERE rm.Obszar_Id = o.Id AND rm.S_1 NOT IN (SELECT S_3 FROM ZOiS WHERE S_3 IS NOT NULL AND S_3 != '')), 0)
         - 
         COALESCE((SELECT SUM(sp.Kwota_RB) FROM Obszary_Sprawozdanie os JOIN Sprawozdanie_Pozycje sp ON os.XmlTag = sp.XmlTag WHERE os.Obszar_Id = o.Id), 0)
     ) AS Odchylenie

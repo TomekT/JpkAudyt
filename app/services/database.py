@@ -21,7 +21,7 @@ def parse_smart_query(q: str):
 
 class DatabaseService:
 
-    def build_zois_where(self, q: str = "", type: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True):
+    def build_zois_where(self, q: str = "", type: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True, obszar_id: Optional[str] = None):
         where_clauses = []
         params = {}
         
@@ -56,11 +56,19 @@ class DatabaseService:
             where_clauses.append("TypKonta = :type")
             params["type"] = type
             
+        if obszar_id:
+            try:
+                target_obszar = int(obszar_id)
+                where_clauses.append("S_1 IN (SELECT S_1 FROM v_zois_resolved_mapping WHERE Obszar_Id = :obszar_id)")
+                params["obszar_id"] = target_obszar
+            except ValueError:
+                pass
+                
         where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         return where_sql, params
 
-    def get_zois_data(self, q: str = "", type: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True):
-        where_sql, params = self.build_zois_where(q, type, forced_ids, synthetic, empty)
+    def get_zois_data(self, q: str = "", type: str = "", forced_ids: Optional[List[str]] = None, synthetic: bool = True, empty: bool = True, obszar_id: Optional[str] = None):
+        where_sql, params = self.build_zois_where(q, type, forced_ids, synthetic, empty, obszar_id)
         sql = f"SELECT * FROM ZOiS {where_sql} ORDER BY S_1"
         return self.get_connection().execute(sql, params).fetchall()
 

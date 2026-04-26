@@ -568,6 +568,22 @@
                                                 </select>
                                             </div>
 
+                                            <div class="form-control w-full mt-2">
+                                                <label class="label"><span
+                                                        class="label-text text-xs uppercase font-bold opacity-60">Obszar</span></label>
+                                                <select id="filter-obszar" name="obszar_id"
+                                                    class="select select-sm select-bordered w-full text-xs zois-filter"
+                                                    hx-get="/zois" hx-target="#zois-container" hx-include=".zois-filter"
+                                                    hx-trigger="change, db-changed from:body"
+                                                    hx-indicator="#zois-spinner"
+                                                    hx-on:change="htmx.trigger('body', 'filter-updated')">
+                                                    <option value="">Wszystkie obszary</option>
+                                                    {% for obszar in obszary %}
+                                                    <option value="{{ obszar.Id }}">{{ obszar.Nazwa }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
                                             <div class="card-actions flex flex-col items-stretch mt-4">
                                                 <button
                                                     class="btn btn-xs btn-ghost text-success hover:bg-success/10 w-full justify-start gap-2"
@@ -822,6 +838,20 @@
                                                     <option value="10">Październik</option>
                                                     <option value="11">Listopad</option>
                                                     <option value="12">Grudzień</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-control w-full mt-2">
+                                                <label class="label"><span
+                                                        class="label-text text-xs uppercase font-bold opacity-60">Obszar</span></label>
+                                                <select id="filter-obszar-zapisy" name="obszar_id"
+                                                    class="select select-sm select-bordered w-full text-xs zapisy-filter"
+                                                    hx-trigger="change"
+                                                    hx-on:change="htmx.trigger('body', 'filter-updated')">
+                                                    <option value="">Wszystkie obszary</option>
+                                                    {% for obszar in obszary %}
+                                                    <option value="{{ obszar.Id }}">{{ obszar.Nazwa }}</option>
+                                                    {% endfor %}
                                                 </select>
                                             </div>
 
@@ -1120,32 +1150,10 @@
     <!-- Map Obszar Modal -->
     <dialog id="map_obszar_modal" class="modal">
         <div class="modal-box w-full max-w-sm">
-            <form method="dialog">
-                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
-            </form>
-            <h3 class="font-bold text-lg mb-4">Mapuj Konto</h3>
-            <form hx-post="/api/zois/map-obszar" hx-target="#toast-container" hx-swap="beforeend" onsubmit="document.getElementById('map_obszar_modal').close()">
-                <input type="hidden" id="map_konto_id" name="konto_id" value="">
-                <div class="form-control w-full mb-2">
-                    <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Obszar</span></label>
-                    <select id="map_obszar_id" name="obszar_id" class="select select-bordered select-sm" required>
-                        <!-- To be populated via htmx -->
-                    </select>
-                </div>
-                <div class="form-control w-full mb-6">
-                    <label class="label"><span class="label-text text-xs uppercase font-bold opacity-70">Strona Salda</span></label>
-                    <select name="strona_salda" class="select select-bordered select-sm" required>
-                        <option value="PERSALDO_WN_MA">Persaldo (Wn - Ma) - np. Aktywa, Koszty</option>
-                        <option value="PERSALDO_MA_WN">Persaldo (Ma - Wn) - np. Pasywa, Przychody</option>
-                        <option value="TYLKO_WN">Tylko saldo Wn (dodatnie)</option>
-                        <option value="TYLKO_MA">Tylko saldo Ma (dodatnie)</option>
-                    </select>
-                </div>
-                <div class="modal-action">
-                    <button type="button" class="btn btn-sm" onclick="document.getElementById('map_obszar_modal').close()">Anuluj</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Zapisz</button>
-                </div>
-            </form>
+            <!-- Content loaded dynamically via /api/zois/get-map-modal -->
+            <div class="flex justify-center p-8">
+                <span class="loading loading-spinner loading-lg text-primary"></span>
+            </div>
         </div>
         <form method="dialog" class="modal-backdrop">
             <button>close</button>
@@ -1369,10 +1377,19 @@
             }
         }
 
-        function openMapModal(konto_id) {
+        function openMapModal(konto_id, has_mapping = false) {
             const modal = document.getElementById('map_obszar_modal');
             document.getElementById('map_konto_id').value = konto_id;
             
+            const unmapBtn = document.getElementById('btn-unmap-modal');
+            if (has_mapping) {
+                unmapBtn.classList.remove('hidden');
+                unmapBtn.setAttribute('hx-delete', `/api/zois/unmap/${konto_id}`);
+                htmx.process(unmapBtn);
+            } else {
+                unmapBtn.classList.add('hidden');
+            }
+
             htmx.ajax('GET', '/api/obszary/options', {
                 target: '#map_obszar_id',
                 swap: 'innerHTML'
@@ -2384,8 +2401,9 @@
             if (tabName === 'ZOiS') {
                 const q = document.getElementById('global-zois-q')?.value || '';
                 const type = document.getElementById('filter-account-type')?.value || '';
+                const obszar = document.getElementById('filter-obszar')?.value || '';
                 const badge = document.getElementById('zois-filters-badge');
-                if (q !== '' || type !== '') {
+                if (q !== '' || type !== '' || obszar !== '') {
                     badge?.classList.remove('hidden');
                 } else {
                     badge?.classList.add('hidden');
@@ -2393,8 +2411,9 @@
             } else if (tabName === 'Zapisy') {
                 const zq = document.getElementById('zapisy-local-q')?.value || '';
                 const month = document.getElementById('filter-month')?.value || '';
+                const obszar_zapisy = document.getElementById('filter-obszar-zapisy')?.value || '';
                 const badge = document.getElementById('zapisy-filters-badge');
-                if (zq !== '' || month !== '') {
+                if (zq !== '' || month !== '' || obszar_zapisy !== '') {
                     badge?.classList.remove('hidden');
                 } else {
                     badge?.classList.add('hidden');
@@ -2408,10 +2427,12 @@
             const q = document.getElementById('global-zois-q');
             const type = document.getElementById('filter-account-type');
             const forced = document.getElementById('zois-forced-ids');
+            const obszar = document.getElementById('filter-obszar');
 
             if (q) q.value = '';
             if (type) type.value = '';
             if (forced) forced.value = '';
+            if (obszar) obszar.value = '';
 
             updateFilterState('ZOiS');
 
@@ -2432,6 +2453,7 @@
             const adv_z2 = document.getElementById('adv_z2');
             const adv_d1 = document.getElementById('adv_d1');
             const adv_min_kwota = document.getElementById('adv_min_kwota');
+            const obszar_zapisy = document.getElementById('filter-obszar-zapisy');
 
             if (q) q.value = '';
             if (month) month.value = '';
@@ -2439,6 +2461,7 @@
             if (adv_z2) adv_z2.value = '';
             if (adv_d1) adv_d1.value = '';
             if (adv_min_kwota) adv_min_kwota.value = '';
+            if (obszar_zapisy) obszar_zapisy.value = '';
 
             updateFilterState('Zapisy');
             if (trigger) {
@@ -2569,7 +2592,7 @@
 
         // Initialize Filter Indicators and Listeners
         document.addEventListener('DOMContentLoaded', () => {
-            const zoisInputs = ['global-zois-q', 'filter-account-type'];
+            const zoisInputs = ['global-zois-q', 'filter-account-type', 'filter-obszar'];
             zoisInputs.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -2578,7 +2601,7 @@
                 }
             });
 
-            const zapisyInputs = ['zapisy-local-q', 'filter-month'];
+            const zapisyInputs = ['zapisy-local-q', 'filter-month', 'filter-obszar-zapisy'];
             zapisyInputs.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
