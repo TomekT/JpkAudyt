@@ -339,30 +339,4 @@ SELECT
     ) AS Odchylenie
 FROM Obszary o;
 
--- Dodanie predefiniowanych obszarów badania
-INSERT INTO Obszary (Nazwa, Typ, Czy_Systemowy) VALUES
--- AKTYWA
-('WNiP', 'Aktywa', 1),
-('Środki Trwałe', 'Aktywa', 1),
-('Inwestycje długoterminowe', 'Aktywa', 1),
-('Zapasy', 'Aktywa', 1),
-('Należności handlowe', 'Aktywa', 1),
-('Inne należności', 'Aktywa', 1),
-('Środki Pieniężne', 'Aktywa', 1),
-('Krótkoterminowe rozliczenia międzyokresowe', 'Aktywa', 1),
-
--- PASYWA
-('Kapitał własny', 'Pasywa', 1),
-('Rezerwy na zobowiązania', 'Pasywa', 1),
-('Zobowiązania długoterminowe', 'Pasywa', 1),
-('Zobowiązania krótkoterminowe', 'Pasywa', 1),
-('Rozliczenia międzyokresowe', 'Pasywa', 1),
-
--- RZiS
-('Przychody ze sprzedaży', 'RZiS', 1),
-('Koszty własne sprzedaży', 'RZiS', 1),
-('Koszty ogólnego zarządu', 'RZiS', 1),
-('Amortyzacja', 'RZiS', 1),
-('Pozostałe przychody i koszty operacyjne', 'RZiS', 1),
-('Przychody i koszty finansowe', 'RZiS', 1),
-('Podatek dochodowy', 'RZiS', 1);
+-- Obszary są inicjalizowane z pliku insert_obszary.sql podczas tworzenia bazy

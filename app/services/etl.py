@@ -77,6 +77,11 @@ class ETLService:
         slownik_path = resource_path("insert_slownik.sql")
         if slownik_path.exists():
             self.db.execute_script_file(str(slownik_path))
+
+        # Load Obszary/Sprawozdanie Tags
+        obszary_sql_path = resource_path("insert_obszary.sql")
+        if obszary_sql_path.exists():
+            self.db.execute_script_file(str(obszary_sql_path))
             
         return db_path
 

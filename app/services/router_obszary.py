@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, Response
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
@@ -61,25 +61,52 @@ async def get_obszary_szczegoly(obszar_id: int):
         
         html_rows = ""
         for row in rows:
+            tag = html.escape(row['XmlTag'])
+            nazwa = html.escape(row['Nazwa'])
+            kwota_rb = row['Kwota_RB'] or 0
+            kwota_rp = row['Kwota_RP'] or 0
+            
+            # Formaty polskie: spacja jako separator tysięcy, przecinek jako dziesiętny
+            val_rp = f"{kwota_rp:,.2f}".replace(",", " ").replace(".", ",")
+            val_rb = f"{kwota_rb:,.2f}".replace(",", " ").replace(".", ",")
+            
             html_rows += f"""
-            <tr class="hover text-[10px]">
-                <td title="{html.escape(row['XmlTag'])}"><div class="max-w-[80px] truncate">{html.escape(row['XmlTag'])}</div></td>
-                <td title="{html.escape(row['Nazwa'])}"><div class="max-w-[120px] truncate">{html.escape(row['Nazwa'])}</div></td>
-                <td class="text-right font-mono">{row['Kwota_RB']:,.2f}</td>
+            <tr class="hover h-8 transition-colors text-[10px]">
+                <td class="w-48 font-bold text-primary truncate" title="{tag}">{tag}</td>
+                <td class="truncate" title="{nazwa}">{nazwa}</td>
+                <td class="w-40 text-right font-mono">
+                    <input type="text" 
+                           class="input input-ghost input-xs w-full text-right focus:bg-base-200 font-mono opacity-80" 
+                           value="{val_rp}"
+                           name="kwota"
+                           hx-put="/api/sprawozdanie/{tag}/wartosc/RP"
+                           hx-trigger="change, blur"
+                           hx-swap="none">
+                </td>
+                <td class="w-40 text-right font-mono">
+                    <input type="text" 
+                           class="input input-ghost input-xs w-full text-right focus:bg-base-200 font-mono font-bold" 
+                           value="{val_rb}"
+                           name="kwota"
+                           hx-put="/api/sprawozdanie/{tag}/wartosc/RB"
+                           hx-trigger="change, blur"
+                           hx-swap="none">
+                </td>
             </tr>
             """
             
         if not html_rows:
-            html_rows = "<tr><td colspan='3' class='text-center italic opacity-50'>Brak przypisanych pozycji</td></tr>"
+            html_rows = "<tr><td colspan='4' class='text-center py-4 italic opacity-50 text-xs'>Brak przypisanych pozycji</td></tr>"
             
         return f"""
-        <div class="p-2 border border-base-300 rounded-lg bg-base-100 shadow-inner mt-2">
-            <table class="table table-xs w-full">
+        <div class="p-2 border border-base-300 rounded-lg bg-base-100 shadow-inner mt-2 overflow-hidden">
+            <table class="table table-xs w-full table-fixed border-separate border-spacing-0">
                 <thead>
-                    <tr class="bg-base-200/50">
-                        <th class="text-xs">Tag</th>
-                        <th class="text-xs">Nazwa</th>
-                        <th class="text-right text-xs">Kwota RB</th>
+                    <tr class="bg-base-200/50 h-8">
+                        <th class="w-48 text-left text-[10px] uppercase opacity-70 border-b border-base-300">Tag</th>
+                        <th class="text-left text-[10px] uppercase opacity-70 border-b border-base-300">Nazwa</th>
+                        <th class="w-40 text-right text-[10px] uppercase opacity-70 border-b border-base-300">Kwota RP</th>
+                        <th class="w-40 text-right text-[10px] uppercase opacity-70 border-b border-base-300">Kwota RB</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -395,3 +422,29 @@ async def unmap_obszar(konto_id: str):
     except Exception as e:
         return f"<div class='alert alert-error'>Błąd: {e}</div>"
 
+
+@router.put("/api/sprawozdanie/{xml_tag}/wartosc/{rok}")
+async def update_sprawozdanie_wartosc(xml_tag: str, rok: str, kwota: str = Form(...)):
+    if rok not in ['RB', 'RP']:
+        return Response(status_code=400)
+    
+    # 1. Clean and validate financial data
+    # Remove spaces and convert comma to dot for float compatibility
+    clean_kwota = kwota.replace(" ", "").replace(",", ".")
+    try:
+        val = float(clean_kwota)
+    except ValueError:
+        return Response(status_code=400)
+        
+    # 2. Update Database
+    column = "Kwota_RB" if rok == "RB" else "Kwota_RP"
+    try:
+        conn = db_service.get_connection()
+        conn.execute(f"UPDATE Sprawozdanie_Pozycje SET {column} = ? WHERE XmlTag = ?", (val, xml_tag))
+        conn.commit()
+        
+        # Return success with HTMX trigger to refresh the main areas list/totals
+        return Response(headers={"HX-Trigger": "odswiez-obszary"})
+    except Exception as e:
+        print(f"Error updating sprawozdanie: {e}")
+        return Response(status_code=500)
