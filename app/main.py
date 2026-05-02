@@ -467,22 +467,27 @@ async def import_jpk(file: UploadFile = File(...)):
         config_manager.set_last_db(str(db_path))
         
         return HTMLResponse(f"""
-            <div class="flex flex-col items-center justify-center py-10">
-                <span class="loading loading-spinner loading-lg text-success"></span>
-                <div class="mt-4 text-sm font-bold text-success">Finalizowanie importu...</div>
+            <div class="flex flex-col items-center justify-center py-12">
+                <div class="relative mb-6">
+                    <span class="loading loading-spinner w-16 h-16 text-success opacity-20"></span>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-lg font-black text-success tracking-tight">Import zakończony!</div>
+                <div class="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-2">Trwa obliczanie sum kontrolnych i walidacja danych...</div>
+                <div class="text-[9px] opacity-30 mt-1 italic">To może potrwać kilka sekund dla dużych plików</div>
                 
                 <script>
                     // 1. Odśwież dane w tle
                     htmx.trigger('body', 'db-changed');
                     
-                    // 2. Wyświetl okno walidacji (ono jest najważniejsze)
+                    // 2. Wyślij żądanie o okno walidacji
                     htmx.trigger('body', 'show-consistency');
                     
-                    // 3. Zamknij to okno (import_modal) automatycznie
-                    const modal = document.getElementById('import_modal');
-                    if (modal) modal.close();
-                    
-                    // 4. Aktualizacja etykiety bazy
+                    // 3. Aktualizacja etykiety bazy
                     const label = document.getElementById('active-db-label');
                     if (label) label.innerText = "{db_name}";
                 </script>
@@ -2145,8 +2150,8 @@ async def get_jpk_check_consistency():
         jpk_type_str = "JPK_KR_PD" if is_kr_pd else "JPK_KR"
             
         return f"""
-        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
-            <div class="p-8 bg-base-100 rounded-3xl shadow-2xl border border-base-content/10 max-w-3xl w-full mx-4 animate-in zoom-in duration-300">
+        <div class="fixed inset-0 z-[1001] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+            <div class="p-8 bg-base-100 rounded-3xl shadow-2xl border border-base-content/20 max-w-4xl w-full mx-4 animate-in zoom-in duration-300">
                 <div class="flex items-center justify-between mb-8">
                     <div>
                         <h2 class="text-3xl font-black text-primary flex items-center gap-3">
@@ -2159,6 +2164,12 @@ async def get_jpk_check_consistency():
                     </div>
                     <button onclick="this.closest('.fixed').remove()" class="btn btn-circle btn-ghost">✕</button>
                 </div>
+
+                <script>
+                    // Dodatkowe zabezpieczenie: Zamknij modal importu jeśli wciąż wisiał pod spodem
+                    const impModal = document.getElementById('import_modal');
+                    if (impModal && typeof impModal.close === 'function') impModal.close();
+                </script>
 
                 <div class="overflow-hidden rounded-2xl border border-base-content/10 shadow-sm bg-base-200/30">
                     <table class="table w-full">

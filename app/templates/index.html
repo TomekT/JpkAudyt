@@ -1202,8 +1202,11 @@
 
     <!-- Container for dynamic modals -->
     <div id="modal-container"></div>
-    <div hx-get="/api/jpk/check-consistency" hx-trigger="show-consistency from:body" hx-target="#modal-container"
-        hx-swap="innerHTML"></div>
+    <div hx-get="/api/jpk/check-consistency" 
+         hx-trigger="show-consistency from:body" 
+         hx-target="#modal-container"
+         hx-swap="innerHTML"
+         hx-on::after-settle="const modal = document.getElementById('import_modal'); if (modal) modal.close();"></div>
 
     <!-- Map Obszar Modal -->
     <dialog id="map_obszar_modal" class="modal">
