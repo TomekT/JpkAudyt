@@ -9,7 +9,8 @@ import json
 import logging
 import re
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException, BackgroundTasks
+import uuid
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -110,6 +111,7 @@ async def hard_reset():
 async def heartbeat():
     app.state.last_heartbeat = time.time()
     return {"status": "ok"}
+
 
 @app.get("/health")
 async def health_check():
@@ -445,59 +447,76 @@ async def import_jpk(file: UploadFile = File(...)):
     upload_dir = Path("app/data/uploads")
     upload_dir.mkdir(parents=True, exist_ok=True)
     
-    # Path Traversal protection
     safe_filename = Path(file.filename).name
     file_path = upload_dir / safe_filename
     
     try:
-        # 1. Save file
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        def run_etl():
-            try:
-                # route_import handles version detection
-                db_path = jpk_router.route_import(str(file_path))
-                return db_path
-            except Exception as e:
-                logger.error(f"Background ETL Error: {e}")
-                raise e
-
-        # Execute in thread to keep app responsive
-        db_path_str = await asyncio.to_thread(run_etl)
+        # Uruchomienie importu w osobnym wątku, czekając na wynik
+        db_path_str = await asyncio.to_thread(
+            jpk_router.route_import, 
+            str(file_path)
+        )
         db_path = Path(db_path_str)
-
-        # 3. Finalize
+        db_name = db_path.name
+        
+        # Connect and persist
         db_service.connect(str(db_path))
         config_manager.set_last_db(str(db_path))
         
-        response = HTMLResponse(content=html.escape(db_path.name))
-        response.headers["HX-Trigger"] = json.dumps({
-            "db-changed": {"no_reload": True}, 
-            "show-consistency": None
-        })
-        return response
+        return HTMLResponse(f"""
+            <div class="flex flex-col items-center justify-center py-10">
+                <span class="loading loading-spinner loading-lg text-success"></span>
+                <div class="mt-4 text-sm font-bold text-success">Finalizowanie importu...</div>
+                
+                <script>
+                    // 1. Odśwież dane w tle
+                    htmx.trigger('body', 'db-changed');
+                    
+                    // 2. Wyświetl okno walidacji (ono jest najważniejsze)
+                    htmx.trigger('body', 'show-consistency');
+                    
+                    // 3. Zamknij to okno (import_modal) automatycznie
+                    const modal = document.getElementById('import_modal');
+                    if (modal) modal.close();
+                    
+                    // 4. Aktualizacja etykiety bazy
+                    const label = document.getElementById('active-db-label');
+                    if (label) label.innerText = "{db_name}";
+                </script>
+            </div>
+        """)
         
     except Exception as e:
-        logger.error(f"Import failed: {e}")
-        # XSS protection
+        logger.error(f"Upload failed: {e}")
         error_msg = html.escape(str(e))
-        
-        # Consistent error reporting via OOB alert (swapped even on 200/500 if HTMX is used)
-        alert_html = f"""
-        <div id="alert-container" hx-swap-oob="true" class="fixed bottom-4 right-4 z-50">
-            <div class="alert alert-error shadow-lg border-2 border-base-100/20">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span class="text-xs font-bold leading-tight">{error_msg}</span>
-                <button class="btn btn-ghost btn-xs" onclick="document.getElementById('alert-container').innerHTML=''">✕</button>
+        return HTMLResponse(content=f"""
+            <div class="flex flex-col items-center text-center gap-6 py-6">
+                <div class="bg-error/20 p-6 rounded-full shadow-inner">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                
+                <div class="space-y-1">
+                    <h4 class="text-2xl font-black text-error tracking-tight">Błąd importu</h4>
+                    <p class="text-xs opacity-60">Wystąpił krytyczny problem podczas przetwarzania pliku.</p>
+                </div>
+
+                <div class="w-full bg-error/5 p-4 rounded-xl border border-error/20 text-left">
+                    <pre class="text-[10px] text-error font-mono whitespace-pre-wrap leading-relaxed">{error_msg}</pre>
+                </div>
+
+                <div class="w-full pt-4">
+                    <button class="btn btn-ghost w-full border-base-300" 
+                            onclick="document.getElementById('import_modal').close()">
+                        Zamknij i spróbuj ponownie
+                    </button>
+                </div>
             </div>
-        </div>
-        """
-        # Return status 200 so HTMX swaps the OOB alert even on error.
-        # Target label remains unchanged.
-        return HTMLResponse(content=alert_html, status_code=200)
+        """, status_code=200)
 
 @app.post("/connect-db")
 async def connect_db(file: UploadFile = File(...)):
@@ -573,19 +592,19 @@ async def get_recent():
         
         html_out += f"""
         <li class="group relative flex flex-col p-2 hover:bg-base-200 transition-colors rounded-lg cursor-pointer"
-            hx-post="/select-db" hx-vals='{vals}' hx-swap="none">
+            hx-post="/select-db" hx-vals='{vals}' hx-swap="none" hx-indicator="#main-spinner">
             <div class="truncate font-bold text-xs">{name}</div>
             <div class="text-[9px] opacity-40 truncate pr-16">{short_path}</div>
             
             <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-base-100/80 backdrop-blur-sm pl-2 rounded-l-lg"
                  onclick="event.stopPropagation()">
-                <button hx-post="/open-db-folder" hx-vals='{vals}' hx-swap="none" 
+                <button hx-post="/open-db-folder" hx-vals='{vals}' hx-swap="none" hx-indicator="#main-spinner"
                         class="btn btn-ghost btn-xs btn-square" title="Otwórz lokalizację">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                     </svg>
                 </button>
-                <button hx-post="/detach-db" hx-vals='{vals}' hx-swap="none" 
+                <button hx-post="/detach-db" hx-vals='{vals}' hx-swap="none" hx-indicator="#main-spinner"
                         class="btn btn-ghost btn-xs btn-square text-warning" title="Odłącz (usuń z listy)">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="2" y1="2" x2="22" y2="22"></line>
@@ -595,7 +614,7 @@ async def get_recent():
                         <path d="M14 6h1a4 4 0 0 1 4 4v1"></path>
                     </svg>
                 </button>
-                <button hx-post="/delete-db" hx-vals='{vals}' hx-confirm="CZY NA PEWNO CHCESZ TRWALE USUNĄĆ PLIK BAZY: {name}?" hx-swap="none" 
+                <button hx-post="/delete-db" hx-vals='{vals}' hx-confirm="CZY NA PEWNO CHCESZ TRWALE USUNĄĆ PLIK BAZY: {name}?" hx-swap="none" hx-indicator="#main-spinner"
                         class="btn btn-ghost btn-xs btn-square text-error" title="USUŃ PLIK Z DYSKU">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -615,10 +634,14 @@ async def detach_db(path: str = Form(...)):
 async def delete_db(path: str = Form(...)):
     try:
         norm_path = Path(path).resolve()
-        # Close connection BEFORE unlinking
+        
+        # Close ALL connections to this path across all threads (essential for Windows)
+        db_service.close_all_connections_to_path(norm_path)
+        
+        # If it was the active DB, clear the state
         if db_service.current_db_path and db_service.current_db_path.resolve() == norm_path:
-            db_service.close()
             config_manager.set_last_db(None)
+            db_service.current_db_path = None
             
         if norm_path.exists():
             norm_path.unlink()

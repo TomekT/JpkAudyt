@@ -3,6 +3,7 @@ from lxml import etree
 from datetime import datetime
 import logging
 import os
+import time
 from app.services.database import db_service
 from app.core.path_utils import resource_path
 
@@ -14,31 +15,42 @@ class ETLService:
     def __init__(self):
         self.db = db_service
 
-    def import_jpk(self, xml_path: str) -> str:
+    def import_jpk(self, xml_path: str, progress_callback=None) -> str:
         """Imports a JPK XML file using optimized streaming and batching."""
         xml_file = Path(xml_path)
         if not xml_file.exists():
             raise FileNotFoundError(f"XML file not found: {xml_path}")
 
         logger.info(f"Starting optimized import of {xml_path}")
+        if progress_callback: progress_callback("Pobieranie metadanych...", 20)
         metadata = self._extract_metadata(xml_path)
+        
+        if progress_callback: progress_callback("Inicjalizacja struktury bazy danych...", 25)
         db_path = self._init_database(xml_file, metadata)
         
         # Sprawdzenie czy baza już istnieje i zawiera dane przed procesowaniem
         if os.path.exists(db_path) and self.db.is_database_populated(str(db_path)):
-            raise ValueError("Baza danych dla tego pliku JPK już istnieje i zawiera dane. Import został przerwany, aby uniknąć duplikatów.")
+            raise ValueError("Baza danych dla tego pliku JPK już istnieje i zawiera dane. Import został przerwany.")
 
         # Connect is handled by db_service globally but we ensure it's connected to new DB
         self.db.connect(str(db_path))
         
-        self._process_xml(xml_path)
+        if progress_callback: progress_callback("Przetwarzanie strumieniowe XML (może potrwać)...", 30)
+        self._process_xml(xml_path, progress_callback)
         
         # Post-processing outside the main streaming loop
+        if progress_callback: progress_callback("Optymalizacja statusów analitycznych...", 85)
         self._update_zois_analytical_status()
+        
+        if progress_callback: progress_callback("Zapisywanie metadanych podmiotu...", 90)
         self._insert_header_data(metadata)
+        
+        if progress_callback: progress_callback("Mapowanie typów kont ze słownika...", 95)
         self._update_zois_typ_konta()
+        
         self.db.update_zois_mapping_cache()
         
+        if progress_callback: progress_callback("Import zakończony!", 100)
         logger.info("Import completed successfully.")
         return str(db_path)
 
@@ -86,7 +98,7 @@ class ETLService:
             
         return db_path
 
-    def _process_xml(self, xml_path: str):
+    def _process_xml(self, xml_path: str, progress_callback=None):
         """Streaming parser with heavy batching and business key linking."""
         buffers = {
             'ZOiS': [],
@@ -96,6 +108,10 @@ class ETLService:
             'RPD': [],
             'Ctrl': []
         }
+        
+        # Track counts for progress
+        total_records = 0
+        last_report_time = time.time()
 
         with self.db.transaction() as conn:
             cursor = conn.cursor()
@@ -141,6 +157,8 @@ class ETLService:
             for event, elem in context:
                 tag = etree.QName(elem).localname
                 is_target_record = False
+                
+                # ... processing tags ...
                 
                 if tag.startswith('ZOiS') and tag != 'ZOiS':
                     d = get_data(elem)
@@ -200,6 +218,15 @@ class ETLService:
                     is_target_record = True
 
                 if is_target_record:
+                    total_records += 1
+                    if progress_callback and total_records % 500 == 0:
+                        now = time.time()
+                        if now - last_report_time > 1.0:
+                            # Estimate progress based on records (assuming avg 20-50k for large files)
+                            pct = min(80, 30 + (total_records // 2000))
+                            progress_callback(f"Wczytywanie rekordów: {total_records}...", pct)
+                            last_report_time = now
+
                     # Check total buffer size
                     if sum(len(v) for v in buffers.values()) >= self.BATCH_SIZE:
                         flush_buffers()

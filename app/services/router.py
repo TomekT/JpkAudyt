@@ -58,25 +58,29 @@ class JPKRouter:
             logger.error(f"Error during version detection: {e}")
             raise
 
-    def route_import(self, file_path: str) -> str:
+    def route_import(self, file_path: str, progress_callback=None) -> str:
         """
         Detects the file version and routes it to either ETLService (Modern) or LegacyETLService (Legacy).
         Returns the path to the resulting SQLite database.
         """
         logger.info(f"Starting routing for file: {file_path}")
+        if progress_callback:
+            progress_callback("Wykrywanie wersji pliku JPK...", 10)
         
         try:
             version = self._detect_version(file_path)
             
             if version == "MODERN":
                 logger.info("Routing to ETLService based on modern namespace detection (JPK_KR_PD).")
-                # Calls the modern ETL service (from etl.py)
-                return self.modern_service.import_jpk(file_path)
+                if progress_callback:
+                    progress_callback("Wykryto format MODERN (JPK_KR_PD). Rozpoczynanie importu...", 15)
+                return self.modern_service.import_jpk(file_path, progress_callback)
             
             elif version == "LEGACY":
                 logger.info("Routing to LegacyETLService based on legacy namespace detection (JPK_KR).")
-                # Calls the legacy ETL service (from legacy_etl.py)
-                return self.legacy_service.import_jpk(file_path)
+                if progress_callback:
+                    progress_callback("Wykryto format LEGACY (JPK_KR). Rozpoczynanie importu...", 15)
+                return self.legacy_service.import_jpk(file_path, progress_callback)
             
             else:
                 raise ValueError(f"Unsupported JPK version: {version}")

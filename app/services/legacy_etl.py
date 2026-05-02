@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from lxml import etree
 import os
+import time
 
 from app.services.database import db_service
 from app.core.path_utils import resource_path
@@ -12,7 +13,7 @@ class LegacyETLService:
     BATCH_SIZE = 5000
     NAMESPACE = "http://jpk.mf.gov.pl/wzor/2016/03/09/03091/"
 
-    def import_jpk(self, xml_path: str) -> str:
+    def import_jpk(self, xml_path: str, progress_callback=None) -> str:
         """
         Imports an old format JPK_KR XML file.
         Returns the path to the created database.
@@ -22,29 +23,35 @@ class LegacyETLService:
             raise FileNotFoundError(f"XML file not found: {xml_path}")
 
         logger.info(f"Starting import of old format JPK_KR: {xml_path}")
-
-        # Extract metadata and determine if it's indeed the correct format
+        if progress_callback: progress_callback("Pobieranie metadanych (Legacy)...", 20)
         metadata = self._extract_metadata(xml_path)
         
-        # Init DB (reuse schema of new JPK)
+        if progress_callback: progress_callback("Inicjalizacja struktury bazy danych...", 25)
         db_path = self._init_database(xml_file, metadata)
         
         # Sprawdzenie czy baza już istnieje i zawiera dane przed procesowaniem
         if os.path.exists(db_path) and db_service.is_database_populated(str(db_path)):
-            raise ValueError("Baza danych dla tego pliku JPK już istnieje i zawiera dane. Import został przerwany, aby uniknąć duplikatów.")
+            raise ValueError("Baza danych dla tego pliku JPK już istnieje i zawiera dane. Import został przerwany.")
 
         # Connect to newly created local SQLite file for this JPK
         db_service.connect(str(db_path))
         
-        # Process the old JPK_KR XML using iterparse stream
-        self._process_xml(xml_path)
+        if progress_callback: progress_callback("Przetwarzanie strumieniowe XML (Legacy)...", 30)
+        self._process_xml(xml_path, progress_callback)
         
         # Post-process (analytic status, type of account, and headers)
+        if progress_callback: progress_callback("Optymalizacja statusów analitycznych...", 85)
         self._update_zois_analytical_status()
+        
+        if progress_callback: progress_callback("Zapisywanie metadanych podmiotu...", 90)
         self._insert_header_data(metadata)
+        
+        if progress_callback: progress_callback("Mapowanie typów kont ze słownika...", 95)
         self._update_zois_typ_konta()
+        
         db_service.update_zois_mapping_cache()
 
+        if progress_callback: progress_callback("Import zakończony!", 100)
         logger.info("Legacy JPK_KR import completed successfully.")
         return str(db_path)
 
@@ -132,7 +139,7 @@ class LegacyETLService:
         except Exception as e:
             logger.error(f"Error inserting header: {e}")
 
-    def _process_xml(self, xml_path: str):
+    def _process_xml(self, xml_path: str, progress_callback=None):
         logger.info(f"Rozpoczynanie parsowania strumieniowego XML: {xml_path}")
         conn = db_service.get_connection()
         cursor = conn.cursor()
@@ -172,8 +179,20 @@ class LegacyETLService:
             tag=(dziennik_tag, konto_zapis_tag, zois_tag, ctrl_dziennik_tag, ctrl_zapisy_tag)
         )
 
+        # Track counts for progress
+        total_records = 0
+        last_report_time = time.time()
+
         for event, elem in context:
             local_tag = etree.QName(elem).localname
+            
+            total_records += 1
+            if progress_callback and total_records % 1000 == 0:
+                now = time.time()
+                if now - last_report_time > 1.0:
+                    pct = min(80, 30 + (total_records // 3000))
+                    progress_callback(f"Wczytywanie rekordów Legacy: {total_records}...", pct)
+                    last_report_time = now
             
             if local_tag == 'Dziennik':
                 def get_stripped(tag_name):

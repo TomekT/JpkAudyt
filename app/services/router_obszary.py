@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Request, Form, Response
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
@@ -74,7 +75,7 @@ async def export_zois_tsv(payload: ZoisExportPayload):
 
 @router.get("/obszary", response_class=HTMLResponse)
 async def get_obszary(request: Request):
-    try:
+    def fetch_data():
         conn = db_service.get_connection()
         rows = conn.execute("SELECT * FROM v_obszary_rekoncyliacja ORDER BY Typ, Id").fetchall()
         obszary_list = [dict(r) for r in rows]
@@ -86,6 +87,11 @@ async def get_obszary(request: Request):
             if t not in grouped_obszary:
                 grouped_obszary[t] = []
             grouped_obszary[t].append(o)
+        
+        return obszary_list, grouped_obszary
+
+    try:
+        obszary_list, grouped_obszary = await asyncio.to_thread(fetch_data)
 
         return templates.TemplateResponse("obszary_tab.html", {
             "request": request,
@@ -364,7 +370,7 @@ async def map_obszar(konto_id: str = Form(...), obszar_id: int = Form(...), stro
 
 @router.get("/obszary/{obszar_id}/explain", response_class=HTMLResponse)
 async def explain_obszar(obszar_id: int):
-    try:
+    def fetch_explain_data():
         conn = db_service.get_connection()
         # Pobieramy nazwę obszaru
         obszar_name = conn.execute("SELECT Nazwa FROM Obszary WHERE Id = ?", (obszar_id,)).fetchone()
@@ -394,6 +400,11 @@ async def explain_obszar(obszar_id: int):
             GROUP BY SUBSTR(rm.S_1, 1, 3)
             ORDER BY Konto_Syntetyczne
         """, (obszar_id,)).fetchall()
+        
+        return obszar_name, rows
+
+    try:
+        obszar_name, rows = await asyncio.to_thread(fetch_explain_data)
         
         html_rows = ""
         grand_total = 0

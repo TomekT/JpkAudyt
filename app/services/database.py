@@ -2,6 +2,7 @@ import sqlite3
 import re
 from typing import Optional, List, Any, Dict, AsyncIterator
 from contextlib import asynccontextmanager
+import threading
 
 from pathlib import Path
 import logging
@@ -74,46 +75,55 @@ class DatabaseService:
 
 
     def __init__(self):
+        self.thread_local = threading.local()
         self.current_db_path: Optional[Path] = None
-        self._connection: Optional[sqlite3.Connection] = None
+        self._all_connections_lock = threading.Lock()
+        self._all_connections = [] # List of (path, conn)
 
     def connect(self, db_path: str):
-        """Connects to a specific SQLite database file with high-performance READ pragma settings."""
-        path = Path(db_path)
-        if not path.exists():
-            raise FileNotFoundError(f"Database file not found: {db_path}")
-        
-        if self._connection:
-            self._connection.close()
-        
-        # check_same_thread=False is essential for FastAPI/Uvicorn multi-threading
+        """Sets the current active database path and initializes it for the current thread."""
         try:
-            path = Path(db_path).resolve()
-            logger.info(f"Connecting to database: {path}")
-            self._connection = sqlite3.connect(str(path), check_same_thread=False)
-            self._connection.row_factory = sqlite3.Row
+            path = Path(db_path)
+            if not path.exists():
+                raise FileNotFoundError(f"Database file not found: {db_path}")
+                
             self.current_db_path = path
             
-            # Automatyczna optymalizacja i migracja schematu dla wydajności
-            self._ensure_performance_schema(self._connection)
+            # Reset current thread connection
+            if hasattr(self.thread_local, 'conn') and self.thread_local.conn:
+                try:
+                    self.thread_local.conn.close()
+                except:
+                    pass
+                self.thread_local.conn = None
+                self.thread_local.db_path = None
             
-            logger.info("Database connected.")
+            # Initial connection to verify
+            conn = self.get_connection()
+            
+            # Automatyczna optymalizacja i migracja schematu dla wydajności
+            self._ensure_performance_schema(conn)
+            
+            logger.info("Database path set and initialized for current thread.")
         except Exception as e:
             logger.error(f"Failed to connect to database {db_path}: {e}")
-            self._connection = None
             raise e
 
-        # Read-heavy optimizations
-        cursor = self._connection.cursor()
-        cursor.execute("PRAGMA temp_store = MEMORY;")      # Keep temp tables/indexes in RAM
-        cursor.execute("PRAGMA mmap_size = 3000000000;")   # Map up to 3GB into memory (OS level)
-        cursor.execute("PRAGMA cache_size = -64000;")      # 64MB Application cache
-        cursor.execute("PRAGMA synchronous = NORMAL;")     # Faster writes while maintaining safety
-        
-        logger.info(f"Connected to database: {path} (Absolute: {path.absolute()})")
-        
-        # Automatyczne dodanie tabel etykiet jeśli ich nie ma (migracja w locie)
-        # This call is now inside the try block above.
+    def close_all_connections_to_path(self, path: Path):
+        """Closes all tracked connections to a specific path across all threads."""
+        target_path = path.resolve()
+        with self._all_connections_lock:
+            remaining = []
+            for p, conn in self._all_connections:
+                try:
+                    if p.resolve() == target_path:
+                        logger.info(f"Force closing connection to {p}")
+                        conn.close()
+                    else:
+                        remaining.append((p, conn))
+                except Exception as e:
+                    logger.warning(f"Error closing tracked connection: {e}")
+            self._all_connections = remaining
 
     from contextlib import contextmanager
 
@@ -129,24 +139,55 @@ class DatabaseService:
             raise e
 
 
+    def _unregister_connection(self, conn: sqlite3.Connection):
+        """Removes a connection from the global tracking list."""
+        with self._all_connections_lock:
+            self._all_connections = [(p, c) for p, c in self._all_connections if c != conn]
+
     def get_connection(self) -> sqlite3.Connection:
-        if self._connection is None:
-            if self.current_db_path:
-                self.connect(str(self.current_db_path))
+        if not hasattr(self.thread_local, 'conn') or getattr(self.thread_local, 'db_path', None) != self.current_db_path:
+            if hasattr(self.thread_local, 'conn') and self.thread_local.conn:
+                try:
+                    old_conn = self.thread_local.conn
+                    old_conn.close()
+                    self._unregister_connection(old_conn)
+                except:
+                    pass
+                    
+            if not self.current_db_path:
+                raise RuntimeError("No active database connection path set.")
+                
+            path = self.current_db_path
+            logger.info(f"Connecting to database (thread {threading.get_ident()}): {path}")
+            conn = sqlite3.connect(str(path), check_same_thread=False)
+            conn.row_factory = sqlite3.Row
             
-            if self._connection is None:
-                raise RuntimeError("No active database connection and could not re-establish one.")
-        
-        return self._connection
+            # Read-heavy optimizations
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA journal_mode = WAL;")
+            cursor.execute("PRAGMA temp_store = MEMORY;")
+            cursor.execute("PRAGMA mmap_size = 3000000000;")
+            cursor.execute("PRAGMA cache_size = -64000;")
+            cursor.execute("PRAGMA synchronous = NORMAL;")
+            
+            self.thread_local.conn = conn
+            self.thread_local.db_path = path
+            
+            # Register connection globally
+            with self._all_connections_lock:
+                self._all_connections.append((path, conn))
+            
+        return self.thread_local.conn
 
     def close(self):
-        if self._connection is not None:
+        if hasattr(self.thread_local, 'conn') and self.thread_local.conn is not None:
             try:
-                self._connection.close()
+                self.thread_local.conn.close()
             except:
                 pass
-            self._connection = None
-            logger.info("Database connection closed")
+            self.thread_local.conn = None
+            self.thread_local.db_path = None
+            logger.info(f"Database connection closed for thread {threading.get_ident()}")
 
 
 
@@ -188,11 +229,8 @@ class DatabaseService:
 
     def execute_script_file(self, script_path: str):
         """Executes a SQL script from a file on the current connection."""
-        if not self._connection:
-             # If no connection, maybe we should connect? 
-             # But this uses current connection usually? 
-             # Or we want to run it on a specific path?
-             # Let's assume we use get_connection()
+        if getattr(self.thread_local, 'conn', None) is None and not self.current_db_path:
+             # If no connection and no db path is set, do nothing.
              pass
              
         conn = self.get_connection()
@@ -484,7 +522,7 @@ class DatabaseService:
                 WHERE length(S_1) > 3
             """)
             
-            # C) Agregacja wartości finansowych - idempotentna modyfikacja ograniczająca do dzieci
+            # C) Agregacja wartości finansowych - idempotentna modyfikacja ograniczająca do kont posiadających dzieci
             cursor.execute("""
                 UPDATE ZOiS AS parent
                 SET 
@@ -497,6 +535,7 @@ class DatabaseService:
                     S_10 = (SELECT SUM(COALESCE(child.S_10, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3),
                     S_11 = (SELECT SUM(COALESCE(child.S_11, 0)) FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3)
                 WHERE length(S_1) = 3
+                  AND EXISTS (SELECT 1 FROM ZOiS child WHERE child.S_3 = parent.S_1 AND length(child.S_1) > 3)
             """)
 
     def get_unnamed_groups(self) -> list:

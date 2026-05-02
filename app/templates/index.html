@@ -1148,25 +1148,56 @@
 
     <!-- Import Modal -->
     <dialog id="import_modal" class="modal">
-        <div class="modal-box">
-            <h3 class="font-bold text-lg">Importuj nowy plik JPK</h3>
-            <p class="py-4">Wybierz plik XML do zaimportowania.</p>
+        <div class="modal-box bg-base-100 shadow-2xl border border-base-300 max-w-lg">
+            <div id="import-modal-body">
+                <!-- Initial Form State -->
+                <div id="import-form-ui">
+                    <h3 class="font-bold text-xl flex items-center gap-3 mb-2">
+                        <div class="bg-primary/10 p-2 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                        </div>
+                        Importuj nowy plik JPK
+                    </h3>
+                    <p class="text-xs opacity-60 mb-8">Wybierz plik XML (JPK_KR lub JPK_KR_PD). System automatycznie utworzy nową bazę danych i przeprowadzi walidację struktury.</p>
 
-            <form id="import-form" hx-post="/upload" hx-encoding="multipart/form-data" hx-target="#active-db-label"
-                hx-indicator="#main-spinner">
-                <input type="file" name="file" class="file-input file-input-bordered w-full mb-4" accept=".xml"
-                    required />
-
-                <div class="modal-action">
-                    <button type="button" class="btn"
-                        onclick="document.getElementById('import_modal').close()">Anuluj</button>
-                    <button type="submit" class="btn btn-primary"
-                        onclick="document.getElementById('import_modal').close()">
-                        Importuj
-                    </button>
+                    <form id="import-form" hx-post="/upload" hx-encoding="multipart/form-data" 
+                          hx-target="#import-modal-body"
+                          onsubmit="document.getElementById('import-form-ui').classList.add('hidden'); document.getElementById('import-processing-ui').classList.remove('hidden');">
+                        
+                        <div class="form-control w-full">
+                            <div class="bg-base-200/50 p-6 rounded-2xl border-2 border-dashed border-base-300 hover:border-primary/50 transition-colors group">
+                                <input type="file" name="file" class="file-input file-input-ghost w-full focus:outline-none" accept=".xml" required />
+                                <div class="text-[10px] opacity-40 mt-2 text-center font-bold uppercase tracking-widest">Kliknij lub przeciągnij plik tutaj</div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-action flex justify-between mt-10">
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('import_modal').close()">Anuluj</button>
+                            <button type="submit" class="btn btn-primary btn-sm px-10 shadow-lg">Rozpocznij import</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+
+                <!-- Processing State (Hidden by default) -->
+                <div id="import-processing-ui" class="hidden flex-col items-center justify-center gap-8 py-12">
+                    <div class="relative">
+                        <span class="loading loading-spinner w-24 h-24 text-primary opacity-20"></span>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="loading loading-spinner w-12 h-12 text-primary"></span>
+                        </div>
+                    </div>
+                    <div class="text-center space-y-2">
+                        <div class="text-xl font-black text-primary tracking-tight">Trwa importowanie...</div>
+                        <p class="text-xs opacity-50 max-w-[250px]">Analizujemy rekordy, mapujemy konta i optymalizujemy bazę danych. Może to zająć chwilę.</p>
+                    </div>
+                </div>
+            </div>
         </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
     </dialog>
 
     <!-- Container for dynamic modals -->
@@ -2195,7 +2226,6 @@
 
         document.body.addEventListener("db-changed", (evt) => {
             console.log("Database changed, refreshing active components...");
-            if (evt.detail && evt.detail.no_reload === true) return;
             
             // 1. Refresh global indicators
             htmx.trigger("#active-db-name", "load");

@@ -218,9 +218,8 @@ CREATE INDEX IF NOT EXISTS idx_zois_s3 ON ZOiS(S_3);
 CREATE INDEX IF NOT EXISTS idx_zois_s12_1 ON ZOiS(S_12_1);
 CREATE INDEX IF NOT EXISTS idx_zois_typkonta ON ZOiS(TypKonta);
 CREATE INDEX IF NOT EXISTS idx_zois_isanalytical ON ZOiS(IsAnalytical);
+CREATE INDEX IF NOT EXISTS idx_zois_obszar_analityka ON ZOiS(Obszar_Id, IsAnalytical);
 CREATE INDEX IF NOT EXISTS idx_zapisy_dziennikid ON Zapisy(Dziennik_Id);
-CREATE INDEX IF NOT EXISTS idx_zois_map_s1 ON ZOiS_Mapowanie_Obszar(ZOiS_S1);
-CREATE INDEX IF NOT EXISTS idx_zois_map_obszar ON ZOiS_Mapowanie_Obszar(Obszar_Id);
 
 
 -- Reset i aktualizacja widoku (usuwamy stary, aby wymusić nową strukturę)
@@ -295,6 +294,9 @@ CREATE TABLE IF NOT EXISTS ZOiS_Mapowanie_Obszar (
     FOREIGN KEY (Obszar_Id) REFERENCES Obszary(Id) ON DELETE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS idx_zois_map_s1 ON ZOiS_Mapowanie_Obszar(ZOiS_S1);
+CREATE INDEX IF NOT EXISTS idx_zois_map_obszar ON ZOiS_Mapowanie_Obszar(Obszar_Id);
+
 DROP VIEW IF EXISTS v_zois_resolved_mapping;
 CREATE VIEW v_zois_resolved_mapping AS
 WITH AllMatches AS (
@@ -325,37 +327,39 @@ WHERE rnk = 1;
 
 DROP VIEW IF EXISTS v_obszary_rekoncyliacja;
 CREATE VIEW v_obszary_rekoncyliacja AS
-SELECT 
-    o.Id,
-    o.Nazwa,
-    o.Typ,
-    (SELECT SUM(sp.Kwota_RB) 
-     FROM Obszary_Sprawozdanie os
-     JOIN Sprawozdanie_Pozycje sp ON os.XmlTag = sp.XmlTag
-     WHERE os.Obszar_Id = o.Id) AS Suma_Sprawozdanie,
-    (SELECT SUM(
-        CASE 
-            WHEN z.Strona_Salda = 'TYLKO_WN' THEN z.S_10
-            WHEN z.Strona_Salda = 'TYLKO_MA' THEN z.S_11
-            WHEN z.Strona_Salda = 'PERSALDO_WN_MA' THEN (z.S_10 - z.S_11)
-            WHEN z.Strona_Salda = 'PERSALDO_MA_WN' THEN (z.S_11 - z.S_10)
-            ELSE 0 
-        END)
-     FROM ZOiS z
-     WHERE z.Obszar_Id = o.Id
-     AND z.IsAnalytical = 1
-    ) AS Suma_ZOiS,
-    (
-        COALESCE((SELECT SUM(
+WITH SumySprawozdanie AS (
+    SELECT 
+        os.Obszar_Id,
+        SUM(sp.Kwota_RB) AS Suma_Sprawozdanie
+    FROM Obszary_Sprawozdanie os
+    JOIN Sprawozdanie_Pozycje sp ON os.XmlTag = sp.XmlTag
+    GROUP BY os.Obszar_Id
+),
+SumyZOiS AS (
+    SELECT 
+        z.Obszar_Id,
+        SUM(
             CASE 
                 WHEN z.Strona_Salda = 'TYLKO_WN' THEN z.S_10
                 WHEN z.Strona_Salda = 'TYLKO_MA' THEN z.S_11
                 WHEN z.Strona_Salda = 'PERSALDO_WN_MA' THEN (z.S_10 - z.S_11)
                 WHEN z.Strona_Salda = 'PERSALDO_MA_WN' THEN (z.S_11 - z.S_10)
-                ELSE 0 END) FROM ZOiS z WHERE z.Obszar_Id = o.Id AND z.IsAnalytical = 1), 0)
-        - 
-        COALESCE((SELECT SUM(sp.Kwota_RB) FROM Obszary_Sprawozdanie os JOIN Sprawozdanie_Pozycje sp ON os.XmlTag = sp.XmlTag WHERE os.Obszar_Id = o.Id), 0)
-    ) AS Odchylenie
-FROM Obszary o;
+                ELSE 0 
+            END
+        ) AS Suma_ZOiS
+    FROM ZOiS z
+    WHERE z.IsAnalytical = 1
+    GROUP BY z.Obszar_Id
+)
+SELECT 
+    o.Id,
+    o.Nazwa,
+    o.Typ,
+    COALESCE(ss.Suma_Sprawozdanie, 0) AS Suma_Sprawozdanie,
+    COALESCE(sz.Suma_ZOiS, 0) AS Suma_ZOiS,
+    COALESCE(sz.Suma_ZOiS, 0) - COALESCE(ss.Suma_Sprawozdanie, 0) AS Odchylenie
+FROM Obszary o
+LEFT JOIN SumySprawozdanie ss ON o.Id = ss.Obszar_Id
+LEFT JOIN SumyZOiS sz ON o.Id = sz.Obszar_Id;
 
 -- Obszary są inicjalizowane z pliku insert_obszary.sql podczas tworzenia bazy
