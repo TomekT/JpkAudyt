@@ -1,14 +1,76 @@
 from fastapi import APIRouter, Request, Form, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 from pathlib import Path
 from app.services.database import db_service
+from app.services.export_service import generate_tsv
 import html
 
 router = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+class ZoisFilters(BaseModel):
+    q: Optional[str] = ""
+    type: Optional[str] = ""
+    obszar_id: Optional[str] = None
+    synthetic: Optional[bool] = True
+    empty: Optional[bool] = True
+    poziom_kont: str = 'syntetyka'  # 'syntetyka' lub 'wszystkie'
+
+class ZoisExportPayload(BaseModel):
+    filters: Optional[ZoisFilters] = None
+    record_ids: Optional[List[int]] = None
+
+@router.post("/api/zois/export-tsv")
+async def export_zois_tsv(payload: ZoisExportPayload):
+    conn = db_service.get_connection()
+    
+    if payload.record_ids:
+        placeholders = ", ".join(str(int(rid)) for rid in payload.record_ids)
+        where_sql = f"WHERE Id IN ({placeholders})"
+        params = {}
+    else:
+        filters = payload.filters or ZoisFilters()
+        where_sql, params = db_service.build_zois_where(
+            q=filters.q,
+            type=filters.type,
+            synthetic=filters.synthetic,
+            empty=filters.empty,
+            obszar_id=filters.obszar_id
+        )
+        
+        # Obsługa poziomu kont (syntetyka vs wszystkie)
+        if filters.poziom_kont == 'syntetyka':
+            if where_sql:
+                where_sql += " AND IsAnalytical = 0"
+            else:
+                where_sql = "WHERE IsAnalytical = 0"
+
+    sql = f"""
+        SELECT 
+            S_1 AS "Konto", 
+            S_2 AS "Nazwa", 
+            S_4 AS "BO Wn", 
+            S_5 AS "BO Ma", 
+            S_6 AS "Obroty Wn", 
+            S_7 AS "Obroty Ma", 
+            S_8 AS "Obroty Nar. Wn", 
+            S_9 AS "Obroty Nar. Ma", 
+            S_10 AS "Saldo Wn", 
+            S_11 AS "Saldo Ma"
+        FROM ZOiS
+        {where_sql}
+        ORDER BY S_1
+    """
+    
+    return StreamingResponse(
+        generate_tsv(conn, sql.format(where_sql=where_sql), params),
+        media_type="text/tab-separated-values; charset=utf-8"
+    )
 
 @router.get("/obszary", response_class=HTMLResponse)
 async def get_obszary(request: Request):

@@ -425,22 +425,27 @@
                                                         stroke-width="2" d="M19 9l-7 7-7-7" />
                                                 </svg>
                                             </label>
-                                            <ul tabindex="0"
+                                                          <ul tabindex="0"
                                                 class="dropdown-menu dropdown-content z-[100] menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-300 mt-1">
                                                 <li class="dropdown-item">
-                                                    <a onclick="copyTableToClipboard('zois-container', this)"
+                                                    <a onclick="exportDataToClipboard('/api/zois/export-tsv', { filters: { q: document.getElementById('global-zois-q').value, type: document.getElementById('filter-account-type').value, obszar_id: document.getElementById('filter-obszar').value, poziom_kont: 'syntetyka' } }, this)"
                                                         class="flex gap-2">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                                                         </svg>
-                                                        Kopiuj tabelę
+                                                        Kopiuj (Syntetyka)
                                                     </a>
                                                 </li>
-
-                                            </ul>
+                                                <li class="dropdown-item">
+                                                    <a onclick="exportDataToClipboard('/api/zois/export-tsv', { filters: { q: document.getElementById('global-zois-q').value, type: document.getElementById('filter-account-type').value, obszar_id: document.getElementById('filter-obszar').value, poziom_kont: 'wszystkie' } }, this)"
+                                                        class="flex gap-2">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 00-2-2H5a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2zm3 2h10V9l-3-3H12v13z" />
+                                                        </svg>
+                                                        Kopiuj (Z Analityką)
+                                                    </a>
+                                                </li>
+                                            </ul>                                    
                                         </div>
                                     </div>
 
@@ -704,7 +709,7 @@
                                             <ul tabindex="0"
                                                 class="dropdown-menu dropdown-content z-[200] menu p-2 shadow bg-base-100 rounded-box w-52 border border-base-300 mt-1">
                                                 <li class="dropdown-item">
-                                                    <a onclick="copyTableToClipboard('zapisy-container', this)"
+                                                    <a onclick="exportDataToClipboard('/api/zapisy/export-tsv', getZapisyPayload(), this)"
                                                         class="flex gap-2">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
                                                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -930,7 +935,7 @@
                             <h3 class="text-lg font-bold">Dziennik Zapisów</h3>
                             <div class="flex gap-2">
                                 <button class="btn btn-sm btn-outline btn-accent"
-                                    onclick="copyTableToClipboard('dziennik-container', this)">
+                                    onclick="exportDataToClipboard('/api/dziennik/export-tsv', { filters: {}, record_ids: [] }, this)">
                                     <span>Kopiuj</span>
                                 </button>
                                 <button id="btnRaportKsiegowan" class="btn btn-secondary btn-sm"
@@ -1453,124 +1458,97 @@
             }
         }
 
-        async function copyTableToClipboard(containerId, btn) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-
-            // Improved flattening: strip HTML and normalize whitespace
-            const flatten = (val) => {
-                if (!val) return "";
-                let text = val.toString().replace(/<[^>]*>?/gm, '').trim();
-                return text.replace(/\s+/g, " ");
-            };
-
-            const formatPL = (val) => {
-                if (val === null || val === undefined || val === '') return "";
-                const num = parseFloat(val.toString().replace(/\s/g, '').replace(',', '.'));
-                if (isNaN(num)) return val;
-                return num.toLocaleString('pl-PL', {
-                    minimumFractionDigits: 2, maximumFractionDigits: 2
-                }).replace(/\u00A0/g, ' ');
-            };
-
-            let headers = [];
-            let rowsRaw = [];
-
-            const isZois = containerId === 'zois-container';
-
-            if (isZois) {
-                // Header for ZOiS grid
-                const headerGrid = container.querySelector('.grid[class*="border-b-2"]');
-                if (headerGrid) {
-                    headers = Array.from(headerGrid.children).map(div => flatten(div.innerText));
-                }
-                // Rows for ZOiS (finding all divs with the grid class)
-                // Filter out the header if it was included
-                const gridRows = Array.from(container.querySelectorAll('.grid')).filter(g => !g.classList.contains('border-b-2'));
-                gridRows.forEach(row => {
-                    const cells = Array.from(row.children).map(cell => {
-                        // The first cell might have expander SVG and lines, we need clean text
-                        return flatten(cell.innerText);
-                    });
-                    if (cells.length > 0) rowsRaw.push(cells);
-                });
-            } else {
-                const table = container.querySelector('table');
-                if (!table) return;
-
-                const headerCells = Array.from(table.querySelectorAll('thead th'));
-                headers = headerCells.map(th => flatten(th.innerText));
-
-                Array.from(table.querySelectorAll('tbody tr')).forEach(row => {
-                    const tdElements = Array.from(row.querySelectorAll('td'));
-                    const cellData = tdElements.map(td => {
-                        const tooltip = td.querySelector('.tooltip');
-                        const text = flatten(tooltip ? tooltip.getAttribute('data-tip') : td.innerText);
-                        const type = td.getAttribute('data-type') || 'text';
-                        const val = td.getAttribute('data-value') || text;
-                        return { text, type, val };
-                    });
-                    rowsRaw.push(cellData);
-                });
-            }
-
-            if (headers.length === 0 && rowsRaw.length === 0) return;
-
-            let plainTextLines = [headers.join("\t")];
-            let rowsHtml = "<tr>" + headers.map(h => `<th style="border: 0.5pt solid #ccc; background-color: #eeeeee; font-weight: bold; text-align: center;">${h}</th>`).join("") + "</tr>";
-
-            rowsRaw.forEach(row => {
-                let cellTexts = [];
-                let rowHtml = "<tr>";
-
-                row.forEach(cell => {
-                    let text = typeof cell === 'object' ? cell.text : cell;
-                    let type = typeof cell === 'object' ? cell.type : 'text';
-                    let val = typeof cell === 'object' ? cell.val : text;
-
-                    // Clean text for plain text (tab-separated)
-                    cellTexts.push(text);
-
-                    if (type === 'number') {
-                        const rawVal = val.toString().replace(/\s+/g, '').replace(',', '.');
-                        rowHtml += `<td x:num="${rawVal}" style="mso-number-format: '\\#\\ \\#\\#0\\.00'; text-align: right; border: 0.5pt solid #ccc;">${formatPL(rawVal)}</td>`;
-                    } else if (type === 'date') {
-                        rowHtml += `<td style="mso-number-format: 'yyyy\\-mm\\-dd'; text-align: center; border: 0.5pt solid #ccc;">${val}</td>`;
-                    } else {
-                        rowHtml += `<td x:str style="mso-number-format: '\\@'; border: 0.5pt solid #ccc;">${text}</td>`;
-                    }
-                });
-
-                plainTextLines.push(cellTexts.join("\t"));
-                rowsHtml += rowHtml + "</tr>";
-            });
-
-            const excelHtml = `
-                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-                <head><meta http-equiv="content-type" content="text/html; charset=utf-8"></head>
-                <body><table border="1" style="border-collapse: collapse;">${rowsHtml}</table></body>
-                </html>`;
-
+        async function exportDataToClipboard(apiEndpoint, payload, buttonElement) {
+            const originalHTML = buttonElement.innerHTML;
+            const originalClass = buttonElement.className;
+            
             try {
-                const blobHtml = new Blob([excelHtml], { type: "text/html" });
-                const blobText = new Blob(["\ufeff" + plainTextLines.join("\n")], { type: "text/plain" });
+                // Pokaż stan ładowania
+                buttonElement.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Kopiowanie...';
+                buttonElement.disabled = true;
+                
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error(`Błąd serwera: ${response.status}`);
+                const textData = await response.text();
+                
+                try {
+                    // Optymalizacja Schowka: Użycie ClipboardItem i Bloba dla lepszego rozpoznawania typu MIME
+                    const blob = new Blob([textData], { type: 'text/plain' });
+                    const data = [new ClipboardItem({ 'text/plain': blob })];
+                    await navigator.clipboard.write(data);
+                } catch (clipboardErr) {
+                    // Fallback dla starszych przeglądarek lub problemów z uprawnieniami
+                    console.warn("API ClipboardItem zawiodło, użycie execCommand", clipboardErr);
+                    const textArea = document.createElement("textarea");
+                    textArea.value = textData;
+                    textArea.style.position = "fixed"; 
+                    textArea.style.top = "0";
+                    textArea.style.left = "0";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    if (!successful) throw new Error("Fallback kopiowania również zawiódł");
+                }
+                
+                buttonElement.innerHTML = 'Skopiowano!';
+                buttonElement.className = originalClass + ' text-success font-bold';
 
-                await navigator.clipboard.write([
-                    new ClipboardItem({ "text/html": blobHtml, "text/plain": blobText })
-                ]);
-
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = 'Skopiowano!';
-                const originalClass = btn.className;
-                btn.classList.add('text-success', 'font-bold');
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                    btn.className = originalClass;
-                }, 2000);
+                // Powiadomienie Toast o sukcesie
+                if (window.showNotification) {
+                    showNotification("Skopiowano dane do schowka!", "success");
+                }
             } catch (err) {
-                console.error('Błąd kopiowania:', err);
-                alert('Nie udało się skopiować danych. Sprawdź uprawnienia schowka.');
+                console.error('Błąd eksportu:', err);
+                const errorMsg = 'Nie udało się skopiować danych. ' + err.message;
+                
+                // Powiadomienie Toast o błędzie
+                if (window.showNotification) {
+                    showNotification(errorMsg, "error");
+                } else {
+                    alert(errorMsg);
+                }
+                
+                buttonElement.innerHTML = 'Błąd!';
+                buttonElement.className = originalClass + ' text-error';
+            } finally {
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalHTML;
+                    buttonElement.className = originalClass;
+                    buttonElement.disabled = false;
+                }, 2000);
             }
+        }
+
+        function getZapisyPayload() {
+            const filters = {
+                q: document.getElementById('global-zois-q')?.value || '',
+                type: document.getElementById('filter-account-type')?.value || '',
+                zq: document.getElementById('zapisy-local-q')?.value || '',
+                month: document.getElementById('filter-month')?.value || '',
+                konto: document.getElementById('adv_z3')?.value || '',
+                opis: document.getElementById('adv_z2')?.value || '',
+                dziennik_id: document.getElementById('adv_d1')?.value || '',
+                min_kwota: document.getElementById('adv_min_kwota')?.value || '',
+                obszar_id: document.getElementById('filter-obszar')?.value || ''
+            };
+            
+            const rows = document.querySelectorAll('#zapisy-container tbody tr[data-id]');
+            const visibleRows = Array.from(rows).filter(r => r.style.display !== 'none');
+            
+            let record_ids = [];
+            // Jeśli mamy widoczny wynik testu (mniej niż wszystkie wiersze), bierzemy ID
+            if (visibleRows.length > 0 && visibleRows.length < rows.length) {
+                record_ids = visibleRows.map(row => parseInt(row.getAttribute('data-id')));
+            }
+            
+            return { filters, record_ids };
         }
 
         let heartbeatTimer = null;

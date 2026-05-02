@@ -7,9 +7,10 @@ import json
 from pathlib import Path
 from typing import List, Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 from app.services.database import db_service
+from app.services.export_service import generate_tsv
 from app.services.etl import etl_service
 from app.services.legacy_etl import legacy_etl_service
 from app.services.agent_chat import AgentChat
@@ -135,6 +136,106 @@ async def chat_with_ai(request_data: ChatRequest, request: Request):
         # Nie rzucamy 500, aby frontend mógł wyświetlić czytelny komunikat o błędzie
         return {"response": f"Wystąpił błąd podczas przetwarzania pytania: {str(e)}"}
 
+class DziennikExportPayload(BaseModel):
+    filters: Optional[Dict[str, Any]] = None
+    record_ids: Optional[List[int]] = None
+
+class ZapisyExportPayload(BaseModel):
+    filters: Optional[Dict[str, Any]] = None
+    record_ids: Optional[List[int]] = None
+
+@api_router.post("/api/dziennik/export-tsv")
+async def export_dziennik_tsv(payload: DziennikExportPayload):
+    conn = db_service.get_connection()
+    
+    if payload.record_ids:
+        placeholders = ", ".join(str(int(rid)) for rid in payload.record_ids)
+        where_sql = f"WHERE Id IN ({placeholders})"
+        params = {}
+    else:
+        # Obsługa ewentualnych filtrów w przyszłości
+        where_sql = ""
+        params = {}
+
+    sql = f"""
+        SELECT 
+            D_1 AS "Nr Dowodu",
+            D_2 AS "Opis dziennika",
+            D_3 AS "Kontrahent",
+            D_4 AS "Dowód",
+            D_5 AS "Dowód źródłowy",
+            D_6 AS "Data operacji",
+            D_7 AS "Data dowodu",
+            D_8 AS "Data księgowania",
+            D_9 AS "Operator",
+            D_10 AS "Opis operacji",
+            D_11 AS "Kwota",
+            D_12 AS "KSeF"
+        FROM Dziennik
+        {where_sql}
+        ORDER BY Id
+    """
+    
+    return StreamingResponse(
+        generate_tsv(conn, sql, params),
+        media_type="text/tab-separated-values; charset=utf-8"
+    )
+
+@api_router.post("/api/zapisy/export-tsv")
+async def export_zapisy_tsv(payload: ZapisyExportPayload):
+    db_path = str(db_service.current_db_path) if db_service.current_db_path else ""
+    z_service = ZapisyService(db_path)
+    conn = db_service.get_connection()
+    
+    if payload.record_ids and len(payload.record_ids) > 0:
+        placeholders = ", ".join(str(int(rid)) for rid in payload.record_ids)
+        where_sql = f"WHERE z.id_zapisu IN ({placeholders})"
+        params = {}
+    else:
+        f = payload.filters or {}
+        where_sql, params = z_service.build_zapisy_where(
+            q=f.get('q', ''),
+            type=f.get('type', ''),
+            zq=f.get('zq', ''),
+            month=f.get('month', ''),
+            konto=f.get('konto', ''),
+            opis=f.get('opis', ''),
+            min_kwota=f.get('min_kwota', ''),
+            dziennik_id=f.get('dziennik_id', ''),
+            obszar_id=f.get('obszar_id', '')
+        )
+
+    # Subquery for counter-accounts (Konta Przeciwstawne)
+    subquery = """
+    (
+        SELECT GROUP_CONCAT(DISTINCT SUBSTR(zp.Z_3, 1, 3)) 
+        FROM Zapisy zp 
+        WHERE zp.Dziennik_Id = z.Dziennik_Id 
+          AND zp.Z_3 != z.Z_3
+    )
+    """
+
+    sql = f"""
+        SELECT 
+            z.Numer_Konta AS "Konto",
+            {subquery} AS "Konta Przec.",
+            z.Opis_Zapisu AS "Opis",
+            z.Z_Data AS "Data",
+            z.Numer_Dziennika AS "Dziennik",
+            z.Kwota_Wn AS "Kwota Wn",
+            z.Kwota_Ma AS "Kwota Ma",
+            z.Dowod AS "Dowód",
+            z.Operacja AS "Operacja",
+            z.Kontrahent AS "Kontrahent"
+        FROM v_zapisy_pelne z
+        {where_sql}
+        ORDER BY z.Z_Data ASC, z.id_zapisu ASC
+    """
+    
+    return StreamingResponse(
+        generate_tsv(conn, sql, params),
+        media_type="text/tab-separated-values; charset=utf-8"
+    )
 
 @api_router.post("/api/zois/group-ai")
 async def group_zois_accounts():
