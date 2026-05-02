@@ -660,7 +660,7 @@
                     </div> <!-- end tabpanel for ZOiS -->
 
                     <input id="tab-obszary" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Obszary"
-                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
+                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(false);" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                         <div id="obszary-main-container" hx-get="/obszary" hx-trigger="intersect once, refresh" hx-swap="innerHTML">
@@ -671,7 +671,7 @@
                     </div>
 
                     <input id="tab-zapisy" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Zapisy"
-                        onclick="triggerAiSave(); htmx.trigger('body', 'filter-updated');" />
+                        onclick="triggerAiSave(); resetAllZoisFilters(false); htmx.trigger('body', 'filter-updated');" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                         <div class="flex justify-between items-center mb-4">
@@ -929,7 +929,7 @@
                     </div> <!-- end tabpanel for Zapisy -->
 
                     <input id="tab-dziennik" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Dziennik"
-                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
+                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(false);" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                         <!-- Dziennik View -->
@@ -954,7 +954,7 @@
                     </div>
 
                     <input id="tab-podmiot" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Podmiot"
-                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
+                        onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(false);" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                         <!-- Podmiot View -->
@@ -970,7 +970,7 @@
 
                     <!-- Settings Tab (Ustawienia) -->
                     <input id="tab-settings" type="radio" name="main_tabs" role="tab" class="tab"
-                        aria-label="Ustawienia" onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
+                        aria-label="Ustawienia" onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(false);" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
                         <div class="flex h-full gap-6">
@@ -1100,6 +1100,15 @@
                                                         <input type="number" id="cfg-timeout" name="server_timeout"
                                                             class="input input-bordered input-md w-full focus:border-primary transition-all font-mono"
                                                             min="3" step="1" required />
+                                                    </div>
+                                                    <div class="form-control w-full">
+                                                        <label class="label">
+                                                            <span
+                                                                class="label-text text-xs uppercase font-bold opacity-60">Limit wyświetlanych rekordów</span>
+                                                        </label>
+                                                        <input type="number" id="cfg-display-limit" name="display_limit"
+                                                            class="input input-bordered input-md w-full focus:border-primary transition-all font-mono"
+                                                            min="100" step="100" required />
                                                     </div>
                                                     <div id="system-config-status"
                                                         class="mt-4 transition-all duration-300"></div>
@@ -1597,8 +1606,10 @@
                 // Update settings form if exists
                 const hInput = document.getElementById('cfg-heartbeat');
                 const tInput = document.getElementById('cfg-timeout');
+                const dInput = document.getElementById('cfg-display-limit');
                 if (hInput) hInput.value = config.heartbeat_interval;
                 if (tInput) tInput.value = config.server_timeout;
+                if (dInput) dInput.value = config.display_limit;
 
                 heartbeatTimer = setInterval(async () => {
                     try {

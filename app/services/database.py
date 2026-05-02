@@ -696,6 +696,9 @@ class DatabaseService:
             if added:
                 conn.commit()
                 self.update_zois_mapping_cache()
+            
+            # Zawsze upewnij się, że widok v_zapisy_pelne jest zgodny z ustawieniami
+            self.update_zapisy_view()
                 
         except Exception as e:
             logger.error(f"Błąd podczas sprawdzania schematu wydajnościowego: {e}")
@@ -727,6 +730,60 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Błąd aktualizacji cache'u mapowania: {e}")
             conn.rollback()
+
+    def update_zapisy_view(self):
+        """
+        Upewnia się, że widok v_zapisy_pelne posiada inteligentny warunek WHERE 
+        korzystający z tabeli ParametryBadania.
+        """
+        try:
+            conn = self.get_connection()
+            sql = """
+            DROP VIEW IF EXISTS v_zapisy_pelne;
+            CREATE VIEW v_zapisy_pelne AS
+            SELECT 
+                z.Id AS id_zapisu,
+                z.Id,
+                z.Dziennik_Id,
+                z.Z_3,
+                z.Z_3 AS Numer_Konta,
+                z.Z_2,
+                z.Z_2 AS Opis_Zapisu,
+                z.Z_Data,
+                z.Z_DataMiesiac,
+                z.Z_GrupaKont,
+                z.Z_4,
+                z.Z_4 AS Kwota_Wn,
+                z.Z_5,
+                z.Z_5 AS Kwota_Waluta_Wn,
+                z.Z_6,
+                z.Z_6 AS Kod_Waluty_Wn,
+                z.Z_7,
+                z.Z_7 AS Kwota_Ma,
+                z.Z_8,
+                z.Z_8 AS Kwota_Waluta_Ma,
+                z.Z_9,
+                z.Z_9 AS Kod_Waluty_Ma,
+                (z.Z_4 + z.Z_7) AS Kwota,
+                d.D_1 AS Numer_Dziennika,
+                d.D_1,
+                d.D_8 AS Data_ksiegowania,
+                d.D_4 AS Dowod,
+                d.D_10 AS Operacja,
+                d.D_3 AS Kontrahent,
+                d.D_12 AS KSeF
+            FROM Zapisy z
+            LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
+            WHERE (
+                d.D_1 NOT LIKE 'BO%' 
+                OR COALESCE((SELECT Tekst FROM ParametryBadania WHERE Klucz = 'Ukryj_BO'), '1') = '0'
+            );
+            """
+            conn.executescript(sql)
+            conn.commit()
+            logger.info("Zsynchronizowano definicję widoku v_zapisy_pelne ze schematem.")
+        except Exception as e:
+            logger.error(f"Błąd aktualizacji widoku zapisów: {e}")
 
 db_service = DatabaseService()
 

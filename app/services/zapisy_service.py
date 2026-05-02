@@ -112,7 +112,7 @@ class ZapisyService:
         where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         return where_sql, params
 
-    def get_zapisy_pelne(self, q: str = "", type: str = "", zq: str = "", month: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = "", limit: int = 1000, offset: int = 0, adv_sort: str = "", with_details: bool = False, obszar_id: str = ""):
+    def get_zapisy_pelne(self, q: str = "", type: str = "", zq: str = "", month: str = "", konto: str = "", opis: str = "", min_kwota: str = "", dziennik_id: str = "", limit: int = 20000, offset: int = 0, adv_sort: str = "", with_details: bool = False, obszar_id: str = ""):
         """
         Retrieves accounting entries from the v_zapisy_pelne view applying all filters.
         Returns a dict: {'rows': list, 'sum_wn': float, 'sum_ma': float}

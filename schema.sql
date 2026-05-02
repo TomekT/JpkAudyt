@@ -258,7 +258,10 @@ SELECT
     d.D_12 AS KSeF                -- Numer KSeF
 FROM Zapisy z
 LEFT JOIN Dziennik d ON z.Dziennik_Id = d.Id
-WHERE d.D_1 NOT LIKE 'BO%';
+WHERE (
+    d.D_1 NOT LIKE 'BO%' 
+    OR COALESCE((SELECT Tekst FROM ParametryBadania WHERE Klucz = 'Ukryj_BO'), '1') = '0'
+);
 
 -- =============================================================================
 -- SEKCJA: OBSZARY BADANIA (ARCHITEKTURA MAPOWANIA DZIEDZICZONEGO)

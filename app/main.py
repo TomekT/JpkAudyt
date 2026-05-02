@@ -375,17 +375,19 @@ async def dashboard(request: Request):
     params = {}
     try:
         conn = db_service.get_connection()
-        keys = ["Biegly", "Istotnosc_Ogolna", "Istotnosc_Wykonawcza", "Istotnosc_Trywialna", "Uwagi"]
+        keys = ["Biegly", "Istotnosc_Ogolna", "Istotnosc_Wykonawcza", "Istotnosc_Trywialna", "Uwagi", "Ukryj_BO"]
         for key in keys:
             row = conn.execute("SELECT Tekst, Kwota FROM ParametryBadania WHERE Klucz = ?", (key,)).fetchone()
             if row:
                 kwota = int(round(row["Kwota"])) if row["Kwota"] is not None else 0
                 params[key] = {"Tekst": row["Tekst"], "Kwota": kwota}
             else:
-                params[key] = {"Tekst": "", "Kwota": 0}
+                # Domyślnie Ukryj_BO jest włączone
+                default_tekst = "1" if key == "Ukryj_BO" else ""
+                params[key] = {"Tekst": default_tekst, "Kwota": 0}
     except:
         # Fallback if no DB or table doesn't exist yet
-        params = {k: {"Tekst": "", "Kwota": 0} for k in ["Biegly", "Istotnosc_Ogolna", "Istotnosc_Wykonawcza", "Istotnosc_Trywialna", "Uwagi"]}
+        params = {k: ({"Tekst": "1", "Kwota": 0} if k == "Ukryj_BO" else {"Tekst": "", "Kwota": 0}) for k in ["Biegly", "Istotnosc_Ogolna", "Istotnosc_Wykonawcza", "Istotnosc_Trywialna", "Uwagi", "Ukryj_BO"]}
 
     # Fetch config for ai_tab.html
     config = config_ai_manager.get_config()
@@ -888,7 +890,7 @@ def render_zois_tree(nodes, depth=0, expand_all=False):
     return html
 
 @app.get("/zois", response_class=HTMLResponse)
-async def get_zois(request: Request, q: str = "", type: str = "", forced_ids: str = "", 
+def get_zois(request: Request, q: str = "", type: str = "", forced_ids: str = "", 
                    synthetic: str = "true", expand: str = "false", empty: str = "true", obszar_id: str = ""):
     is_synthetic = synthetic.lower() == "true"
     is_expand = expand.lower() == "true"
@@ -1071,7 +1073,7 @@ async def get_zois(request: Request, q: str = "", type: str = "", forced_ids: st
         return f"<div class='alert alert-error'>Błąd pobierania danych: {e}</div>"
 
 @app.get("/zois/filters", response_class=HTMLResponse)
-async def get_zois_filters():
+def get_zois_filters():
     try:
         conn = db_service.get_connection()
         rows = conn.execute("SELECT DISTINCT TypKonta FROM ZOiS WHERE TypKonta IS NOT NULL AND TypKonta != ''").fetchall()
@@ -1090,13 +1092,14 @@ async def get_zois_filters():
 
 
 @app.get("/dziennik", response_class=HTMLResponse)
-async def get_dziennik():
+def get_dziennik():
     try:
         conn = db_service.get_connection()
         # Updated Dziennik mapping:
         # Nr dziennika -> D_1, Opis -> D_10, Nr dowodu -> D_4, 
         # Data zapisu -> D_8, Wartość -> D_11, KSeF -> D_12
-        rows = conn.execute("SELECT D_1, D_10, D_4, D_8, D_11, D_12 FROM Dziennik ORDER BY D_8 LIMIT 500").fetchall()
+        limit = config_manager.config.display_limit
+        rows = conn.execute(f"SELECT D_1, D_10, D_4, D_8, D_11, D_12 FROM Dziennik ORDER BY D_8 LIMIT {limit}").fetchall()
         
         html_rows = ""
         for row in rows:
@@ -1142,8 +1145,8 @@ async def get_dziennik():
 @app.get("/data/table", response_class=HTMLResponse)
 @app.get("/data/zapisy", response_class=HTMLResponse)
 @app.get("/zapisy", response_class=HTMLResponse)
-async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", details: str = "", with_details: bool = False, page: int = 1, konto: str = "", opis: str = "", min_kwota: str = "", adv_sort: str = "", dziennik_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = "", obszar_id: str = ""):
-    pageSize = 1000
+def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "", details: str = "", with_details: bool = False, page: int = 1, konto: str = "", opis: str = "", min_kwota: str = "", adv_sort: str = "", dziennik_id: str = "", adv_z3: str = "", adv_z2: str = "", adv_min_kwota: str = "", adv_d1: str = "", obszar_id: str = ""):
+    pageSize = config_manager.config.display_limit
     offset = (page - 1) * pageSize
     try:
         # Compatibility mapping
@@ -1316,7 +1319,7 @@ async def get_zapisy(q: str = "", type: str = "", zq: str = "", month: str = "",
 
 
 @app.get("/dziennik-details/{dziennik_id}", response_class=HTMLResponse)
-async def get_dziennik_details(dziennik_id: int):
+def get_dziennik_details(dziennik_id: int):
     try:
         conn = db_service.get_connection()
         # 1. Fetch journal details
@@ -1505,7 +1508,8 @@ async def save_badanie(
     istotnosc_ogolna: str = Form("0"),
     istotnosc_wykonawcza: str = Form("0"),
     istotnosc_trywialna: str = Form("0"),
-    uwagi: str = Form("")
+    uwagi: str = Form(""),
+    ukryj_bo: Optional[str] = Form(None)
 ):
     try:
         # Clean and round to integer
@@ -1524,7 +1528,8 @@ async def save_badanie(
             ("Istotnosc_Ogolna", "Istotność Ogólna", None, val_ogolna),
             ("Istotnosc_Wykonawcza", "Istotność Wykonawcza", None, val_wykonawcza),
             ("Istotnosc_Trywialna", "Kwota pomijalna w badaniu", None, val_trywialna),
-            ("Uwagi", "Uwagi do pliku", uwagi, None)
+            ("Uwagi", "Uwagi do pliku", uwagi, None),
+            ("Ukryj_BO", "Usuń BO z zapisów", "1" if ukryj_bo else "0", None)
         ]
         
         for klucz, opis, tekst, kwota in data:
@@ -1538,7 +1543,13 @@ async def save_badanie(
             """, (klucz, opis, tekst, kwota))
         
         conn.commit()
-        return HTMLResponse(content="Parametry zapisane", headers={"HX-Trigger": "badanie-updated"})
+        
+        # Przeładowanie widoku zapisów (Ukryj BO)
+        db_service.update_zapisy_view()
+        
+        # Wyzwalanie odświeżenia danych w tabelach
+        headers = {"HX-Trigger": "filter-updated"}
+        return HTMLResponse(content="Parametry zapisane", headers=headers)
     except Exception as e:
         print(f"Błąd zapisu Badanie: {e}")
         return HTMLResponse(content=f"Błąd zapisu: {e}", status_code=500)
@@ -1788,7 +1799,7 @@ async def export_ai_full():
         return HTMLResponse(content=f"<div class='alert alert-error'>Błąd eksportu: {e}</div>", status_code=500)
 
 @app.get("/podmiot", response_class=HTMLResponse)
-async def get_podmiot():
+def get_podmiot():
     try:
         conn = db_service.get_connection()
         
@@ -2082,7 +2093,7 @@ async def mus_execute(
         return HTMLResponse(content=f"<div class='alert alert-error font-mono text-xs p-4'>Wystąpił twardy błąd generatora:<br><br>{str(e)}</div>")
 
 @app.get("/api/jpk/check-consistency", response_class=HTMLResponse)
-async def get_jpk_check_consistency():
+def get_jpk_check_consistency():
     try:
         results = db_service.get_import_consistency_check()
         is_kr_pd = results["is_kr_pd"]
@@ -2218,16 +2229,17 @@ async def get_jpk_check_consistency():
 async def get_system_config():
     return {
         "heartbeat_interval": config_manager.config.heartbeat_interval,
-        "server_timeout": config_manager.config.server_timeout
+        "server_timeout": config_manager.config.server_timeout,
+        "display_limit": config_manager.config.display_limit
     }
 
 @app.post("/api/config/system")
-async def update_system_config(heartbeat_interval: int = Form(...), server_timeout: int = Form(...)):
+async def update_system_config(heartbeat_interval: int = Form(...), server_timeout: int = Form(...), display_limit: int = Form(5000)):
     # Walidacja również po stronie backendu
     if server_timeout < 3 * heartbeat_interval:
         raise HTTPException(status_code=400, detail="Timeout musi być co najmniej 3 razy większy niż interwał.")
     
-    config_manager.update_system_config(heartbeat_interval, server_timeout)
+    config_manager.update_system_config(heartbeat_interval, server_timeout, display_limit)
     return HTMLResponse(content="""
         <div class="alert alert-success shadow-lg">
             <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>

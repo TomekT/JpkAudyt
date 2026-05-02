@@ -31,6 +31,7 @@ class AppConfig(BaseModel):
     theme: str = "light"
     heartbeat_interval: int = 5
     server_timeout: int = 30
+    display_limit: int = 5000
 
 class ConfigAIManager:
     config_file: Path
@@ -116,9 +117,10 @@ class ConfigManager:
         except Exception:
             return AppConfig()
 
-    def update_system_config(self, heartbeat_interval: int, server_timeout: int):
+    def update_system_config(self, heartbeat_interval: int, server_timeout: int, display_limit: int = 5000):
         self.config.heartbeat_interval = heartbeat_interval
         self.config.server_timeout = server_timeout
+        self.config.display_limit = display_limit
         self.save_config()
 
     def save_config(self):

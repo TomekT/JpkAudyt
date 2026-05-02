@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import Dict, Any
+from pathlib import Path
 
 from google import genai
 from google.genai import types
@@ -34,6 +35,27 @@ class ZoisNamingAgent:
         except Exception as e:
             raise AIConnectionError(f"Błąd inicjalizacji klienta: {e}")
 
+    def _load_knowledge(self) -> str:
+        """
+        Wczytuje treść pliku wiedzy z planem kont.
+        Bezpiecznie odczytuje plik resources/knowledge/wzorcowy_plan_kont.md przy użyciu pathlib.
+        """
+        # Próba odnalezienia pliku relatywnie do korzenia projektu
+        # Plik znajduje się w app/resources/knowledge/wzorcowy_plan_kont.md
+        current_file = Path(__file__).resolve()
+        # agent_group_zois.py jest w app/services/, więc resources jest w parent.parent / "resources"
+        potential_path = current_file.parent.parent / "resources" / "knowledge" / "wzorcowy_plan_kont.md"
+        
+        try:
+            if potential_path.exists():
+                return potential_path.read_text(encoding="utf-8")
+            else:
+                logger.warning(f"Plik wiedzy nie został znaleziony: {potential_path}")
+                return ""
+        except Exception as e:
+            logger.error(f"Błąd podczas wczytywania pliku wiedzy: {e}")
+            return ""
+
     def generate_names(self, groups_data: list) -> Dict[str, str]:
         """
         Pobiera z serwera AI propozycje nazw dla list grup analitycznych.
@@ -46,12 +68,22 @@ class ZoisNamingAgent:
         if not self._client:
             raise AIConnectionError("Klient AI nie jest zainicjalizowany")
 
+        # Wczytanie wiedzy pomocniczej
+        knowledge = self._load_knowledge()
+
         system_prompt = (
             "Jesteś ekspertem od planów kont w polskiej rachunkowości dla spółek handlowych i produkcyjnych. Otrzymasz JSON z listą grup kont. Twoim zadaniem jest zaproponowanie profesjonalnej "
             "nazwy dla każdej grupy (syntetyki). Sugeruj się wzorcowymi planami kont i nazwami kont analitycznych. "
             "Zwróć wyłącznie płaski obiekt JSON, gdzie kluczem jest numer grupy (string), a wartością nowa nazwa (string). "
             "Przykład: {'100': 'Kasa', '130': 'Rachunek bieżący'}."
         )
+
+        if knowledge:
+            system_prompt += (
+                f"\n\nWIEDZA:\n{knowledge}\n\n"
+                "Instrukcja: W przypadku wątpliwości przy interpretacji opisów kont analitycznych, odnieś się do sekcji WIEDZA. "
+                "Traktuj pierwsze dwie cyfry numeru konta jako klucz do identyfikacji poprawnej nazwy grupy zgodnie ze wzorcem."
+            )
 
         try:
             config = types.GenerateContentConfig(
