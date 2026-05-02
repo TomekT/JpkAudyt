@@ -652,7 +652,7 @@
                             </div> <!-- end flex gap-4 -->
                         </div> <!-- end justify-between header -->
 
-                        <div id="zois-container" hx-get="/zois" hx-trigger="load, db-changed from:body"
+                        <div id="zois-container" hx-get="/zois" hx-trigger="load, refresh"
                             hx-swap="innerHTML">
                             <span id="zois-spinner" class="loading loading-spinner loading-lg htmx-indicator"></span>
                             Ładowanie danych...
@@ -663,8 +663,10 @@
                         onclick="triggerAiSave(); resetZapisyLocalFilters(false); resetAllZoisFilters(true);" />
                     <div role="tabpanel"
                         class="tab-content flex-1 overflow-y-auto overflow-x-auto bg-base-100 border-base-300 rounded-box p-6">
-                        <div id="obszary-main-container" hx-get="/obszary" hx-trigger="load, db-changed from:body" hx-swap="innerHTML">
-                            <span class="loading loading-spinner loading-lg"></span> Ładowanie danych...
+                        <div id="obszary-main-container" hx-get="/obszary" hx-trigger="intersect once, refresh" hx-swap="innerHTML">
+                            <div class="flex justify-center p-20">
+                                <span class="loading loading-spinner loading-lg text-secondary"></span>
+                            </div>
                         </div>
                     </div>
 
@@ -917,7 +919,7 @@
                         </div> <!-- end flex justify-between header -->
 
                         <div id="zapisy-container" hx-get="/data/table"
-                            hx-trigger="load, db-changed from:body, filter-updated from:body"
+                            hx-trigger="intersect once, refresh, filter-updated from:body"
                             hx-include=".zois-filter, .zapisy-filter, #toggle-szczegoly" hx-swap="innerHTML"
                             hx-indicator="#main-spinner">
                             <div class="flex justify-center items-center p-12">
@@ -945,8 +947,8 @@
                             </div>
                         </div>
 
-                        <div id="dziennik-container" hx-get="/dziennik" hx-trigger="load, db-changed from:body"
-                            hx-swap="innerHTML">
+                        <div id="dziennik-container" hx-get="/dziennik" hx-trigger="intersect once, refresh"
+                            class="min-h-[400px]">
                             <span class="loading loading-spinner loading-lg"></span> Ładowanie danych...
                         </div>
                     </div>
@@ -960,7 +962,7 @@
                             <h3 class="text-lg font-bold">Informacje o Podmiocie</h3>
                         </div>
 
-                        <div id="podmiot-container" hx-get="/podmiot" hx-trigger="load, db-changed from:body"
+                        <div id="podmiot-container" hx-get="/podmiot" hx-trigger="intersect once, refresh"
                             hx-swap="innerHTML">
                             <span class="loading loading-spinner loading-lg"></span> Ładowanie danych...
                         </div>
@@ -2192,15 +2194,48 @@
         }
 
         document.body.addEventListener("db-changed", (evt) => {
-            console.log("Database changed, checking for reload...");
-            // Jeśli event ma no_reload=true, nie przeładowujemy całej strony
-            // Pozwala to na wyświetlenie modali (np. spójności) bez przerywania ich działania
-            if (evt.detail && evt.detail.no_reload === true) {
-                console.log("Skipping reload (no_reload=true)");
-                return;
+            console.log("Database changed, refreshing active components...");
+            if (evt.detail && evt.detail.no_reload === true) return;
+            
+            // 1. Refresh global indicators
+            htmx.trigger("#active-db-name", "load");
+            htmx.trigger("#active-podmiot-name", "load");
+            htmx.trigger("#recent-dbs", "load");
+            
+            // 2. Refresh ONLY the currently active tab
+            const activeTab = document.querySelector('input[name="main_tabs"]:checked');
+            if (activeTab) {
+                const panel = activeTab.nextElementSibling;
+                const container = panel.querySelector('[hx-get]');
+                if (container) {
+                    console.log("Refreshing active container:", container.id);
+                    htmx.trigger(container, 'refresh');
+                }
             }
-            console.log("Reloading...");
-            location.reload();
+            
+            // 3. Mark other tabs for reload on next visit by clearing them
+            document.querySelectorAll('div[role="tabpanel"]').forEach(panel => {
+                if (!activeTab || panel !== activeTab.nextElementSibling) {
+                    const container = panel.querySelector('[hx-get]');
+                    if (container) {
+                        container.innerHTML = '<div class="flex justify-center p-20"><span class="loading loading-spinner loading-lg opacity-20"></span></div>';
+                        // We need to re-trigger htmx to handle the 'intersect once' again
+                        // The simplest way is to ensure it doesn't have the settled state
+                        container.classList.remove('htmx-settled');
+                    }
+                }
+            });
+        });
+
+        // Listen for tab switches to trigger lazy load if needed
+        document.querySelectorAll('input[name="main_tabs"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const panel = e.target.nextElementSibling;
+                const container = panel.querySelector('[hx-get]');
+                if (container && container.innerHTML.includes('loading-spinner')) {
+                    htmx.trigger(container, 'refresh');
+                }
+            });
         });
     </script>
 

@@ -883,12 +883,13 @@ async def get_zois(request: Request, q: str = "", type: str = "", forced_ids: st
         )
 
         try:
+            # Używamy denormalizowanych kolumn (Obszar_Id, Strona_Salda, Is_Direct_Mapping) dla maksymalnej wydajności
             sql = f"""
-                SELECT z.S_1, z.S_2, z.S_3, z.S_4, z.S_5, z.S_8, z.S_9, z.S_10, z.S_11, z.IsAnalytical, z.TypKonta,
-                       rm.Obszar_Id, rm.Strona_Salda, rm.Is_Direct
-                FROM (SELECT * FROM ZOiS {where_sql}) z
-                LEFT JOIN v_zois_resolved_mapping rm ON z.S_1 = rm.S_1
-                ORDER BY z.S_1
+                SELECT S_1, S_2, S_3, S_4, S_5, S_8, S_9, S_10, S_11, IsAnalytical, TypKonta,
+                       Obszar_Id, Strona_Salda, Is_Direct_Mapping AS Is_Direct
+                FROM ZOiS
+                {where_sql}
+                ORDER BY S_1
             """
             rows = conn.execute(sql, params).fetchall()
             
@@ -918,13 +919,13 @@ async def get_zois(request: Request, q: str = "", type: str = "", forced_ids: st
                     target_obszar = int(obszar_id)
                     totals_sql = f"""
                         SELECT 
-                            SUM(z.S_10) as sum_wn, 
-                            SUM(z.S_11) as sum_ma,
-                            COUNT(z.S_1) as total_count,
-                            SUM(CASE WHEN z.TypKonta LIKE 'PASYWA%' OR z.TypKonta LIKE 'WYNIKOWE%' THEN 1 ELSE 0 END) as special_count
-                        FROM (SELECT * FROM ZOiS {where_sql}) z
-                        JOIN v_zois_resolved_mapping rm ON z.S_1 = rm.S_1
-                        WHERE rm.Obszar_Id = :oid AND z.IsAnalytical = 1
+                            SUM(S_10) as sum_wn, 
+                            SUM(S_11) as sum_ma,
+                            COUNT(S_1) as total_count,
+                            SUM(CASE WHEN TypKonta LIKE 'PASYWA%' OR TypKonta LIKE 'WYNIKOWE%' THEN 1 ELSE 0 END) as special_count
+                        FROM ZOiS
+                        WHERE Obszar_Id = :oid AND IsAnalytical = 1
+                        {where_sql.replace('WHERE', 'AND') if where_sql else ""}
                     """
                     totals_params = params.copy()
                     totals_params["oid"] = target_obszar

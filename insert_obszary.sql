@@ -113,4 +113,24 @@ INSERT OR IGNORE INTO Obszary_Sprawozdanie (Obszar_Id, XmlTag) VALUES
 (5, 'Aktywa_A_IV_3_B_4'), -- Inwestycje długoterminowe - inne
 (5, 'Aktywa_A_IV_3_C_4'), -- Inwestycje długoterminowe - inne
 (5, 'Aktywa_A_IV_4'), -- Inwestycje długoterminowe - inne
-(6, 'Aktywa_B_I'); -- Zapasy
+(6, 'Aktywa_B_I'), -- Zapasy
+(9, 'Aktywa_B_III_1_C'); -- Środki Pieniężne
+
+-- Domyślne mapowania ZOiS dla najpopularniejszych systemów (Enova, Symfonia, Comarch)
+-- Mapujemy całe grupy (np. '0' to wszystkie środki trwałe) - mechanizm dziedziczenia to obsłuży
+INSERT OR IGNORE INTO ZOiS_Mapowanie_Obszar (Obszar_Id, ZOiS_S1, Strona_Salda) VALUES
+(1, '01', 'PERSALDO_WN_MA'), -- WNiP
+(2, '02', 'PERSALDO_WN_MA'), -- Środki Trwałe
+(2, '03', 'PERSALDO_WN_MA'), -- Środki Trwałe w budowie
+(6, '3', 'PERSALDO_WN_MA'),  -- Zapasy
+(7, '20', 'TYLKO_WN'),       -- Należności handlowe (tylko Wn)
+(14, '20', 'TYLKO_MA'),      -- Zobowiązania handlowe (tylko Ma z konta 20)
+(14, '21', 'TYLKO_MA'),      -- Zobowiązania handlowe
+(7, '21', 'TYLKO_WN'),       -- Należności (tylko Wn z konta 21)
+(9, '10', 'PERSALDO_WN_MA'), -- Kasa
+(9, '13', 'PERSALDO_WN_MA'), -- Banki
+(11, '80', 'PERSALDO_MA_WN'), -- Kapitały
+(16, '70', 'PERSALDO_MA_WN'), -- Przychody ze sprzedaży
+(17, '40', 'PERSALDO_WN_MA'), -- Koszty (rodzajowa)
+(17, '50', 'PERSALDO_WN_MA'), -- Koszty (zespół 5)
+(19, '40', 'PERSALDO_WN_MA'); -- Amortyzacja

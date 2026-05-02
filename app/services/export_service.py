@@ -14,6 +14,9 @@ def generate_tsv(conn: sqlite3.Connection, query: str, params: Union[tuple, dict
     col_names = [desc[0] for desc in cursor.description]
     yield "\t".join(col_names) + "\n"
     
+    # Kolumny, które Excel agresywnie zamienia na daty (np. 401-1-1)
+    TEXT_COLUMNS = {"Konto", "Konta Przec."}
+    
     while True:
         rows = cursor.fetchmany(1000)
         if not rows:
@@ -21,21 +24,24 @@ def generate_tsv(conn: sqlite3.Connection, query: str, params: Union[tuple, dict
             
         for row in rows:
             formatted_row = []
-            for item in row:
+            for i, item in enumerate(row):
+                col_name = col_names[i]
+                
                 if item is None:
-                    formatted_row.append("")
-                elif isinstance(item, bool):
-                    # Zabezpieczenie przed bool, choć sqlite nie ma typu bool jako takiego
-                    formatted_row.append(str(item))
+                    val = ""
                 elif isinstance(item, (int, float)):
-                    # Formatowanie numeryczne: zmiana kropki dziesiętnej na przecinek, brak separatora tysięcy
-                    # sqlite zwraca float lub int
-                    formatted_row.append(str(item).replace(".", ","))
+                    # Formatowanie numeryczne: zmiana kropki dziesiętnej na przecinek
+                    val = str(item).replace(".", ",")
                 elif isinstance(item, str):
-                    # Sanityzacja tekstów: usunięcie znaków nowej linii oraz tabulacji (zamiana na spację)
-                    sanitized = re.sub(r'[\r\n\t]+', ' ', item)
-                    formatted_row.append(sanitized)
+                    # Sanityzacja tekstów: usunięcie znaków nowej linii oraz tabulacji
+                    val = re.sub(r'[\r\n\t]+', ' ', item)
                 else:
-                    formatted_row.append(str(item))
+                    val = str(item)
+                
+                # Wymuszanie formatu tekstowego dla wybranych kolumn (numery kont)
+                if col_name in TEXT_COLUMNS and val and not val.startswith('="'):
+                    val = f'="{val}"'
+                    
+                formatted_row.append(val)
                     
             yield "\t".join(formatted_row) + "\n"

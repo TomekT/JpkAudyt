@@ -37,6 +37,7 @@ class ETLService:
         self._update_zois_analytical_status()
         self._insert_header_data(metadata)
         self._update_zois_typ_konta()
+        self.db.update_zois_mapping_cache()
         
         logger.info("Import completed successfully.")
         return str(db_path)
@@ -212,14 +213,17 @@ class ETLService:
             flush_buffers(force=True)
 
             # Link Zapisy to Dziennik using business key D_1 = Z_NrZapisu
-            logger.info("Linking Zapisy to Dziennik via business key...")
+            logger.info("Łączenie Zapisów z Dziennikiem (klucze biznesowe) i aktualizacja dat...")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_dziennik_d1 ON Dziennik(D_1)")
             cursor.execute("""
                 UPDATE Zapisy 
-                SET Dziennik_Id = (SELECT Id FROM Dziennik WHERE D_1 = Zapisy.Z_NrZapisu) 
-                WHERE Dziennik_Id IS NULL
+                SET Dziennik_Id = d.Id,
+                    Z_Data = d.D_8
+                FROM Dziennik d
+                WHERE d.D_1 = Zapisy.Z_NrZapisu AND Zapisy.Dziennik_Id IS NULL
             """)
             cursor.execute("DROP INDEX idx_dziennik_d1")
+            logger.info("Zakończono łączenie i aktualizację dat.")
 
     def _insert_header_data(self, metadata):
         conn = self.db.get_connection()

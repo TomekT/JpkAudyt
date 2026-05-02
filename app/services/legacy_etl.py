@@ -43,6 +43,7 @@ class LegacyETLService:
         self._update_zois_analytical_status()
         self._insert_header_data(metadata)
         self._update_zois_typ_konta()
+        db_service.update_zois_mapping_cache()
 
         logger.info("Legacy JPK_KR import completed successfully.")
         return str(db_path)
@@ -93,6 +94,10 @@ class LegacyETLService:
         if slownik_path.exists():
             db_service.execute_script_file(str(slownik_path))
             
+        obszary_sql_path = resource_path("insert_obszary.sql")
+        if obszary_sql_path.exists():
+            db_service.execute_script_file(str(obszary_sql_path))
+            
         return db_path
 
     def _insert_header_data(self, metadata):
@@ -128,6 +133,7 @@ class LegacyETLService:
             logger.error(f"Error inserting header: {e}")
 
     def _process_xml(self, xml_path: str):
+        logger.info(f"Rozpoczynanie parsowania strumieniowego XML: {xml_path}")
         conn = db_service.get_connection()
         cursor = conn.cursor()
         
@@ -303,10 +309,13 @@ class LegacyETLService:
         cursor.execute("CREATE INDEX IF NOT EXISTS temp_idx_zapisy_nr ON Zapisy(Z_NrZapisu)")
 
         # Update Z_Data and Z_DataMiesiac based on related Dziennik link (D_1 <-> Z_NrZapisu)
+        logger.info("Łączenie Zapisów z Dziennikiem (klucze biznesowe) i aktualizacja dat...")
         cursor.execute("""
             UPDATE Zapisy
-            SET Dziennik_Id = (SELECT Id FROM Dziennik WHERE D_1 = Zapisy.Z_NrZapisu LIMIT 1),
-                Z_Data = (SELECT D_8 FROM Dziennik WHERE D_1 = Zapisy.Z_NrZapisu LIMIT 1)
+            SET Dziennik_Id = d.Id,
+                Z_Data = d.D_8
+            FROM Dziennik d
+            WHERE d.D_1 = Zapisy.Z_NrZapisu
         """)
         
         cursor.execute("""
@@ -314,6 +323,8 @@ class LegacyETLService:
             SET Z_DataMiesiac = CAST(SUBSTR(Z_Data, 6, 2) AS INTEGER)
             WHERE Z_Data IS NOT NULL
         """)
+
+        logger.info("Zakończono łączenie i aktualizację dat.")
 
         # Drop temporary indices
         cursor.execute("DROP INDEX IF EXISTS temp_idx_dziennik_d1")

@@ -334,6 +334,7 @@ async def map_obszar(konto_id: str = Form(...), obszar_id: int = Form(...), stro
             ON CONFLICT(ZOiS_S1, Strona_Salda) DO UPDATE SET Obszar_Id = excluded.Obszar_Id
         """, (obszar_id, konto_id, strona_salda))
         conn.commit()
+        db_service.update_zois_mapping_cache()
         return HTMLResponse(
             content="""
             <div id="toast-success" class="toast toast-end z-[9999]">
@@ -467,6 +468,7 @@ async def unmap_obszar(konto_id: str):
         conn = db_service.get_connection()
         conn.execute("DELETE FROM ZOiS_Mapowanie_Obszar WHERE ZOiS_S1 = ?", (konto_id,))
         conn.commit()
+        db_service.update_zois_mapping_cache()
         return HTMLResponse(
             content="""
             <div id="toast-unmap" class="toast toast-end z-[9999]">

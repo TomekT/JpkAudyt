@@ -87,6 +87,12 @@ CREATE TABLE ZOiS (
     S_12_2 TEXT,                   
     S_12_3 TEXT,                   
     
+    -- Cache mapowania obszarów (denormalizacja dla maksymalnej wydajności)
+    Obszar_Id INTEGER,
+    Strona_Salda TEXT,
+    Is_Direct_Mapping INTEGER DEFAULT 0,
+    Source_Mapping_Konto TEXT,
+
     TypKonta TEXT,                 
     IsAnalytical INTEGER DEFAULT 0,  -- 1 = Analityczne, 0 = Syntetyczne
     GrupaKont TEXT GENERATED ALWAYS AS (SUBSTR(S_1, 1, 3)) STORED,  -- Grupa kont syntetycznych
@@ -205,10 +211,16 @@ CREATE TABLE ParametryBadania (
 CREATE INDEX IF NOT EXISTS idx_dziennik_d1 ON Dziennik(D_1);
 CREATE INDEX IF NOT EXISTS idx_zapisy_nrzapisu ON Zapisy(Z_NrZapisu);
 CREATE INDEX IF NOT EXISTS idx_zapisy_data_val ON Zapisy(Z_Data);
+CREATE INDEX IF NOT EXISTS idx_zapisy_z3 ON Zapisy(Z_3);
+CREATE INDEX IF NOT EXISTS idx_zapisy_miesiac ON Zapisy(Z_DataMiesiac);
 CREATE INDEX IF NOT EXISTS idx_zois_s1 ON ZOiS(S_1);
+CREATE INDEX IF NOT EXISTS idx_zois_s3 ON ZOiS(S_3);
 CREATE INDEX IF NOT EXISTS idx_zois_s12_1 ON ZOiS(S_12_1);
 CREATE INDEX IF NOT EXISTS idx_zois_typkonta ON ZOiS(TypKonta);
+CREATE INDEX IF NOT EXISTS idx_zois_isanalytical ON ZOiS(IsAnalytical);
 CREATE INDEX IF NOT EXISTS idx_zapisy_dziennikid ON Zapisy(Dziennik_Id);
+CREATE INDEX IF NOT EXISTS idx_zois_map_s1 ON ZOiS_Mapowanie_Obszar(ZOiS_S1);
+CREATE INDEX IF NOT EXISTS idx_zois_map_obszar ON ZOiS_Mapowanie_Obszar(Obszar_Id);
 
 
 -- Reset i aktualizacja widoku (usuwamy stary, aby wymusić nową strukturę)
@@ -286,21 +298,28 @@ CREATE TABLE IF NOT EXISTS ZOiS_Mapowanie_Obszar (
 DROP VIEW IF EXISTS v_zois_resolved_mapping;
 CREATE VIEW v_zois_resolved_mapping AS
 WITH AllMatches AS (
+    -- Bezpośrednie dopasowanie (najszybsze)
     SELECT 
-        z.S_1, 
-        z.S_2, 
-        z.S_3,
-        z.S_10, 
-        z.S_11,
-        m.Obszar_Id,
-        m.Strona_Salda,
-        m.ZOiS_S1 AS Source_Konto,
-        CASE WHEN z.S_1 = m.ZOiS_S1 THEN 1 ELSE 0 END AS Is_Direct,
+        z.S_1, z.S_2, z.S_3, z.S_10, z.S_11, z.IsAnalytical,
+        m.Obszar_Id, m.Strona_Salda, m.ZOiS_S1 AS Source_Konto,
+        1 AS Is_Direct,
+        1 as rnk
+    FROM ZOiS z
+    JOIN ZOiS_Mapowanie_Obszar m ON z.S_1 = m.ZOiS_S1
+    
+    UNION ALL
+    
+    -- Dziedziczenie (LIKE) - tylko dla kont, które nie mają bezpośredniego mapowania
+    SELECT 
+        z.S_1, z.S_2, z.S_3, z.S_10, z.S_11, z.IsAnalytical,
+        m.Obszar_Id, m.Strona_Salda, m.ZOiS_S1 AS Source_Konto,
+        0 AS Is_Direct,
         ROW_NUMBER() OVER (PARTITION BY z.S_1 ORDER BY LENGTH(m.ZOiS_S1) DESC) as rnk
     FROM ZOiS z
-    JOIN ZOiS_Mapowanie_Obszar m ON (z.S_1 = m.ZOiS_S1 OR z.S_1 LIKE m.ZOiS_S1 || '-%')
+    JOIN ZOiS_Mapowanie_Obszar m ON z.S_1 LIKE m.ZOiS_S1 || '-%'
+    WHERE NOT EXISTS (SELECT 1 FROM ZOiS_Mapowanie_Obszar m2 WHERE m2.ZOiS_S1 = z.S_1)
 )
-SELECT S_1, S_2, S_3, S_10, S_11, Obszar_Id, Strona_Salda, Is_Direct, Source_Konto
+SELECT S_1, S_2, S_3, S_10, S_11, IsAnalytical, Obszar_Id, Strona_Salda, Is_Direct, Source_Konto
 FROM AllMatches
 WHERE rnk = 1;
 
@@ -316,24 +335,24 @@ SELECT
      WHERE os.Obszar_Id = o.Id) AS Suma_Sprawozdanie,
     (SELECT SUM(
         CASE 
-            WHEN rm.Strona_Salda = 'TYLKO_WN' THEN rm.S_10
-            WHEN rm.Strona_Salda = 'TYLKO_MA' THEN rm.S_11
-            WHEN rm.Strona_Salda = 'PERSALDO_WN_MA' THEN (rm.S_10 - rm.S_11)
-            WHEN rm.Strona_Salda = 'PERSALDO_MA_WN' THEN (rm.S_11 - rm.S_10)
+            WHEN z.Strona_Salda = 'TYLKO_WN' THEN z.S_10
+            WHEN z.Strona_Salda = 'TYLKO_MA' THEN z.S_11
+            WHEN z.Strona_Salda = 'PERSALDO_WN_MA' THEN (z.S_10 - z.S_11)
+            WHEN z.Strona_Salda = 'PERSALDO_MA_WN' THEN (z.S_11 - z.S_10)
             ELSE 0 
         END)
-     FROM v_zois_resolved_mapping rm
-     WHERE rm.Obszar_Id = o.Id
-     AND rm.S_1 NOT IN (SELECT S_3 FROM ZOiS WHERE S_3 IS NOT NULL AND S_3 != '')
+     FROM ZOiS z
+     WHERE z.Obszar_Id = o.Id
+     AND z.IsAnalytical = 1
     ) AS Suma_ZOiS,
     (
         COALESCE((SELECT SUM(
             CASE 
-                WHEN rm.Strona_Salda = 'TYLKO_WN' THEN rm.S_10
-                WHEN rm.Strona_Salda = 'TYLKO_MA' THEN rm.S_11
-                WHEN rm.Strona_Salda = 'PERSALDO_WN_MA' THEN (rm.S_10 - rm.S_11)
-                WHEN rm.Strona_Salda = 'PERSALDO_MA_WN' THEN (rm.S_11 - rm.S_10)
-                ELSE 0 END) FROM v_zois_resolved_mapping rm WHERE rm.Obszar_Id = o.Id AND rm.S_1 NOT IN (SELECT S_3 FROM ZOiS WHERE S_3 IS NOT NULL AND S_3 != '')), 0)
+                WHEN z.Strona_Salda = 'TYLKO_WN' THEN z.S_10
+                WHEN z.Strona_Salda = 'TYLKO_MA' THEN z.S_11
+                WHEN z.Strona_Salda = 'PERSALDO_WN_MA' THEN (z.S_10 - z.S_11)
+                WHEN z.Strona_Salda = 'PERSALDO_MA_WN' THEN (z.S_11 - z.S_10)
+                ELSE 0 END) FROM ZOiS z WHERE z.Obszar_Id = o.Id AND z.IsAnalytical = 1), 0)
         - 
         COALESCE((SELECT SUM(sp.Kwota_RB) FROM Obszary_Sprawozdanie os JOIN Sprawozdanie_Pozycje sp ON os.XmlTag = sp.XmlTag WHERE os.Obszar_Id = o.Id), 0)
     ) AS Odchylenie

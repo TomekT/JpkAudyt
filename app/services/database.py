@@ -94,7 +94,9 @@ class DatabaseService:
             self._connection.row_factory = sqlite3.Row
             self.current_db_path = path
             
-            # Use the connection directly here
+            # Automatyczna optymalizacja i migracja schematu dla wydajności
+            self._ensure_performance_schema(self._connection)
+            
             logger.info("Database connected.")
         except Exception as e:
             logger.error(f"Failed to connect to database {db_path}: {e}")
@@ -151,14 +153,20 @@ class DatabaseService:
     def init_db(self, db_path: str, schema_path: str = "schema.sql"):
         """Creates a new database file and applies the schema."""
         if Path(db_path).exists():
-            logger.warning(f"Database already exists at {db_path}. Using existing.")
-             # Optionally we could choose to overwrite or just connect.
-             # For safety, let's just connect if it exists, or maybe raise error?
-             # Task says "Tworzy bazę .db". If exists, we probably overwrite or append.
-             # Let's assume overwrite if we are importing a JPK? 
-             # Or maybe just clear it. For now, let's assume we create fresh if import calls this.
-            pass
-            return
+            # Sprawdź czy baza jest faktycznie zainicjalizowana
+            try:
+                temp_conn = sqlite3.connect(db_path)
+                cursor = temp_conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='Config'")
+                initialized = cursor.fetchone() is not None
+                temp_conn.close()
+                if initialized:
+                    logger.info(f"Database already exists and is initialized at {db_path}. Using existing.")
+                    return
+                else:
+                    logger.warning(f"Database file exists at {db_path} but is not initialized. Re-applying schema.")
+            except Exception:
+                logger.warning(f"Database file at {db_path} is corrupted or inaccessible. Attempting to overwrite with schema.")
 
         # We connect (creating file if not exists)
         conn = sqlite3.connect(db_path)
@@ -612,6 +620,74 @@ class DatabaseService:
             raise e
             
         return best_match
+
+    def _ensure_performance_schema(self, conn: sqlite3.Connection):
+        """Sprawdza i dodaje brakujące kolumny wydajnościowe oraz inicjalizuje obszary."""
+        try:
+            cursor = conn.cursor()
+            
+            # 1. Sprawdź kolumny w ZOiS
+            cursor.execute("PRAGMA table_info(ZOiS)")
+            columns = [row['name'] for row in cursor.fetchall()]
+            
+            needed_columns = [
+                ("Obszar_Id", "INTEGER"),
+                ("Strona_Salda", "TEXT"),
+                ("Is_Direct_Mapping", "INTEGER DEFAULT 0"),
+                ("Source_Mapping_Konto", "TEXT")
+            ]
+            
+            added = False
+            for col_name, col_type in needed_columns:
+                if col_name not in columns:
+                    logger.info(f"Dodawanie brakującej kolumny {col_name} do tabeli ZOiS...")
+                    cursor.execute(f"ALTER TABLE ZOiS ADD COLUMN {col_name} {col_type}")
+                    added = True
+            
+            # 2. Sprawdź czy Obszary są puste
+            cursor.execute("SELECT COUNT(*) FROM Obszary")
+            if cursor.fetchone()[0] == 0:
+                logger.info("Inicjalizacja domyślnych obszarów badania...")
+                from app.core.path_utils import resource_path
+                obszary_sql = resource_path("insert_obszary.sql")
+                if obszary_sql.exists():
+                    self.execute_script_file(str(obszary_sql))
+                    added = True
+            
+            if added:
+                conn.commit()
+                self.update_zois_mapping_cache()
+                
+        except Exception as e:
+            logger.error(f"Błąd podczas sprawdzania schematu wydajnościowego: {e}")
+
+    def update_zois_mapping_cache(self):
+        """
+        Denormalizuje mapowanie obszarów bezpośrednio do tabeli ZOiS.
+        Kluczowe dla wydajności przy dużych zbiorach danych (>100k rekordów).
+        """
+        conn = self.get_connection()
+        try:
+            logger.info("Aktualizacja cache'u mapowania obszarów w tabeli ZOiS...")
+            # 1. Czyścimy stare dane
+            conn.execute("UPDATE ZOiS SET Obszar_Id = NULL, Strona_Salda = NULL, Is_Direct_Mapping = 0, Source_Mapping_Konto = NULL")
+            
+            # 2. Pobieramy mapowania z widoku i aktualizujemy ZOiS
+            sql = """
+                UPDATE ZOiS
+                SET Obszar_Id = rm.Obszar_Id,
+                    Strona_Salda = rm.Strona_Salda,
+                    Is_Direct_Mapping = rm.Is_Direct,
+                    Source_Mapping_Konto = rm.Source_Konto
+                FROM v_zois_resolved_mapping rm
+                WHERE ZOiS.S_1 = rm.S_1
+            """
+            conn.execute(sql)
+            conn.commit()
+            logger.info("Zakończono aktualizację cache'u mapowania.")
+        except Exception as e:
+            logger.error(f"Błąd aktualizacji cache'u mapowania: {e}")
+            conn.rollback()
 
 db_service = DatabaseService()
 
