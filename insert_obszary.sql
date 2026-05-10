@@ -16,7 +16,7 @@ INSERT OR IGNORE INTO Sprawozdanie_Pozycje (XmlTag, Nazwa) VALUES
 -- Sekcja zapasy
 ('Aktywa_B_I', 'Zapasy'),
 -- Sekcja nalezności krótkoterminowe
-('Aktywa_B_II_1_A', 'Należności z tyt dostaw - powiązane jednostki')
+('Aktywa_B_II_1_A', 'Należności z tyt dostaw - powiązane jednostki'),
 ('Aktywa_B_II_2_A', 'Należności z tyt dostaw - zaangażowane jednostki'),
 ('Aktywa_B_II_3_A', 'Należności z tyt dostaw - pozostałe jednostki'),
 ('Aktywa_B_II_A', 'Należności z tyt dostaw - jednostka mała'), -- espr dla małej
@@ -61,10 +61,43 @@ INSERT OR IGNORE INTO Sprawozdanie_Pozycje (XmlTag, Nazwa) VALUES
 -- Sekcja RZiS kalkulacyjny
 ('RZiSKalk.A', 'Przychody netto ze sprzedaży produktów i towarów'),
 ('RZiSKalk.B', 'Koszt sprzedanych produktów i towarów'),
-('RZiSKalk.C', 'Koszty sprzedaży'),
-('RZiSKalk.D', 'Koszty ogólnego zarządu'),
-
-
+('RZiSKalk.D', 'Koszty sprzedaży'),
+('RZiSKalk.C.Mala', 'Koszty sprzedaży - jednostka mała'), -- koszty sprzedaży dla jednostki małej
+('RZiSKalk.E', 'Koszty ogólnego zarządu'),
+('RZiSKalk.D.Mala', 'Koszty ogólnego zarządu - jednostka mała'), -- koszty ogólnego zarządu dla jednostki małej
+('RZiSKalk.G', 'Pozostałe przychody operacyjne'),
+('RZiSKalk.F.Mala', 'Poz. przych. operac. - jednostka mała'), -- pozostałe przychody operacyjne dla jednostki małej
+('RZiSKalk.H', 'Pozostałe koszty operacyjne'),
+('RZiSKalk.G.Mala', 'Poz. koszty operac. - jednostka mała'), -- pozostałe koszty operacyjne dla jednostki małej
+('RZiSKalk.J', 'Przychody finansowe'),
+('RZiSKalk.H.Mala', 'Przychody finansowe. - jednostka mała'),
+('RZiSKalk.K', 'Koszty finansowe'),
+('RZiSKalk.I.Mala', 'Koszty finansowe. - jednostka mała'),
+('RZiSKalk.M', 'Podatek dochodowy'),
+('RZiSKalk.K.Mala', 'Podatek dochodowy. - jednostka mała'),
+-- Sekcja RZiS porównawczy
+('RZiSPor.A', 'Przychody netto ze sprzedaży'),
+-- Koszty operacyjne
+('RZiSPor.B_I', 'Amortyzacja'),
+('RZiSPor.B_II', 'Zużycie materiałów i energii'),
+('RZiSPor.B_III', 'Usługi obce'),
+('RZiSPor.B_IV', 'Podatki i opłaty'),
+('RZiSPor.B_V', 'Wynagrodzenia'),
+('RZiSPor.B_IV.Mala', 'Wynagrodzenia - jednostka mała'),
+('RZiSPor.B_VI', 'Ubezp. społeczne i inne świadczenia'),
+('RZiSPor.B_V.Mala', 'Ubezp. społeczne i inne świadczenia - jednostka mała'),
+('RZiSPor.B_VII', 'Pozostałe koszty rodzajowe'),
+('RZiSPor.B_VI.Mala', 'Pozostałe koszty rodzajowe - jednostka mała'),
+('RZiSPor.B_VIII', 'Wartość sprzedanych towarów'),
+-- Pozstałe przychody i koszty
+('RZiSPor.D', 'Pozostałe przychody operacyjne'),
+('RZiSPor.E', 'Pozostałe koszty operacyjne'),
+('RZiSPor.G', 'Przychody finansowe'),
+('RZiSPor.F.Mala', 'Przychody finansowe. - jednostka mała'),
+('RZiSPor.H', 'Koszty finansowe'),
+('RZiSPor.G.Mala', 'Koszty finansowe. - jednostka mała'),
+('RZiSPor.J', 'Podatek dochodowy'),
+('RZiSPor.I.Mala', 'Podatek dochodowy. - jednostka mała');
 
 -- Dodanie predefiniowanych obszarów badania z jawnymi ID
 INSERT OR IGNORE INTO Obszary (Id, Nazwa, Typ, Czy_Systemowy) VALUES
@@ -90,10 +123,14 @@ INSERT OR IGNORE INTO Obszary (Id, Nazwa, Typ, Czy_Systemowy) VALUES
 (16, 'Przychody - układ kalk.', 'RZiS', 1),
 (17, 'Koszty - układ kalk.', 'RZiS', 1),
 (18, 'Przychody - układ por.', 'RZiS', 1),
-(19, 'Koszty - układ por.', 'RZiS', 1),
-(20, 'Pozostałe przychody i koszty operacyjne', 'RZiS', 1),
-(21, 'Przychody i koszty finansowe', 'RZiS', 1),
-(22, 'Podatek dochodowy', 'RZiS', 1);
+(19, 'Koszt amortyzacji', 'RZiS', 1),
+(20, 'Zużycie materiałów i usługi obce', 'RZiS', 1),
+(21, 'Wynagrodzenia i ubezp. społeczne', 'RZiS', 1),
+(22, 'Pozostałe koszty rodzajowe', 'RZiS', 1),
+(23, 'Koszty sprzedaży i zarządu', 'RZiS', 1),
+(24, 'Pozostałe przychody i koszty operacyjne', 'RZiS', 1),
+(25, 'Przychody i koszty finansowe', 'RZiS', 1),
+(26, 'Podatek dochodowy', 'RZiS', 1);
 
 -- Mapowanie pozycji sprawozdania do systemowych obszarów badania po ID
 INSERT OR IGNORE INTO Obszary_Sprawozdanie (Obszar_Id, XmlTag) VALUES
@@ -114,7 +151,7 @@ INSERT OR IGNORE INTO Obszary_Sprawozdanie (Obszar_Id, XmlTag) VALUES
 -- Należności inne
 (6, 'Aktywa_A_III'), -- Należności długoterminowe
 (6, 'Aktywa_B_II_3_B'), -- Należności z tyt. podatków
-(6, 'ktywa_B_II_Inne'), -- Pozostałe należności inne
+(6, 'Aktywa_B_II_Inne'), -- Pozostałe należności inne
 -- Środki pieniężne
 (7, 'Aktywa_B_III_1_C'), -- Środki pieniężne duża
 (7, 'Aktywa_B_III_A_1'), -- Środki pieniężne mała
@@ -124,7 +161,7 @@ INSERT OR IGNORE INTO Obszary_Sprawozdanie (Obszar_Id, XmlTag) VALUES
 (8, 'Aktywa_B_IV'), -- Inne RMK czynne krótkie
 -- Akcje własne
 (9, 'Aktywa_C'), -- Należne wpłaty na kapitał podstawowy
-(9, 'Aktywa_D') -- Udziały (akcje) własne
+(9, 'Aktywa_D'), -- Udziały (akcje) własne
 -- Kapitał własny
 (10, 'Pasywa_A_I'), -- Kapitał (fundusz) podstawowy
 (10, 'Pasywa_A_II'), -- Kapitał zapasowy
@@ -153,4 +190,45 @@ INSERT OR IGNORE INTO Obszary_Sprawozdanie (Obszar_Id, XmlTag) VALUES
 (14, 'Pasywa_B_III_Inne'), -- Inne zobowiązania krótkoterminowe
 -- RM bierne
 (15, 'Pasywa_B_IV'), -- Rozliczenia międzyokresowe bierne
+-- RZiS kalkulacyjny
+(16, 'RZiSKalk.A'), -- Przychody netto ze sprzedaży produktów i towarów
+(17, 'RZiSKalk.B'), -- Koszt sprzedanych produktów i towarów
+(23, 'RZiSKalk.D'), -- Koszty sprzedaży
+(23, 'RZiSKalk.C.Mala'), -- Koszty sprzedaży - mała
+(23, 'RZiSKalk.E'), -- Koszty ogólnego zarządu
+(23, 'RZiSKalk.D.Mala'), -- Koszty ogólnego zarządu - mała
+(24, 'RZiSKalk.G'), -- Pozostałe przychody operacyjne
+(24, 'RZiSKalk.F.Mala'), -- Pozostałe przychody operacyjne - mała
+(24, 'RZiSKalk.H'), -- Pozostałe koszty operacyjne
+(24, 'RZiSKalk.G.Mala'), -- Pozostałe koszty operacyjne - mała
+(25, 'RZiSKalk.J'), -- Przychody finansowe
+(25, 'RZiSKalk.H.Mala'), -- Przychody finansowe - mała
+(25, 'RZiSKalk.K'), -- Koszty finansowe
+(25, 'RZiSKalk.I.Mala'), -- Koszty finansowe - mała
+(26, 'RZiSKalk.M'), -- Podatek dochodowy
+(26, 'RZiSKalk.K.Mala'), -- Podatek dochodowy - mała
+-- RZiS porównawczy
+(18, 'RZiSPor.A'), -- Przychody netto ze sprzedaży produktów i towarów
+(19, 'RZiSPor.B_I'), -- Amortyzacja
+(20, 'RZiSPor.B_II'), -- Zużycie materiałów i energii
+(20, 'RZiSPor.B_III'), -- Usługi obce
+(21, 'RZiSPor.B_V'), -- Wynagrodzenia
+(21, 'RZiSPor.B_VI'), -- Ubezp. społeczne i inne świadczenia
+(21, 'RZiSPor.B_IV.Mala'), -- Wynagrodzenia - mała
+(21, 'RZiSPor.B_V.Mala'), -- Ubezp. społeczne i inne świadczenia - mała
+(22, 'RZiSPor.B_IV'), -- Podatki i opłaty
+(22, 'RZiSPor.B_VII'), -- Pozostałe koszty
+(22, 'RZiSPor.B_VIII'), -- Wartość sprzedanych towarów
+(22, 'RZiSPor.B_VI.Mala'), -- Pozostałe koszty - mała
+(24, 'RZiSPor.D'), -- Pozostałe przychody operacyjne
+(24, 'RZiSPor.E'), -- Pozostałe koszty operacyjne
+(25, 'RZiSPor.G'), -- Przychody finansowe
+(25, 'RZiSPor.H'), -- Koszty finansowe
+(25, 'RZiSPor.F.Mala'), -- Przychody finansowe - mała
+(25, 'RZiSPor.G.Mala'), -- Koszty finansowe - mała
+(26, 'RZiSPor.J'), -- Podatek dochodowy
+(26, 'RZiSPor.I.Mala'); -- Podatek dochodowy - mała
+
+
+
 
