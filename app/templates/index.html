@@ -174,7 +174,7 @@
 
     <!-- Sidebar -->
     <aside id="sidebar"
-        class="fixed left-0 top-0 h-full z-[100] w-16 hover:w-64 transition-all duration-300 group overflow-hidden bg-base-100 shadow-2xl border-r flex flex-col">
+        class="fixed left-0 top-0 h-full z-[100] w-16 hover:w-64 transition-all duration-300 group bg-base-100 shadow-2xl border-r flex flex-col">
         <div id="sidebar-content" class="flex flex-col h-full transition-opacity duration-200">
             <!-- Branding Header -->
             <div class="p-4 border-b h-16 flex items-center shrink-0">
@@ -184,41 +184,58 @@
             </div>
 
             <!-- Main Actions -->
-            <div class="px-0 py-4 flex flex-col gap-4 border-b shrink-0">
-                <div class="hidden group-hover:block px-4">
-                    <h3 class="text-[10px] uppercase font-bold text-gray-400 mb-2">Akcje</h3>
-                </div>
-
-                <div class="tooltip tooltip-right w-full" data-tip="Importuj JPK">
-                    <button onclick="document.getElementById('import_modal').showModal()"
-                        class="btn btn-sm w-full h-10 flex items-center justify-start px-0 overflow-hidden transition-all duration-300 relative border-none bg-transparent hover:bg-base-200 text-base-content group/btn">
-                        <div
-                            class="w-16 h-10 flex-shrink-0 flex items-center justify-center bg-primary/10 group-hover/btn:bg-primary group-hover/btn:text-primary-content transition-colors duration-300">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <div class="px-0 py-2 flex flex-col gap-1 border-b shrink-0">
+                <div class="dropdown dropdown-right dropdown-hover w-full">
+                    <div tabindex="0" role="button" class="btn btn-sm w-full h-9 flex items-center justify-start px-0 overflow-hidden transition-all duration-300 relative border-none bg-transparent hover:bg-base-200 text-base-content group/btn">
+                        <div class="w-16 h-9 flex-shrink-0 flex items-center justify-center bg-primary/10 group-hover/btn:bg-primary group-hover/btn:text-primary-content transition-colors duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
-                        <span
-                            class="truncate opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pl-4 font-semibold">Importuj
-                            JPK</span>
-                    </button>
+                        <span class="truncate opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pl-4 font-medium text-xs">Importuj dokument...</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 ml-auto mr-4 opacity-0 group-hover:opacity-50 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+                    <ul tabindex="0" class="dropdown-content z-[200] menu menu-sm p-2 shadow bg-base-100 rounded-box w-64 border border-base-300 ml-2">
+                        <li>
+                            <a onclick="document.getElementById('import_modal').showModal()" class="flex items-center gap-2 py-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <div class="flex flex-col">
+                                    <span class="font-bold">Plik JPK_KR</span>
+                                    <span class="text-[10px] opacity-50">Księgi rachunkowe (XML)</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a onclick="document.getElementById('espr-file-input').click()" class="flex items-center gap-2 py-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 00-2-2H5a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2zm3 2h10V9l-3-3H12v13z" />
+                                </svg>
+                                <div class="flex flex-col">
+                                    <span class="font-bold">e-Sprawozdanie</span>
+                                    <span class="text-[10px] opacity-50">Finansowe (XML)</span>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
 
                 <div class="tooltip tooltip-right w-full" data-tip="Podłącz bazę">
                     <button onclick="document.getElementById('connect-db-input').click()"
-                        class="btn btn-sm w-full h-10 flex items-center justify-start px-0 overflow-hidden transition-all duration-300 relative border-none bg-transparent hover:bg-base-200 text-base-content group/btn">
+                        class="btn btn-sm w-full h-9 flex items-center justify-start px-0 overflow-hidden transition-all duration-300 relative border-none bg-transparent hover:bg-base-200 text-base-content group/btn">
                         <div
-                            class="w-16 h-10 flex-shrink-0 flex items-center justify-center bg-base-300/50 group-hover/btn:bg-primary group-hover/btn:text-primary-content transition-colors duration-300">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                            class="w-16 h-9 flex-shrink-0 flex items-center justify-center bg-base-300/30 group-hover/btn:bg-primary group-hover/btn:text-primary-content transition-colors duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
                             </svg>
                         </div>
                         <span
-                            class="truncate opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pl-4 font-semibold">Podłącz
+                            class="truncate opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pl-4 font-medium text-xs">Podłącz
                             bazę</span>
                     </button>
                     <form hx-post="/connect-db" hx-encoding="multipart/form-data" hx-swap="none">
@@ -226,17 +243,18 @@
                             onchange="this.form.requestSubmit()" />
                     </form>
                 </div>
+
+                <form id="espr-import-form" hx-post="/api/obszary/import-espr" hx-encoding="multipart/form-data" hx-target="#toast-container" hx-swap="beforeend" class="hidden">
+                    <input type="file" id="espr-file-input" name="file" accept=".xml" onchange="this.form.requestSubmit()">
+                </form>
             </div>
 
             <!-- Database Section -->
-            <div class="flex-1 overflow-y-auto overflow-x-hidden py-4 flex flex-col mt-auto">
-                <div class="hidden group-hover:block px-4">
-                    <h2 class="font-semibold text-gray-500 text-[10px] uppercase mb-2">Ostatnio otwarte</h2>
-                </div>
+            <div class="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col mt-auto">
                 <!-- Collapsed Icon Indicator -->
                 <div class="w-16 flex justify-center group-hover:hidden tooltip tooltip-right"
                     data-tip="Ostatnio otwarte">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-300" fill="none"
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-300" fill="none"
                         viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
@@ -244,7 +262,7 @@
                 </div>
                 <!-- Expanded List -->
                 <div class="hidden group-hover:block transition-all duration-300 px-2">
-                    <ul class="menu menu-xs bg-base-100 w-full rounded-box gap-1 p-0" id="recent-dbs" hx-get="/recent"
+                    <ul class="menu menu-xs bg-base-100 w-full rounded-box gap-0.5 p-0" id="recent-dbs" hx-get="/recent"
                         hx-trigger="load, db-changed from:body">
                         <li><span class="loading loading-spinner loading-xs"></span></li>
                     </ul>
@@ -252,7 +270,7 @@
             </div>
 
             <!-- Bottom Section (Settings) -->
-            <div class="px-0 py-4 border-t bg-base-200/50 flex flex-col gap-2 shrink-0 pb-16">
+            <div class="px-0 py-2 border-t bg-base-200/50 flex flex-col gap-1 shrink-0 pb-16">
                 <!-- Odśwież -->
                 <div class="tooltip tooltip-right w-full" data-tip="Odśwież dane">
                     <button
@@ -260,7 +278,7 @@
                         onclick="handleHardReset()">
                         <div class="w-16 h-8 flex-shrink-0 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity" fill="none"
+                                class="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -276,7 +294,7 @@
                     <label class="flex items-center w-full h-8 cursor-pointer group/theme">
                         <div class="w-16 h-8 flex-shrink-0 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity" fill="none"
+                                class="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -292,11 +310,11 @@
                 </div>
 
                 <!-- Status Info -->
-                <div class="flex flex-col gap-1 border-t border-base-content/5 pt-3">
+                <div class="flex flex-col gap-0.5 border-t border-base-content/5 pt-2">
                     <div class="flex items-center w-full" title="Baza danych">
-                        <div class="w-16 h-8 flex-shrink-0 flex items-center justify-center">
+                        <div class="w-16 h-7 flex-shrink-0 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg"
-                                class="w-4 h-4 text-secondary opacity-40 group-hover:opacity-100 transition-opacity"
+                                class="w-3.5 h-3.5 text-secondary opacity-40 group-hover:opacity-100 transition-opacity"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
@@ -304,15 +322,15 @@
                         </div>
                         <div
                             class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden leading-tight pl-4">
-                            <span class="text-[8px] uppercase font-bold opacity-30">Baza</span>
-                            <span class="text-[10px] font-bold text-secondary truncate" id="active-db-label"
+                            <span class="text-[7px] uppercase font-bold opacity-30">Baza</span>
+                            <span class="text-[9px] font-bold text-secondary truncate" id="active-db-label"
                                 hx-get="/active-db-name" hx-trigger="load, db-changed from:body">Brak</span>
                         </div>
                     </div>
                     <div class="flex items-center w-full" title="Podmiot">
-                        <div class="w-16 h-8 flex-shrink-0 flex items-center justify-center">
+                        <div class="w-16 h-7 flex-shrink-0 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg"
-                                class="h-4 w-4 text-primary opacity-40 group-hover:opacity-100 transition-opacity"
+                                class="h-3.5 w-3.5 text-primary opacity-40 group-hover:opacity-100 transition-opacity"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -320,15 +338,15 @@
                         </div>
                         <div
                             class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden leading-tight pl-4">
-                            <span class="text-[8px] uppercase font-bold opacity-30">Podmiot</span>
-                            <span class="text-[10px] font-bold text-primary truncate" id="active-podmiot-label"
+                            <span class="text-[7px] uppercase font-bold opacity-30">Podmiot</span>
+                            <span class="text-[9px] font-bold text-primary truncate" id="active-podmiot-label"
                                 hx-get="/active-podmiot-name" hx-trigger="load, db-changed from:body">---</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="pt-2 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span class="text-[8px] text-gray-400">v. 1.0.0</span>
+                    <span class="text-[7px] text-gray-400">v. 1.0.0</span>
                 </div>
             </div>
         </div>

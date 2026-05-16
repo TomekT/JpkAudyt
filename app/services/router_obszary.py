@@ -1,5 +1,9 @@
 import asyncio
-from fastapi import APIRouter, Request, Form, Response
+import os
+import shutil
+import tempfile
+import logging
+from fastapi import APIRouter, Request, Form, Response, UploadFile, File
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -7,6 +11,8 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 from app.services.database import db_service
 from app.services.export_service import generate_tsv
+from app.services.espr_etl import EsprEtlService
+from lxml import etree
 import html
 
 router = APIRouter()
@@ -523,3 +529,66 @@ async def update_sprawozdanie_wartosc(xml_tag: str, rok: str, kwota: str = Form(
     except Exception as e:
         print(f"Error updating sprawozdanie: {e}")
         return Response(status_code=500)
+
+@router.post("/api/obszary/import-espr", response_class=HTMLResponse)
+async def import_espr(file: UploadFile = File(...)):
+    service = EsprEtlService()
+    
+    # a) Zapisz tymczasowo przesłany plik XML na dysku.
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".xml") as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = tmp.name
+
+    try:
+        # b) Załaduję plik do lxml.etree.parse.
+        tree = etree.parse(tmp_path)
+        
+        # c) Wykonaj automatyczną detekcję typu jednostki
+        # Jeśli zapytanie tree.xpath("//*[local-name()='JednostkaMala']") zwróci wynik, oznacza to Jednostkę Małą.
+        is_mala = bool(tree.xpath("//*[local-name()='JednostkaMala']"))
+        
+        # d) Pobierz aktualne aktywne połączenie bazy danych z db_service.
+        conn = db_service.get_connection()
+        
+        # e) Uruchom odpowiednią metodę serwisu
+        if is_mala:
+            service.import_jednostka_mala(tmp_path, conn)
+            message = "Zaimportowano e-Sprawozdanie (Jednostka Mała)"
+        else:
+            service.import_jednostka_inna(tmp_path, conn)
+            message = "Zaimportowano e-Sprawozdanie (Jednostka Inna)"
+            
+        # f) Zwróć odpowiedź HTML wysyłającą nagłówek HTMX HX-Trigger: odswiez-obszary
+        return HTMLResponse(
+            content=f"""
+            <div id="toast-success-espr" class="toast toast-end z-[9999]">
+                <div class="alert alert-success shadow-lg"><span>{message}</span></div>
+            </div>
+            <script>
+                setTimeout(() => {{
+                    const toast = document.getElementById('toast-success-espr');
+                    if(toast) toast.remove();
+                }}, 3000);
+            </script>
+            """,
+            headers={"HX-Trigger": "odswiez-obszary"}
+        )
+    except Exception as e:
+        logger_err = logging.getLogger(__name__)
+        logger_err.error(f"Błąd importu e-Sprawozdania: {e}")
+        return HTMLResponse(
+            content=f"""
+            <div id="toast-error-espr" class="toast toast-end z-[9999]">
+                <div class="alert alert-error shadow-lg"><span>Błąd importu: {e}</span></div>
+            </div>
+            <script>
+                setTimeout(() => {{
+                    const toast = document.getElementById('toast-error-espr');
+                    if(toast) toast.remove();
+                }}, 5000);
+            </script>
+            """
+        )
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
